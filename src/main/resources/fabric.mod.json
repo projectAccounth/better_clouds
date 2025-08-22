@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "story_mode_clouds",
+  "version": "${version}",
+  "name": "story_mode_clouds",
+  "description": "",
+  "authors": [],
+  "license": "MIT",
+  "icon": "assets/alpha_items/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "net.not_thefirst.story_mode_clouds.StoryModeClouds"
+    ]
+  },
+  "mixins": [
+    "story_mode_clouds.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "1.21.4"
+  }
+}

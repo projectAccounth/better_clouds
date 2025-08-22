@@ -1,0 +1,6 @@
+# Project files
+.gradle/
+build/
+run/
+.vscode/
+bin/
