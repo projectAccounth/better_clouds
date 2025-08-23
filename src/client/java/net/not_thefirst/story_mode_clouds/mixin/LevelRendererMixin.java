@@ -30,7 +30,7 @@ public abstract class LevelRendererMixin {
     private CloudRenderer cloudRenderer;
 
     @Inject(method = "<init>", at = @At("TAIL"))
-    private void smc$initCloudRenderer(
+    private void initCloudRenderer(
         Minecraft minecraft,
         EntityRenderDispatcher entityRenderDispatcher,
         BlockEntityRenderDispatcher blockEntityRenderDispatcher,
@@ -47,7 +47,7 @@ public abstract class LevelRendererMixin {
             target = "Lnet/minecraft/client/renderer/CloudRenderer;render(ILnet/minecraft/client/CloudStatus;FLorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lnet/minecraft/world/phys/Vec3;F)V"
         )
     )
-    private void smc$replaceCloudRender(
+    private void replaceCloudRender(
         CloudRenderer instance,
         int cloudColor,
         CloudStatus status,
@@ -61,7 +61,7 @@ public abstract class LevelRendererMixin {
     }
 
     @Inject(method = "method_62205", at = @At("HEAD"), cancellable = true)
-    private void smc$renderCloudsHead(
+    private void interceptCloudRender(
         ResourceHandle<RenderTarget> handle,
         int cloudColor,
         CloudStatus status,

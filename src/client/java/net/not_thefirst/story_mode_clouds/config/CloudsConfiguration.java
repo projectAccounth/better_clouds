@@ -14,14 +14,19 @@ public class CloudsConfiguration {
 
     public boolean IS_ENABLED = true;
 
-    public boolean APPEARS_SHADED = false;
-    public boolean USES_CUSTOM_ALPHA = true;
-    public boolean FULLBRIGHT = true;
+    public boolean APPEARS_SHADED    = false; // Whether clouds should appear shaded (darker) when the sun is behind them
+    public boolean USES_CUSTOM_ALPHA = true; // Whether clouds should use custom alpha values
+    public boolean CUSTOM_BRIGHTNESS = true; // Whether clouds should be rendered with custom brightness brightness (even at night)
+    public boolean USES_CUSTOM_COLOR = false; // Uses custom color for clouds
+    public boolean DEBUG_v0          = true;
+    public boolean RANDOMIZED_Y      = true;
 
-    public float FADE_RANGE = 6.0F;
-    public float CLOUD_Y_SCALE = 1.5f;
-    public float BRIGHTNESS = 1.0f;
-    public float BASE_ALPHA = 0.8f;
+    public float   FADE_ALPHA    = 0.2F; // The maximum fade alpha.
+    public float   CLOUD_Y_SCALE = 1.5f; // Scale factor for cloud height
+    public float   BRIGHTNESS    = 1.0f; // Base brightness color for clouds
+    public float   BASE_ALPHA    = 0.8f; // Base transparency of clouds
+
+    public int     CLOUD_COLOR   = 0xFFFFFF; // Color of the clouds in RGB format (default white)
 
     public static CloudsConfiguration INSTANCE = new CloudsConfiguration();
 

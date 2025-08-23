@@ -26,14 +26,20 @@ public class CustomCloudRenderer extends CloudRenderer {
     private static final float CELL_SIZE_IN_BLOCKS = 12.0F;
     private static final float HEIGHT_IN_BLOCKS = 4.0F;
 
+    @SuppressWarnings("unused")
+    private float insideCloudFadeFactor = 0.0F;
+
     private boolean needsRebuild = true;
     private int prevCellX = Integer.MIN_VALUE;
     private int prevCellZ = Integer.MIN_VALUE;
     private RelativeCameraPos prevRelativeCameraPos = RelativeCameraPos.INSIDE_CLOUDS;
+
     @Nullable
     private CloudStatus prevType;
+
     @Nullable
     private TextureData texture;
+
     private final VertexBuffer vertexBuffer = new VertexBuffer(com.mojang.blaze3d.buffers.BufferUsage.STATIC_WRITE);
     private boolean vertexBufferEmpty;
 
@@ -54,7 +60,6 @@ public class CustomCloudRenderer extends CloudRenderer {
     private static boolean isSouthEmpty(long c) { return (c >> 1 & 1L) != 0L; }
     private static boolean isWestEmpty(long c)  { return (c & 1L) != 0L; }
 
-    private float insideCloudFadeFactor = 0.0F; // unused
     // === Rendering ===
     public void render(int i, CloudStatus status, float cloudHeight, Matrix4f proj, Matrix4f modelView, Vec3 cam, float tickDelta) {
         if (this.texture == null) return;
@@ -107,8 +112,9 @@ public class CustomCloudRenderer extends CloudRenderer {
         }
 
         if (!this.vertexBufferEmpty) {
-            if (CloudsConfiguration.INSTANCE.FULLBRIGHT && CloudsConfiguration.INSTANCE.IS_ENABLED)
-                RenderSystem.setShaderColor(1.0F, 1.0F,1.0F, 1.0F);
+            float CUSTOM_BRIGHTNESS = CloudsConfiguration.INSTANCE.BRIGHTNESS;
+            if (CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS && CloudsConfiguration.INSTANCE.IS_ENABLED)
+                RenderSystem.setShaderColor(CUSTOM_BRIGHTNESS, CUSTOM_BRIGHTNESS,CUSTOM_BRIGHTNESS, 1.0F);
             else
                 RenderSystem.setShaderColor(ARGB.redFloat(i), ARGB.greenFloat(i), ARGB.blueFloat(i), 1.0F);
             if (status == CloudStatus.FANCY) {
@@ -250,23 +256,36 @@ public class CustomCloudRenderer extends CloudRenderer {
 
         boolean APPEARS_SHADED    = CloudsConfiguration.INSTANCE.APPEARS_SHADED;
         boolean USES_CUSTOM_ALPHA = CloudsConfiguration.INSTANCE.USES_CUSTOM_ALPHA;
+        boolean USES_CUSTOM_COLOR = CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR;
 
         float BASE_ALPHA = CloudsConfiguration.INSTANCE.BASE_ALPHA;
-        float BRIGHTNESS = CloudsConfiguration.INSTANCE.BRIGHTNESS;
-        
-        float FADE_RANGE = CloudsConfiguration.INSTANCE.FADE_RANGE;
+        float FADE_ALPHA = CloudsConfiguration.INSTANCE.FADE_ALPHA; // Minimum alpha achieved
 
-        float r = APPEARS_SHADED ? ARGB.redFloat(color) : BRIGHTNESS;
-        float g = APPEARS_SHADED ? ARGB.greenFloat(color) : BRIGHTNESS;
-        float b = APPEARS_SHADED ? ARGB.blueFloat(color) : BRIGHTNESS;
+        int CUSTOM_COLOR = CloudsConfiguration.INSTANCE.CLOUD_COLOR;
+
+        float r = ARGB.redFloat(color);
+        float g = ARGB.greenFloat(color);
+        float b = ARGB.blueFloat(color);
         float a = USES_CUSTOM_ALPHA ? BASE_ALPHA : ARGB.alphaFloat(color);
 
-        float fade = (pos == RelativeCameraPos.ABOVE_CLOUDS) ? 1.0F : Mth.clamp(1.0F - (Math.abs(vertexY) / FADE_RANGE), 0.0F, 1.0F);
+        float FADE_RANGE = (HEIGHT_IN_BLOCKS * CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE - Math.abs(vertexY) * a) / (a - FADE_ALPHA);
 
-        fade *= fadeMultiplier;
-        return ARGB.colorFromFloat(Math.clamp(a * (fade + insideCloudFadeFactor), 0, a) , r, g, b);
+        if (!APPEARS_SHADED && USES_CUSTOM_COLOR) {
+            r = ARGB.redFloat(CUSTOM_COLOR);
+            g = ARGB.greenFloat(CUSTOM_COLOR);
+            b = ARGB.blueFloat(CUSTOM_COLOR);
+        } else if (USES_CUSTOM_COLOR) {
+            r *= ARGB.redFloat(CUSTOM_COLOR);
+            g *= ARGB.greenFloat(CUSTOM_COLOR);
+            b *= ARGB.blueFloat(CUSTOM_COLOR);
+        }
+
+        // Calculate fade factor based on vertexY and interpolate alpha
+        float fade = (pos == RelativeCameraPos.ABOVE_CLOUDS) ? 1.0F : Mth.clamp(1.0F - Math.abs(vertexY) / FADE_RANGE, 0.0F, 1.0F);
+
+        fade *= fadeMultiplier; // Apply fade multiplier
+        return ARGB.colorFromFloat(a * fade, r, g, b);
     }
-
 
     public void markForRebuild() { this.needsRebuild = true; }
     @Override public void close() { this.vertexBuffer.close(); }
