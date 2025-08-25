@@ -2,6 +2,7 @@ package net.not_thefirst.story_mode_clouds.mixin;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.resource.ResourceHandle;
+
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.CloudRenderer;
@@ -74,7 +75,6 @@ public abstract class LevelRendererMixin {
     ) {
         if (!Compat.hasSodium()) return; // only take over when Sodium is present
         ci.cancel();
-
         renderCloud(cloudColor, status, cloudHeight, projMatrix, modelViewMatrix, vec3, partialTicks);
         // renderCloud(cloudColor, status, cloudHeight, projMatrix, modelViewMatrix, vec3, partialTicks);
     }

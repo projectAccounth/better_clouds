@@ -43,6 +43,8 @@ public class SimpleConfigScreen extends Screen {
                 onCloseActions.forEach(Runnable::run);
                 // return
                 Minecraft.getInstance().setScreen(parent);
+
+                Minecraft.getInstance().levelRenderer.getCloudRenderer().markForRebuild();
             }).bounds(this.width / 2 - 100, this.height - 28, 200, 20).build()
         );
     }
