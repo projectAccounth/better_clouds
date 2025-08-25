@@ -7,7 +7,10 @@
   "mixins": [
   ],
   "client": [
-    "LevelRendererMixin"
+    "LevelRendererMixin",
+    "KeyMappingAccessor",
+    "OptionsMixin",
+    "ClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1
