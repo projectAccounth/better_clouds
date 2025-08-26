@@ -8,7 +8,6 @@
   "license": "MIT",
   "icon": "assets/cloud_tweaks/icon.png",
   "environment": "client",
-  "accessWidener" : "cloud_tweaks.accesswidener",
   "entrypoints": {
     "client": [
       "net.not_thefirst.story_mode_clouds.StoryModeClouds"
@@ -22,7 +21,7 @@
   ],
   "depends": {
     "fabricloader": ">=0.16.10",
-    "minecraft": "1.21.4"
+    "minecraft": "1.21.5"
   },
   "suggests": {
     "cloth-config": "*",

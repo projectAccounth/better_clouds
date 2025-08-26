@@ -1,249 +1,333 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
-import com.mojang.blaze3d.shaders.FogShape;
+import com.mojang.blaze3d.buffers.BufferType;
+import com.mojang.blaze3d.buffers.BufferUsage;
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.CloudRenderer;
-import net.minecraft.client.renderer.FogParameters;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
 
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
 import java.util.Random;
 
 @Environment(EnvType.CLIENT)
 public class CustomCloudRenderer extends CloudRenderer {
+    // ==== constants (match vanilla, keep your scale) ====
     private static final float CELL_SIZE_IN_BLOCKS = 12.0F;
     private static final float HEIGHT_IN_BLOCKS = 4.0F;
 
-    // === Per-layer rendering state ===
-    private VertexBuffer[] layerBuffers;
-    private boolean[] layerBufferEmpty;
-    private boolean[] layerNeedsRebuild;
-    private int[] prevCellX;
-    private int[] prevCellZ;
-    private RelativeCameraPos[] prevRelativePos;
-    private CloudStatus[] prevStatus;
-    private TextureData[] layerTextures;
-    private long[] lastFadeRebuild;
+    // ==== per-layer state ====
+    private final GpuBuffer[] layerBuffers;
+    private final int[]       layerIndexCount;
+    private final boolean[]   layerNeedsRebuild;
 
-    private int maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
+    private final int[]       prevCellX;
+    private final int[]       prevCellZ;
+    private final RelativeCameraPos[] prevRelativePos;
+    private final CloudStatus[] prevStatus;
 
-    // Random offsets
-    private float[][] layerOffsets;
+    private final TextureData[] layerTextures;
+    private final float[][]     layerOffsets;       // [layer][0=x,1=z]
+    private final long[]        lastFadeRebuildMs;
+    private final float[]       prevFadeMix;        // for rebuild-on-change
+
+    private final int maxLayerCount;
+
+    // shared index buffer like vanilla
+    private final RenderSystem.AutoStorageIndexBuffer indices =
+            RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
 
     public CustomCloudRenderer() {
         super();
+        this.maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
 
-        this.layerBuffers = new VertexBuffer[maxLayerCount];
-        this.layerBufferEmpty = new boolean[maxLayerCount];
-        this.layerNeedsRebuild = new boolean[maxLayerCount];
-        this.prevCellX = new int[maxLayerCount];
-        this.prevCellZ = new int[maxLayerCount];
-        this.prevRelativePos = new RelativeCameraPos[maxLayerCount];
-        this.prevStatus = new CloudStatus[maxLayerCount];
-        this.layerTextures = new TextureData[maxLayerCount];
-        this.layerOffsets = new float[maxLayerCount][2];
-        this.lastFadeRebuild = new long[maxLayerCount];
+        layerBuffers       = new GpuBuffer[maxLayerCount];
+        layerIndexCount    = new int[maxLayerCount];
+        layerNeedsRebuild  = new boolean[maxLayerCount];
 
-        for (int i = 0; i < 10; i++) {
-            layerBuffers[i] = new VertexBuffer(com.mojang.blaze3d.buffers.BufferUsage.STATIC_WRITE);
-            layerBufferEmpty[i] = true;
+        prevCellX          = new int[maxLayerCount];
+        prevCellZ          = new int[maxLayerCount];
+        prevRelativePos    = new RelativeCameraPos[maxLayerCount];
+        prevStatus         = new CloudStatus[maxLayerCount];
+
+        layerTextures      = new TextureData[maxLayerCount];
+        layerOffsets       = new float[maxLayerCount][2];
+        lastFadeRebuildMs  = new long[maxLayerCount];
+        prevFadeMix        = new float[maxLayerCount];
+
+        for (int i = 0; i < maxLayerCount; i++) {
+            layerBuffers[i]      = null;
+            layerIndexCount[i]   = 0;
             layerNeedsRebuild[i] = true;
+
             prevCellX[i] = Integer.MIN_VALUE;
             prevCellZ[i] = Integer.MIN_VALUE;
             prevRelativePos[i] = RelativeCameraPos.INSIDE_CLOUDS;
             prevStatus[i] = null;
-            lastFadeRebuild[i] = System.currentTimeMillis();
-        }
 
-        if (CloudsConfiguration.INSTANCE.CLOUD_RANDOM_LAYERS) {
-            Random random = new Random();
-            for (int i = 0; i < 10; i++) {
-                layerOffsets[i][0] = random.nextFloat() * CELL_SIZE_IN_BLOCKS * 64.0f;
-                layerOffsets[i][1] = random.nextFloat() * CELL_SIZE_IN_BLOCKS * 64.0f;
+            lastFadeRebuildMs[i] = 0L;
+            prevFadeMix[i] = Float.NaN;
+
+            // random offsets (optional)
+            if (CloudsConfiguration.INSTANCE.CLOUD_RANDOM_LAYERS) {
+                Random r = new Random(i * 9127L ^ 0x9E3779B9L);
+                layerOffsets[i][0] = r.nextFloat() * CELL_SIZE_IN_BLOCKS * 64.0f;
+                layerOffsets[i][1] = r.nextFloat() * CELL_SIZE_IN_BLOCKS * 64.0f;
+            } else {
+                layerOffsets[i][0] = 0f;
+                layerOffsets[i][1] = 0f;
             }
         }
     }
 
+    // ==== reload ====
     @Override
     protected Optional<TextureData> prepare(ResourceManager resourceManager, ProfilerFiller profilerFiller) {
+        // Let vanilla load the base texture (records width/height/cells)
         return super.prepare(resourceManager, profilerFiller);
     }
 
     @Override
     protected void apply(Optional<TextureData> optional, ResourceManager resourceManager, ProfilerFiller profilerFiller) {
-        TextureData baseTexture = optional.orElse(super.prepare(resourceManager, profilerFiller).orElse(null));
-        for (int i = 0; i < 10; i++) {
-            // Default: same texture per layer (can replace with config getter)
-            this.layerTextures[i] = resolveTextureForLayer(i, baseTexture);
-            this.layerNeedsRebuild[i] = true;
+        TextureData base = optional.orElse(null);
+        for (int i = 0; i < maxLayerCount; i++) {
+            layerTextures[i] = resolveTextureForLayer(i, base); // hook for per-layer texture later
+            layerNeedsRebuild[i] = true;
         }
     }
 
     @Nullable
     private TextureData resolveTextureForLayer(int layer, @Nullable TextureData fallback) {
-        // Hook for per-layer texture overrides from config
+        // Placeholder: return fallback for now; wire per-layer texture here if desired.
         return fallback;
     }
 
+    // ==== helpers to read TextureData record ====
+    private static int texW(TextureData t) { return t.width(); }
+    private static int texH(TextureData t) { return t.height(); }
+    private static long[] texCells(TextureData t) { return t.cells(); }
+
     private static int getColor(long cell) { return (int)(cell >> 4 & 0xFFFFFFFFL); }
-    private static boolean isNorthEmpty(long c) { return (c >> 3 & 1L) != 0L; }
-    private static boolean isEastEmpty(long c)  { return (c >> 2 & 1L) != 0L; }
-    private static boolean isSouthEmpty(long c) { return (c >> 1 & 1L) != 0L; }
-    private static boolean isWestEmpty(long c)  { return (c & 1L) != 0L; }
+    private static boolean isNorthEmpty(long c){ return (c >> 3 & 1L) != 0L; }
+    private static boolean isEastEmpty (long c){ return (c >> 2 & 1L) != 0L; }
+    private static boolean isSouthEmpty(long c){ return (c >> 1 & 1L) != 0L; }
+    private static boolean isWestEmpty (long c){ return (c      & 1L) != 0L; }
 
-    // === Rendering ===
+    // ==== main render (1.21.5 signature) ====
     @Override
-    public void render(int i, CloudStatus status, float cloudHeight, Matrix4f proj, Matrix4f modelView, Vec3 cam, float tickDelta) {
-        int layers = CloudsConfiguration.INSTANCE.CLOUD_LAYERS;
-        if (layers <= 0) return;
+    public void render(int skyColor, CloudStatus status, float cloudHeight, Vec3 cam, float tickDelta) {
+        int cfgLayers = Mth.clamp(CloudsConfiguration.INSTANCE.CLOUD_LAYERS, 0, maxLayerCount);
+        if (cfgLayers <= 0) return;
 
-        double dx = cam.x + tickDelta * 0.03F;
-        double dz = cam.z + 3.96F;
+        // camera-based scroll (match vanilla)
+        double baseDx = cam.x + tickDelta * 0.03F;
+        double baseDz = cam.z + 3.96F;
 
-        int layerCount = CloudsConfiguration.INSTANCE.CLOUD_LAYERS; // or however many you have
-        List<Integer> layerIndices = new ArrayList<>();
-        for (int ind = 0; ind < layerCount; ind++) {
-            layerIndices.add(ind);
-        }
-
-        // compute relative distance for sorting
-        layerIndices.sort((a, b) -> {
-            float ay = (float)(cloudHeight - cam.y) + a * CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING;
-            float by = (float)(cloudHeight - cam.y) + b * CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING;
-            // we want farthest drawn first, nearest last
-            return Float.compare(Math.abs(by), Math.abs(ay));
+        // sort layers back-to-front by |camera distance|
+        List<Integer> order = new ArrayList<>(cfgLayers);
+        for (int i = 0; i < cfgLayers; i++) order.add(i);
+        order.sort((a, b) -> {
+            float ya = (float)(cloudHeight - cam.y) + a * CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING;
+            float yb = (float)(cloudHeight - cam.y) + b * CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING;
+            return Float.compare(Math.abs(yb), Math.abs(ya)); // far first
         });
 
-        for (int layer : layerIndices) {
-            TextureData tex = this.layerTextures[layer];
+        // choose pipelines
+        boolean fancy = status == CloudStatus.FANCY;
+        RenderPipeline pipeline = fancy ? RenderPipelines.CLOUDS : RenderPipelines.FLAT_CLOUDS;
+
+        // pick render targets like vanilla
+        RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+        RenderTarget cloudsTarget = Minecraft.getInstance().levelRenderer.getCloudsTarget();
+        GpuTexture colorTex = (cloudsTarget != null ? cloudsTarget.getColorTexture() : main.getColorTexture());
+        GpuTexture depthTex = (cloudsTarget != null ? cloudsTarget.getDepthTexture() : main.getDepthTexture());
+
+        float globalBrightness = CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS && CloudsConfiguration.INSTANCE.IS_ENABLED
+                ? CloudsConfiguration.INSTANCE.BRIGHTNESS : 1.0f;
+
+        for (int layer : order) {
+            TextureData tex = layerTextures[layer];
             if (tex == null) continue;
 
-            double wrapX = tex.width() * CELL_SIZE_IN_BLOCKS;
-            double wrapZ = tex.height() * CELL_SIZE_IN_BLOCKS;
-            double dxLayer = dx + layerOffsets[layer][0];
-            double dzLayer = dz + layerOffsets[layer][1];
-            dxLayer -= Mth.floor(dxLayer / wrapX) * wrapX;
-            dzLayer -= Mth.floor(dzLayer / wrapZ) * wrapZ;
+            // wrapping
+            double wrapX = texW(tex) * CELL_SIZE_IN_BLOCKS;
+            double wrapZ = texH(tex) * CELL_SIZE_IN_BLOCKS;
 
-            float cloudChunkHeight = HEIGHT_IN_BLOCKS * 
-                (CloudsConfiguration.INSTANCE.IS_ENABLED ? CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE : 1.0F);
-            float layerY = (float)(cloudHeight - cam.y) + layer * CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING;
-            float relYTop = layerY + cloudChunkHeight;
+            double dx = baseDx + layerOffsets[layer][0];
+            double dz = baseDz + layerOffsets[layer][1];
+            dx -= Mth.floor(dx / wrapX) * wrapX;
+            dz -= Mth.floor(dz / wrapZ) * wrapZ;
 
-            RelativeCameraPos layerPos =
-                (relYTop < 0.0F) ? RelativeCameraPos.ABOVE_CLOUDS :
-                (layerY > 0.0F) ? RelativeCameraPos.BELOW_CLOUDS : RelativeCameraPos.INSIDE_CLOUDS;
+            int cellX = Mth.floor(dx / CELL_SIZE_IN_BLOCKS);
+            int cellZ = Mth.floor(dz / CELL_SIZE_IN_BLOCKS);
+            float offX = (float)(dx - cellX * CELL_SIZE_IN_BLOCKS);
+            float offZ = (float)(dz - cellZ * CELL_SIZE_IN_BLOCKS);
 
-            int cellX = Mth.floor(dxLayer / CELL_SIZE_IN_BLOCKS);
-            int cellZ = Mth.floor(dzLayer / CELL_SIZE_IN_BLOCKS);
-            float offX = (float)(dxLayer - cellX * CELL_SIZE_IN_BLOCKS);
-            float offZ = (float)(dzLayer - cellZ * CELL_SIZE_IN_BLOCKS);
+            // per-layer Y
+            float yScale = CloudsConfiguration.INSTANCE.IS_ENABLED ? CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE : 1.0f;
+            float chunkHeight = HEIGHT_IN_BLOCKS * yScale;
+
+            float layerBaseY = (float)(cloudHeight - cam.y) + layer * CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING;
+            float relYTop = layerBaseY + chunkHeight;
+            RelativeCameraPos pos =
+                    (relYTop < 0.0F) ? RelativeCameraPos.ABOVE_CLOUDS :
+                    (layerBaseY > 0.0F) ? RelativeCameraPos.BELOW_CLOUDS : RelativeCameraPos.INSIDE_CLOUDS;
+
+            // center distance (for fade direction blend)
+            float relYCenter = layerBaseY + (chunkHeight * 0.5f);
+
+            // compute fadeMix in [-1..1] → blend selector for recolor()
+            float transition = Math.max(0.0001f, CloudsConfiguration.INSTANCE.TRANSITION_RANGE);
+            float dir = Mth.clamp(relYCenter / transition, -1.0f, 1.0f);
+
+            // throttle mesh rebuilds:
+            //  - rebuild when cell origin or status/pos changes
+            //  - also rebuild when fade mix changes noticeably near transition, but not faster than every ~40ms
+            boolean needs = layerNeedsRebuild[layer]
+                    || cellX != prevCellX[layer]
+                    || cellZ != prevCellZ[layer]
+                    || pos   != prevRelativePos[layer]
+                    || status!= prevStatus[layer];
 
             long now = System.currentTimeMillis();
-
-            float relY = (float)(relYTop - cloudChunkHeight / 2.0f);
-
-            if (CloudsConfiguration.INSTANCE.IS_ENABLED &&
-                Math.abs(relY) <= CloudsConfiguration.INSTANCE.TRANSITION_RANGE && 
-                now - lastFadeRebuild[layer] > 40) {
-                // How should I optimize this?
-
-                layerNeedsRebuild[layer] = true;
-                lastFadeRebuild[layer] = now;
-            }
-
-            if (layerNeedsRebuild[layer] ||
-                cellX != prevCellX[layer] || cellZ != prevCellZ[layer] ||
-                layerPos != prevRelativePos[layer] || status != prevStatus[layer]) {
-
-                layerNeedsRebuild[layer] = false;
-                prevCellX[layer] = cellX;
-                prevCellZ[layer] = cellZ;
-                prevRelativePos[layer] = layerPos;
-                prevStatus[layer] = status;
-
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.flatClouds();
-                MeshData mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, rt, relY, layer);
-                if (mesh != null) {
-                    layerBuffers[layer].bind();
-                    layerBuffers[layer].upload(mesh);
-                    VertexBuffer.unbind();
-                    layerBufferEmpty[layer] = false;
+            if (!needs && CloudsConfiguration.INSTANCE.FADE_ENABLED) {
+                // only watch dir when |relYCenter| is within transition range
+                if (Math.abs(relYCenter) <= CloudsConfiguration.INSTANCE.TRANSITION_RANGE) {
+                    float old = prevFadeMix[layer];
+                    // if first time, or changed more than epsilon, and enough time has passed, rebuild
+                    if ((Float.isNaN(old) || Math.abs(dir - old) > 0.02f) && (now - lastFadeRebuildMs[layer] > 40L)) {
+                        needs = true;
+                        lastFadeRebuildMs[layer] = now;
+                    }
                 } else {
-                    layerBufferEmpty[layer] = true;
+                    // away from transition range: only rebuild once when we cross boundary
+                    if (Float.isNaN(prevFadeMix[layer]) || Math.signum(prevFadeMix[layer]) != Math.signum(dir)) {
+                        needs = true;
+                    }
                 }
             }
 
-            if (!layerBufferEmpty[layer]) {
-                float CUSTOM_BRIGHTNESS = CloudsConfiguration.INSTANCE.BRIGHTNESS;
-                
-                if (CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS && CloudsConfiguration.INSTANCE.IS_ENABLED)
-                    RenderSystem.setShaderColor(CUSTOM_BRIGHTNESS, CUSTOM_BRIGHTNESS, CUSTOM_BRIGHTNESS, 1.0F);
-                else 
-                    RenderSystem.setShaderColor(ARGB.redFloat(i), ARGB.greenFloat(i), ARGB.blueFloat(i), 1.0F);
+            if (needs) {
+                layerNeedsRebuild[layer] = false;
+                prevCellX[layer] = cellX;
+                prevCellZ[layer] = cellZ;
+                prevRelativePos[layer] = pos;
+                prevStatus[layer] = status;
+                prevFadeMix[layer] = dir;
 
-                if (!CloudsConfiguration.INSTANCE.FOG_ENABLED)
-                    RenderSystem.setShaderFog(new FogParameters(Float.MAX_VALUE, 0.0F, FogShape.SPHERE, 0.0F, 0.0F, 0.0F, 0.0F));
+                try (MeshData mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, pos, relYCenter, layer)) {
+                    if (mesh == null) {
+                        layerIndexCount[layer] = 0;
+                    } else {
+                        if (layerBuffers[layer] != null && layerBuffers[layer].size >= mesh.vertexBuffer().remaining()) {
+                            RenderSystem.getDevice().createCommandEncoder()
+                                    .writeToBuffer(layerBuffers[layer], mesh.vertexBuffer(), 0);
+                        } else {
+                            if (layerBuffers[layer] != null) layerBuffers[layer].close();
+                            layerBuffers[layer] = RenderSystem.getDevice().createBuffer(
+                                    () -> "Cloud layer " + layer,
+                                    BufferType.VERTICES,
+                                    BufferUsage.DYNAMIC_WRITE,
+                                    mesh.vertexBuffer()
+                            );
+                        }
+                        layerIndexCount[layer] = mesh.drawState().indexCount();
+                    }
+                }
+            }
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.flatClouds();
-                layerBuffers[layer].bind();
-                drawWithRenderType(rt, proj, modelView, offX, layerY, offZ, layerBuffers[layer]);
-                
-                VertexBuffer.unbind();
-                RenderSystem.setShaderColor(1, 1, 1, 1);
+            if (layerIndexCount[layer] > 0) {
+                // brightness override (keep sky color otherwise)
+                float rr = CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS && CloudsConfiguration.INSTANCE.IS_ENABLED
+                        ? globalBrightness : ARGB.redFloat(skyColor);
+                float gg = CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS && CloudsConfiguration.INSTANCE.IS_ENABLED
+                        ? globalBrightness : ARGB.greenFloat(skyColor);
+                float bb = CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS && CloudsConfiguration.INSTANCE.IS_ENABLED
+                        ? globalBrightness : ARGB.blueFloat(skyColor);
+                RenderSystem.setShaderColor(rr, gg, bb, 1.0F);
+
+                // depth-only prepass for fancy (like vanilla)
+                if (fancy) {
+                    drawLayer(RenderPipelines.CLOUDS_DEPTH_ONLY, offX, layerBaseY, offZ, colorTex, depthTex, layer, indices);
+                }
+                drawLayer(pipeline, offX, layerBaseY, offZ, colorTex, depthTex, layer, indices);
+
+                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             }
         }
     }
 
-    private void drawWithRenderType(RenderType rt, Matrix4f proj, Matrix4f mv, float ox, float oy, float oz, VertexBuffer buf) {
-        rt.setupRenderState();
-        var shader = RenderSystem.getShader();
-        
-        if (shader != null && shader.MODEL_OFFSET != null) {
-            shader.MODEL_OFFSET.set(-ox, oy, -oz);
+    private void drawLayer(RenderPipeline pipeline,
+                           float offX, float offY, float offZ,
+                           GpuTexture colorTex, GpuTexture depthTex,
+                           int layer,
+                           RenderSystem.AutoStorageIndexBuffer indices) {
+        RenderSystem.setModelOffset(-offX, offY, -offZ);
+
+        GpuBuffer indexBuf = indices.getBuffer(layerIndexCount[layer]);
+        try (RenderPass pass = RenderSystem.getDevice()
+                .createCommandEncoder()
+                .createRenderPass(colorTex, OptionalInt.empty(), depthTex, OptionalDouble.empty())) {
+            pass.setPipeline(pipeline);
+            pass.setIndexBuffer(indexBuf, indices.type());
+            pass.setVertexBuffer(0, layerBuffers[layer]);
+            pass.drawIndexed(0, layerIndexCount[layer]);
         }
-        buf.drawWithShader(proj, mv, shader);
-        rt.clearRenderState();
+
+        RenderSystem.resetModelOffset();
     }
 
+    // ==== mesh building (vanilla pattern, but with your recolor + scaling) ====
     @Nullable
-    private MeshData buildMeshForLayer(TextureData tex, Tesselator tess, int cx, int cz,
-                                       CloudStatus status, RelativeCameraPos pos, RenderType rt, float relY, int currentLayer) {
-        int top = ARGB.colorFromFloat(0.8F, 1, 1, 1);
+    private MeshData buildMeshForLayer(TextureData tex,
+                                       Tesselator tess, int cx, int cz,
+                                       CloudStatus status, RelativeCameraPos pos,
+                                       float relYCenter, int currentLayer) {
+        // vanilla-ish base tints
+        int top =    ARGB.colorFromFloat(0.8F, 1.0F, 1.0F, 1.0F);
         int bottom = ARGB.colorFromFloat(0.8F, 0.9F, 0.9F, 0.9F);
-        int side = ARGB.colorFromFloat(0.8F, 0.7F, 0.7F, 0.7F);
-        int inner = ARGB.colorFromFloat(0.8F, 0.8F, 0.8F, 0.8F);
+        int side =   ARGB.colorFromFloat(0.8F, 0.7F, 0.7F, 0.7F);
+        int inner =  ARGB.colorFromFloat(0.8F, 0.8F, 0.8F, 0.8F);
 
-        BufferBuilder bb = tess.begin(rt.mode(), rt.format());
-        buildMesh(tex, pos, bb, cx, cz, side, top, bottom, inner, status == CloudStatus.FANCY, relY, currentLayer);
+        boolean fancy = status == CloudStatus.FANCY;
+        RenderPipeline pipe = fancy ? RenderPipelines.CLOUDS : RenderPipelines.FLAT_CLOUDS;
+
+        BufferBuilder bb = tess.begin(pipe.getVertexFormatMode(), pipe.getVertexFormat());
+        buildMesh(tex, pos, bb, cx, cz, side, top, bottom, inner, fancy, relYCenter, currentLayer);
         return bb.build();
     }
 
     private void buildMesh(TextureData tex, RelativeCameraPos pos, BufferBuilder bb,
-                           int cx, int cz, int bottom, int top, int side, int inner, boolean fancy, float relY, int currentLayer) {
-        int range = 32;
-        long[] cells = tex.cells();
-        int w = tex.width();
-        int h = tex.height();
+                           int cx, int cz, int bottom, int top, int side, int inner,
+                           boolean fancy, float relYCenter, int currentLayer) {
+        final int range = 32;
+        long[] cells = texCells(tex);
+        int w = texW(tex), h = texH(tex);
 
         for (int dz = -range; dz <= range; dz++) {
             for (int dx = -range; dx <= range; dx++) {
@@ -251,16 +335,16 @@ public class CustomCloudRenderer extends CloudRenderer {
                 int z = Math.floorMod(cz + dz, h);
                 long cell = cells[x + z * w];
                 if (cell != 0L) {
-                    int color = getColor(cell);
+                    int mul = getColor(cell);
                     if (fancy) {
                         buildExtrudedCell(pos, bb,
-                            ARGB.multiply(bottom, color),
-                            ARGB.multiply(top, color),
-                            ARGB.multiply(side, color),
-                            ARGB.multiply(inner, color),
-                            dx, dz, cell, relY, currentLayer);
+                                ARGB.multiply(bottom, mul),
+                                ARGB.multiply(top,    mul),
+                                ARGB.multiply(side,   mul),
+                                ARGB.multiply(inner,  mul),
+                                dx, dz, cell, relYCenter, currentLayer);
                     } else {
-                        buildFlatCell(bb, ARGB.multiply(top, color), dx, dz, currentLayer);
+                        buildFlatCell(bb, ARGB.multiply(top, mul), dx, dz, currentLayer);
                     }
                 }
             }
@@ -272,15 +356,16 @@ public class CustomCloudRenderer extends CloudRenderer {
         float x1 = x0 + CELL_SIZE_IN_BLOCKS;
         float z0 = cz * CELL_SIZE_IN_BLOCKS;
         float z1 = z0 + CELL_SIZE_IN_BLOCKS;
-        bb.addVertex(x0, 0, z0).setColor(recolor(color, 0, currentLayer));
-        bb.addVertex(x0, 0, z1).setColor(recolor(color, 0, currentLayer));
-        bb.addVertex(x1, 0, z1).setColor(recolor(color, 0, currentLayer));
-        bb.addVertex(x1, 0, z0).setColor(recolor(color, 0, currentLayer));
+        int c = recolor(color, 0f, currentLayer);
+        bb.addVertex(x0, 0, z0).setColor(c);
+        bb.addVertex(x0, 0, z1).setColor(c);
+        bb.addVertex(x1, 0, z1).setColor(c);
+        bb.addVertex(x1, 0, z0).setColor(c);
     }
 
     private void buildExtrudedCell(RelativeCameraPos pos, BufferBuilder bb,
                                    int bottomColor, int topColor, int sideColor, int innerColor,
-                                   int cx, int cz, long cell, float relY, int currentLayer) {
+                                   int cx, int cz, long cell, float relYCenter, int currentLayer) {
         float x0 = cx * CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + CELL_SIZE_IN_BLOCKS;
         float y0 = 0.0F;
@@ -288,105 +373,115 @@ public class CustomCloudRenderer extends CloudRenderer {
         float z0 = cz * CELL_SIZE_IN_BLOCKS;
         float z1 = z0 + CELL_SIZE_IN_BLOCKS;
 
-        float scaledY1 = y1 * (CloudsConfiguration.INSTANCE.IS_ENABLED ? CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE : 1.0f);
+        float yScale = CloudsConfiguration.INSTANCE.IS_ENABLED ? CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE : 1.0f;
+        float sy1 = y1 * yScale;
 
-        // Top face
+        // top
         if (pos != RelativeCameraPos.BELOW_CLOUDS) {
-            bb.addVertex(x0, scaledY1, z0).setColor(recolor(topColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z1).setColor(recolor(topColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z1).setColor(recolor(topColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z0).setColor(recolor(topColor, scaledY1, pos, relY, currentLayer));
+            int c = recolor(topColor, sy1, pos, relYCenter, currentLayer);
+            bb.addVertex(x0, sy1, z0).setColor(c);
+            bb.addVertex(x0, sy1, z1).setColor(c);
+            bb.addVertex(x1, sy1, z1).setColor(c);
+            bb.addVertex(x1, sy1, z0).setColor(c);
         }
-        // Bottom face
+        // bottom
         if (pos != RelativeCameraPos.ABOVE_CLOUDS) {
-            bb.addVertex(x1, y0, z0).setColor(recolor(bottomColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x1, y0, z1).setColor(recolor(bottomColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x0, y0, z1).setColor(recolor(bottomColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x0, y0, z0).setColor(recolor(bottomColor, y0, pos, relY, currentLayer));
+            int c = recolor(bottomColor, y0, pos, relYCenter, currentLayer);
+            bb.addVertex(x1, y0, z0).setColor(c);
+            bb.addVertex(x1, y0, z1).setColor(c);
+            bb.addVertex(x0, y0, z1).setColor(c);
+            bb.addVertex(x0, y0, z0).setColor(c);
         }
-        // Sides
+        // sides
         if (isNorthEmpty(cell)) {
-            bb.addVertex(x0, y0, z0).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z0).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z0).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, y0, z0).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
+            int c0 = recolor(sideColor, y0, pos, relYCenter, currentLayer);
+            int c1 = recolor(sideColor, sy1, pos, relYCenter, currentLayer);
+            bb.addVertex(x0, y0, z0).setColor(c0);
+            bb.addVertex(x0, sy1, z0).setColor(c1);
+            bb.addVertex(x1, sy1, z0).setColor(c1);
+            bb.addVertex(x1, y0, z0).setColor(c0);
         }
         if (isSouthEmpty(cell)) {
-            bb.addVertex(x1, y0, z1).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z1).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z1).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, y0, z1).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
+            int c0 = recolor(sideColor, y0, pos, relYCenter, currentLayer);
+            int c1 = recolor(sideColor, sy1, pos, relYCenter, currentLayer);
+            bb.addVertex(x1, y0, z1).setColor(c0);
+            bb.addVertex(x1, sy1, z1).setColor(c1);
+            bb.addVertex(x0, sy1, z1).setColor(c1);
+            bb.addVertex(x0, y0, z1).setColor(c0);
         }
         if (isWestEmpty(cell)) {
-            bb.addVertex(x0, y0, z1).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z1).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z0).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, y0, z0).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
+            int c0 = recolor(sideColor, y0, pos, relYCenter, currentLayer);
+            int c1 = recolor(sideColor, sy1, pos, relYCenter, currentLayer);
+            bb.addVertex(x0, y0, z1).setColor(c0);
+            bb.addVertex(x0, sy1, z1).setColor(c1);
+            bb.addVertex(x0, sy1, z0).setColor(c1);
+            bb.addVertex(x0, y0, z0).setColor(c0);
         }
         if (isEastEmpty(cell)) {
-            bb.addVertex(x1, y0, z0).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z0).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z1).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, y0, z1).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
+            int c0 = recolor(sideColor, y0, pos, relYCenter, currentLayer);
+            int c1 = recolor(sideColor, sy1, pos, relYCenter, currentLayer);
+            bb.addVertex(x1, y0, z0).setColor(c0);
+            bb.addVertex(x1, sy1, z0).setColor(c1);
+            bb.addVertex(x1, sy1, z1).setColor(c1);
+            bb.addVertex(x1, y0, z1).setColor(c0);
         }
     }
 
-    private int recolor(int color, float vertexY, int currentLayer) {
-        if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
-            return color;
-        }
+    // ==== your recolor logic (per-layer tint + fade) ====
+    private int recolor(int inColor, float vertexY, int currentLayer) {
+        if (!CloudsConfiguration.INSTANCE.IS_ENABLED) return inColor;
 
         boolean shaded   = CloudsConfiguration.INSTANCE.APPEARS_SHADED;
         boolean useAlpha = CloudsConfiguration.INSTANCE.USES_CUSTOM_ALPHA;
         boolean useColor = CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR;
 
-        float baseAlpha  = useAlpha ? CloudsConfiguration.INSTANCE.BASE_ALPHA : ARGB.alphaFloat(color);
-        int customColor  = CloudsConfiguration.INSTANCE.CLOUD_COLORS[currentLayer];
+        float baseAlpha  = useAlpha ? CloudsConfiguration.INSTANCE.BASE_ALPHA : ARGB.alphaFloat(inColor);
+        int   tint       = CloudsConfiguration.INSTANCE.CLOUD_COLORS[currentLayer];
 
-        float r = ARGB.redFloat(color);
-        float g = ARGB.greenFloat(color);
-        float b = ARGB.blueFloat(color);
+        float r = ARGB.redFloat(inColor);
+        float g = ARGB.greenFloat(inColor);
+        float b = ARGB.blueFloat(inColor);
 
-        // Apply custom tinting
         if (!shaded && useColor) {
-            r = ARGB.redFloat(customColor);
-            g = ARGB.greenFloat(customColor);
-            b = ARGB.blueFloat(customColor);
+            r = ARGB.redFloat(tint);
+            g = ARGB.greenFloat(tint);
+            b = ARGB.blueFloat(tint);
         } else if (useColor) {
-            r *= ARGB.redFloat(customColor);
-            g *= ARGB.greenFloat(customColor);
-            b *= ARGB.blueFloat(customColor);
+            r *= ARGB.redFloat(tint);
+            g *= ARGB.greenFloat(tint);
+            b *= ARGB.blueFloat(tint);
+        } else if (!shaded) {
+            r = g = b = 1.0f;
         }
 
         return ARGB.colorFromFloat(baseAlpha, r, g, b);
     }
 
-    private int recolor(int color, float vertexY, RelativeCameraPos pos, float relY, int currentLayer) {
-        if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
-            return color;
-        }
+    private int recolor(int inColor, float vertexY, RelativeCameraPos pos, float relYCenter, int currentLayer) {
+        if (!CloudsConfiguration.INSTANCE.IS_ENABLED) return inColor;
 
         boolean shaded   = CloudsConfiguration.INSTANCE.APPEARS_SHADED;
         boolean useAlpha = CloudsConfiguration.INSTANCE.USES_CUSTOM_ALPHA;
         boolean useColor = CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR;
 
-        float baseAlpha  = useAlpha ? CloudsConfiguration.INSTANCE.BASE_ALPHA : ARGB.alphaFloat(color);
+        float baseAlpha  = useAlpha ? CloudsConfiguration.INSTANCE.BASE_ALPHA : ARGB.alphaFloat(inColor);
         float fadeAlpha  = CloudsConfiguration.INSTANCE.FADE_ALPHA;
-        int customColor  = CloudsConfiguration.INSTANCE.CLOUD_COLORS[currentLayer];
 
-        float r = ARGB.redFloat(color);
-        float g = ARGB.greenFloat(color);
-        float b = ARGB.blueFloat(color);
+        int   tint       = CloudsConfiguration.INSTANCE.CLOUD_COLORS[currentLayer];
 
-        // === Tint logic ===
+        float r = ARGB.redFloat(inColor);
+        float g = ARGB.greenFloat(inColor);
+        float b = ARGB.blueFloat(inColor);
+
+        // tint rules
         if (!shaded && useColor) {
-            r = ARGB.redFloat(customColor);
-            g = ARGB.greenFloat(customColor);
-            b = ARGB.blueFloat(customColor);
+            r = ARGB.redFloat(tint);
+            g = ARGB.greenFloat(tint);
+            b = ARGB.blueFloat(tint);
         } else if (useColor) {
-            r *= ARGB.redFloat(customColor);
-            g *= ARGB.greenFloat(customColor);
-            b *= ARGB.blueFloat(customColor);
+            r *= ARGB.redFloat(tint);
+            g *= ARGB.greenFloat(tint);
+            b *= ARGB.blueFloat(tint);
         } else if (!shaded) {
             r = g = b = 1.0f;
         }
@@ -395,49 +490,50 @@ public class CustomCloudRenderer extends CloudRenderer {
             return ARGB.colorFromFloat(baseAlpha, r, g, b);
         }
 
-        // Cloud vertical thickness
-        float cloudHeight = HEIGHT_IN_BLOCKS * CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE;
+        float yScale = CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE;
+        float cloudHeight = HEIGHT_IN_BLOCKS * (CloudsConfiguration.INSTANCE.IS_ENABLED ? yScale : 1.0f);
 
-        // Normalize vertex Y position [0..1]
-        float normalizedY = Mth.clamp(vertexY / cloudHeight, 0.0f, 1.0f);
+        // vertex position normalized in [0..1]
+        float t = Mth.clamp(vertexY / Math.max(0.0001f, cloudHeight), 0.0f, 1.0f);
 
-        // === Smooth direction logic ===
-        float transitionRange = CloudsConfiguration.INSTANCE.TRANSITION_RANGE; // e.g. 10.0f
-        float dir = Mth.clamp(relY / transitionRange, -1.0f, 1.0f);
+        // blend direction based on camera center offset
+        float transition = Math.max(0.0001f, CloudsConfiguration.INSTANCE.TRANSITION_RANGE);
+        float dir = Mth.clamp(relYCenter / transition, -1.0f, 1.0f); // -1 below .. +1 above
 
-        // Fade if camera is well below (dir ≈ -1)
-        float fadeBelow = Mth.lerp(normalizedY, 1.0f, fadeAlpha);
-        // Fade if camera is well above (dir ≈ +1)
-        float fadeAbove = Mth.lerp(1.0f - normalizedY, 1.0f, fadeAlpha);
+        // fades: below = top fades, above = bottom fades
+        float fadeBelow = Mth.lerp(t, 1.0f, fadeAlpha);
+        float fadeAbove = Mth.lerp(1.0f - t, 1.0f, fadeAlpha);
 
-        // Blend between below/above depending on dir
-        float mix = (dir + 1.0f) / 2.0f; // [-1..1] → [0..1]
+        // mix fades smoothly as camera crosses the band
+        float mix = (dir + 1.0f) * 0.5f; // [-1..1] -> [0..1]
         float fade = Mth.lerp(mix, fadeBelow, fadeAbove);
 
-        // Final alpha
         float finalAlpha = baseAlpha * (1.0f - fade);
         return ARGB.colorFromFloat(finalAlpha, r, g, b);
     }
 
+    // ==== external invalidation ====
     public void markForRebuild(int layer) {
-        if (layer >= 0 && layer < layerNeedsRebuild.length) {
-            layerNeedsRebuild[layer] = true;
-        }
+        if (layer >= 0 && layer < layerNeedsRebuild.length) layerNeedsRebuild[layer] = true;
     }
-
+    @Override
     public void markForRebuild() {
-        for (int i = 0; i < layerNeedsRebuild.length; i++) {
-            layerNeedsRebuild[i] = true;
-        }
+        for (int i = 0; i < layerNeedsRebuild.length; i++) layerNeedsRebuild[i] = true;
     }
 
+    // ==== cleanup ====
     @Override
     public void close() {
-        for (VertexBuffer vb : layerBuffers) {
-            if (vb != null) vb.close();
+        for (int i = 0; i < layerBuffers.length; i++) {
+            if (layerBuffers[i] != null) {
+                layerBuffers[i].close();
+                layerBuffers[i] = null;
+            }
         }
     }
 
+    // mirror vanilla's enum visibility for our own usage
+    @Environment(EnvType.CLIENT)
     public enum RelativeCameraPos {
         ABOVE_CLOUDS, INSIDE_CLOUDS, BELOW_CLOUDS
     }

@@ -1,6 +1,5 @@
 package net.not_thefirst.story_mode_clouds.mixin;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.resource.ResourceHandle;
 
 import net.minecraft.client.CloudStatus;
@@ -14,7 +13,6 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 
-import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -45,7 +43,7 @@ public abstract class LevelRendererMixin {
         method = "method_62205",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/CloudRenderer;render(ILnet/minecraft/client/CloudStatus;FLorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lnet/minecraft/world/phys/Vec3;F)V"
+            target = "Lnet/minecraft/client/renderer/CloudRenderer;render(ILnet/minecraft/client/CloudStatus;FLnet/minecraft/world/phys/Vec3;F)V"
         )
     )
     private void replaceCloudRender(
@@ -53,38 +51,31 @@ public abstract class LevelRendererMixin {
         int cloudColor,
         CloudStatus status,
         float cloudHeight,
-        Matrix4f projMatrix,
-        Matrix4f modelViewMatrix,
         Vec3 vec3,
         float partialTicks
     ) {
-        renderCloud(cloudColor, status, cloudHeight, projMatrix, modelViewMatrix, vec3, partialTicks);
+        renderCloud(cloudColor, status, cloudHeight, vec3, partialTicks);
     }
 
     @Inject(method = "method_62205", at = @At("HEAD"), cancellable = true)
     private void interceptCloudRender(
-        ResourceHandle<RenderTarget> handle,
         int cloudColor,
         CloudStatus status,
         float cloudHeight,
-        Matrix4f projMatrix,
-        Matrix4f modelViewMatrix,
         Vec3 vec3,
         float partialTicks,
         CallbackInfo ci
     ) {
-        if (!Compat.hasSodium()) return; // only take over when Sodium is present
+        if (!Compat.hasSodium()) return;
         ci.cancel();
-        renderCloud(cloudColor, status, cloudHeight, projMatrix, modelViewMatrix, vec3, partialTicks);
-        // renderCloud(cloudColor, status, cloudHeight, projMatrix, modelViewMatrix, vec3, partialTicks);
+
+        renderCloud(cloudColor, status, cloudHeight, vec3, partialTicks);
     }
 
     private void renderCloud(
         int cloudColor,
         CloudStatus status,
         float cloudHeight,
-        Matrix4f projMatrix,
-        Matrix4f modelViewMatrix,
         Vec3 vec3,
         float partialTicks
     ) {
@@ -95,6 +86,6 @@ public abstract class LevelRendererMixin {
             this.cloudRenderer = new CustomCloudRenderer();
         }
 
-        this.cloudRenderer.render(cloudColor, status, cloudHeight, projMatrix, modelViewMatrix, vec3, partialTicks);
+        this.cloudRenderer.render(cloudColor, status, cloudHeight, vec3, partialTicks);
     }
 }
