@@ -18,12 +18,31 @@ public final class KeyMappingHelper {
         return KeyMappingAccessor.GetCategoryMap();
     }
 
+    /**
+     * Adds a new category to the category map if it does not already exist.
+     *
+     * @param categoryTranslationKey The key for the category.
+     * @return true if the category exists (either after creating or found in the map), false otherwise.
+     */
     public static boolean addCategory(String categoryTranslationKey) {
-        return getCategoryMap().computeIfAbsent(categoryTranslationKey, key ->
-            getCategoryMap().values().stream().max(Integer::compareTo).orElse(0) + 1
-        ) != null;
+        return getCategoryMap().computeIfAbsent(
+            categoryTranslationKey, 
+            // compute the category key if not in the map
+            key -> getCategoryMap()
+                    .values() // get all existing category IDs
+                    .stream()
+                    .max(Integer::compareTo) // find the highest ID
+                    .orElse(0) // if no categories exist, start from 0
+                    + 1 // assign the next available ID
+        ) != null; // returns true if the value is not null (i.e., successfully added/found)
     }
 
+    /**
+     * Adds a new binding to the available key mappings of Minecraft.
+     *
+     * @param binding The KeyMapping for binding.
+     * @return The exact KeyMapping passed in.
+     */
     public static KeyMapping registerKeyBinding(KeyMapping binding) {
         if (Minecraft.getInstance().options != null) {
             throw new IllegalStateException("Key mappings cannot be registered in run-time!");

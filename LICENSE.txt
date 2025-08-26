@@ -1,10 +1,10 @@
-This project is a modification ("mod") for [Game Title]. 
-It is not affiliated with or endorsed by [Game Developer/Publisher]. 
+This project is a modification ("mod") for Minecraft. 
+It is not affiliated with or endorsed by Mojang. 
 This license applies only to the original code and assets created by not_thefirst.
 
 MIT License
 
-Copyright (c) 2025 not_thefirst
+Copyright (c) 2025 not_thefirst (alias)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -43,6 +43,13 @@ public class ClothConfigScreen {
                 .build());
 
         appearance.addEntry(entryBuilder
+                .startBooleanToggle(Component.translatable("option.cloud_tweaks.fog_enabled"),
+                        CloudsConfiguration.INSTANCE.APPEARS_SHADED)
+                .setDefaultValue(false)
+                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.FOG_ENABLED = v)
+                .build());
+
+        appearance.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.fade_enabled"),
                         CloudsConfiguration.INSTANCE.FADE_ENABLED)
                 .setDefaultValue(false)
@@ -94,13 +101,6 @@ public class ClothConfigScreen {
                 .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR = v)
                 .build());
 
-        appearance.addEntry(entryBuilder
-                .startColorField(Component.translatable("option.cloud_tweaks.color"),
-                        CloudsConfiguration.INSTANCE.CLOUD_COLOR)
-                .setDefaultValue(0xFFFFFF)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUD_COLOR = v)
-                .build());
-
         // === Shape category ===
         ConfigCategory shape = builder.getOrCreateCategory(Component.translatable("option.cloud_tweaks.category.shape"));
 
@@ -133,10 +133,21 @@ public class ClothConfigScreen {
         layers.addEntry(entryBuilder
                 .startFloatField(Component.translatable("option.cloud_tweaks.cloud_layers_spacing"),
                         CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING)
-                .setMin(1.0f).setMax(20.0f)
+                .setMin(1.0f).setMax(512.0f)
                 .setDefaultValue(2.0f)
                 .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING = v)
                 .build());
+
+        for (int i = 0; i < CloudsConfiguration.MAX_LAYER_COUNT; i++) {
+            final int idx = i;
+            layers.addEntry(entryBuilder
+                .startColorField(
+                        Component.translatable("option.cloud_tweaks.layer_color." + (i + 1)),
+                        CloudsConfiguration.INSTANCE.CLOUD_COLORS[idx])
+                .setDefaultValue(0xFFFFFF)
+                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUD_COLORS[idx] = v)
+                .build());
+        }
 
         // Hook up saving
         builder.setSavingRunnable(CloudsConfiguration::save);
