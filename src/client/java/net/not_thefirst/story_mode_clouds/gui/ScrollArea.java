@@ -1,9 +1,10 @@
 package net.not_thefirst.story_mode_clouds.gui;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractScrollArea;
+import net.minecraft.client.gui.components.AbstractScrollWidget;
 import net.minecraft.client.gui.components.AbstractWidget;
 
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ import java.util.List;
 import org.lwjgl.glfw.GLFW;
 
 // --- scroll area implementation ---
-public class ScrollArea extends AbstractScrollArea {
+public class ScrollArea extends AbstractScrollWidget {
     private final List<AbstractWidget> children = new ArrayList<>();
     private final List<LabelEntry> labels = new ArrayList<>();
     private final List<Runnable> commits = new ArrayList<>();
@@ -90,8 +91,6 @@ public class ScrollArea extends AbstractScrollArea {
 
         gfx.pose().popPose();
         gfx.disableScissor();
-
-        renderScrollbar(gfx);
     }
 
     @Override
@@ -160,8 +159,6 @@ public class ScrollArea extends AbstractScrollArea {
         return super.charTyped(chr, mods);
     }
 
-
-    @Override
     protected int contentHeight() {
         return nextRowY + 5;  // total height used by rows
     }
@@ -175,6 +172,15 @@ public class ScrollArea extends AbstractScrollArea {
     protected void updateWidgetNarration(NarrationElementOutput narration) {
     }
 
-    /* --- internal --- */
     private record LabelEntry(Component text, int x, int y, int color) {}
+
+    @Override
+    protected int getInnerHeight() {
+        return contentHeight();
+    }
+
+    @Override
+    protected void renderContents(GuiGraphics guiGraphics, int i, int j, float f) {
+        renderWidget(guiGraphics, i, j, f);
+    }
 }

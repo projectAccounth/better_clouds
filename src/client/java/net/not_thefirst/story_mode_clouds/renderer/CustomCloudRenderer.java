@@ -13,12 +13,12 @@ import net.minecraft.client.renderer.CloudRenderer;
 import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
+import net.not_thefirst.story_mode_clouds.utils.ARGB;
 
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -35,9 +35,6 @@ public class CustomCloudRenderer extends CloudRenderer {
     private LayerState[] layers;
 
     private int maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
-
-    // Random offsets
-    private float[][] layerOffsets;
 
     public CustomCloudRenderer() {
         super();
@@ -122,8 +119,8 @@ public class CustomCloudRenderer extends CloudRenderer {
 
             double wrapX = tex.width() * CELL_SIZE_IN_BLOCKS;
             double wrapZ = tex.height() * CELL_SIZE_IN_BLOCKS;
-            double dxLayer = dx + layerOffsets[layer][0];
-            double dzLayer = dz + layerOffsets[layer][1];
+            double dxLayer = dx + currentLayer.offsetX;
+            double dzLayer = dz + currentLayer.offsetZ;
             dxLayer -= Mth.floor(dxLayer / wrapX) * wrapX;
             dzLayer -= Mth.floor(dzLayer / wrapZ) * wrapZ;
 
