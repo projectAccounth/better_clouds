@@ -74,8 +74,8 @@ public class ScrollArea extends AbstractScrollArea {
 
         int offsetY = (int) scrollAmount();
 
-        gfx.pose().pushPose();
-        gfx.pose().translate(0, -offsetY, 0);
+        gfx.pose().pushMatrix();
+        gfx.pose().translate(0, -offsetY);
 
         // Render labels
         for (LabelEntry lbl : labels) {
@@ -88,7 +88,7 @@ public class ScrollArea extends AbstractScrollArea {
             w.render(gfx, mouseX, mouseY + offsetY, delta);
         }
 
-        gfx.pose().popPose();
+        gfx.pose().popMatrix();
         gfx.disableScissor();
 
         renderScrollbar(gfx);
