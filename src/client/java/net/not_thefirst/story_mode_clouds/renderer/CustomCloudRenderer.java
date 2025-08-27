@@ -32,17 +32,7 @@ import java.util.Random;
 public class CustomCloudRenderer extends CloudRenderer {
     private static final float CELL_SIZE_IN_BLOCKS = 12.0F;
     private static final float HEIGHT_IN_BLOCKS = 4.0F;
-
-    // === Per-layer rendering state ===
-    private VertexBuffer[] layerBuffers;
-    private boolean[] layerBufferEmpty;
-    private boolean[] layerNeedsRebuild;
-    private int[] prevCellX;
-    private int[] prevCellZ;
-    private RelativeCameraPos[] prevRelativePos;
-    private CloudStatus[] prevStatus;
-    private TextureData[] layerTextures;
-    private long[] lastFadeRebuild;
+    private LayerState[] layers;
 
     private int maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
 
@@ -52,33 +42,26 @@ public class CustomCloudRenderer extends CloudRenderer {
     public CustomCloudRenderer() {
         super();
 
-        this.layerBuffers = new VertexBuffer[maxLayerCount];
-        this.layerBufferEmpty = new boolean[maxLayerCount];
-        this.layerNeedsRebuild = new boolean[maxLayerCount];
-        this.prevCellX = new int[maxLayerCount];
-        this.prevCellZ = new int[maxLayerCount];
-        this.prevRelativePos = new RelativeCameraPos[maxLayerCount];
-        this.prevStatus = new CloudStatus[maxLayerCount];
-        this.layerTextures = new TextureData[maxLayerCount];
-        this.layerOffsets = new float[maxLayerCount][2];
-        this.lastFadeRebuild = new long[maxLayerCount];
+        this.layers = new LayerState[maxLayerCount];
 
         for (int i = 0; i < 10; i++) {
-            layerBuffers[i] = new VertexBuffer(com.mojang.blaze3d.buffers.BufferUsage.STATIC_WRITE);
-            layerBufferEmpty[i] = true;
-            layerNeedsRebuild[i] = true;
-            prevCellX[i] = Integer.MIN_VALUE;
-            prevCellZ[i] = Integer.MIN_VALUE;
-            prevRelativePos[i] = RelativeCameraPos.INSIDE_CLOUDS;
-            prevStatus[i] = null;
-            lastFadeRebuild[i] = System.currentTimeMillis();
+            layers[i] = new LayerState(i);
+
+            layers[i].buffer = new VertexBuffer(com.mojang.blaze3d.buffers.BufferUsage.STATIC_WRITE);
+            layers[i].bufferEmpty = true;
+            layers[i].needsRebuild = true;
+            layers[i].prevCellX = Integer.MIN_VALUE;
+            layers[i].prevCellZ = Integer.MIN_VALUE;
+            layers[i].prevPos = RelativeCameraPos.INSIDE_CLOUDS;
+            layers[i].prevStatus = null;
+            layers[i].lastFadeRebuildMs = System.currentTimeMillis();
         }
 
         if (CloudsConfiguration.INSTANCE.CLOUD_RANDOM_LAYERS) {
             Random random = new Random();
             for (int i = 0; i < 10; i++) {
-                layerOffsets[i][0] = random.nextFloat() * CELL_SIZE_IN_BLOCKS * 64.0f;
-                layerOffsets[i][1] = random.nextFloat() * CELL_SIZE_IN_BLOCKS * 64.0f;
+                layers[i].offsetX = random.nextFloat() * CELL_SIZE_IN_BLOCKS * 64.0f;
+                layers[i].offsetZ = random.nextFloat() * CELL_SIZE_IN_BLOCKS * 64.0f;
             }
         }
     }
@@ -92,9 +75,8 @@ public class CustomCloudRenderer extends CloudRenderer {
     protected void apply(Optional<TextureData> optional, ResourceManager resourceManager, ProfilerFiller profilerFiller) {
         TextureData baseTexture = optional.orElse(super.prepare(resourceManager, profilerFiller).orElse(null));
         for (int i = 0; i < 10; i++) {
-            // Default: same texture per layer (can replace with config getter)
-            this.layerTextures[i] = resolveTextureForLayer(i, baseTexture);
-            this.layerNeedsRebuild[i] = true;
+            layers[i].texture = resolveTextureForLayer(i, baseTexture);
+            layers[i].needsRebuild = true;
         }
     }
 
@@ -134,7 +116,8 @@ public class CustomCloudRenderer extends CloudRenderer {
         });
 
         for (int layer : layerIndices) {
-            TextureData tex = this.layerTextures[layer];
+            LayerState currentLayer = this.layers[layer];
+            TextureData tex = currentLayer.texture;
             if (tex == null) continue;
 
             double wrapX = tex.width() * CELL_SIZE_IN_BLOCKS;
@@ -164,36 +147,36 @@ public class CustomCloudRenderer extends CloudRenderer {
 
             if (CloudsConfiguration.INSTANCE.IS_ENABLED &&
                 Math.abs(relY) <= CloudsConfiguration.INSTANCE.TRANSITION_RANGE && 
-                now - lastFadeRebuild[layer] > 40) {
+                now - currentLayer.lastFadeRebuildMs > 40) {
                 // How should I optimize this?
 
-                layerNeedsRebuild[layer] = true;
-                lastFadeRebuild[layer] = now;
+                currentLayer.needsRebuild = true;
+                currentLayer.lastFadeRebuildMs = now;
             }
 
-            if (layerNeedsRebuild[layer] ||
-                cellX != prevCellX[layer] || cellZ != prevCellZ[layer] ||
-                layerPos != prevRelativePos[layer] || status != prevStatus[layer]) {
+            if (currentLayer.needsRebuild ||
+                cellX != currentLayer.prevCellX || cellZ != currentLayer.prevCellZ ||
+                layerPos != currentLayer.prevPos || status != currentLayer.prevStatus) {
 
-                layerNeedsRebuild[layer] = false;
-                prevCellX[layer] = cellX;
-                prevCellZ[layer] = cellZ;
-                prevRelativePos[layer] = layerPos;
-                prevStatus[layer] = status;
+                currentLayer.needsRebuild = false;
+                currentLayer.prevCellX = cellX;
+                currentLayer.prevCellZ = cellZ;
+                currentLayer.prevPos = layerPos;
+                currentLayer.prevStatus = status;
 
                 RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.flatClouds();
                 MeshData mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, rt, relY, layer);
                 if (mesh != null) {
-                    layerBuffers[layer].bind();
-                    layerBuffers[layer].upload(mesh);
+                    currentLayer.buffer.bind();
+                    currentLayer.buffer.upload(mesh);
                     VertexBuffer.unbind();
-                    layerBufferEmpty[layer] = false;
+                    currentLayer.bufferEmpty = false;
                 } else {
-                    layerBufferEmpty[layer] = true;
+                    currentLayer.bufferEmpty = true;
                 }
             }
 
-            if (!layerBufferEmpty[layer]) {
+            if (!currentLayer.bufferEmpty) {
                 float CUSTOM_BRIGHTNESS = CloudsConfiguration.INSTANCE.BRIGHTNESS;
                 
                 if (CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS && CloudsConfiguration.INSTANCE.IS_ENABLED)
@@ -205,8 +188,8 @@ public class CustomCloudRenderer extends CloudRenderer {
                     RenderSystem.setShaderFog(new FogParameters(Float.MAX_VALUE, 0.0F, FogShape.SPHERE, 0.0F, 0.0F, 0.0F, 0.0F));
 
                 RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.flatClouds();
-                layerBuffers[layer].bind();
-                drawWithRenderType(rt, proj, modelView, offX, layerY, offZ, layerBuffers[layer]);
+                currentLayer.buffer.bind();
+                drawWithRenderType(rt, proj, modelView, offX, layerY, offZ, currentLayer.buffer);
                 
                 VertexBuffer.unbind();
                 RenderSystem.setShaderColor(1, 1, 1, 1);
@@ -420,21 +403,41 @@ public class CustomCloudRenderer extends CloudRenderer {
     }
 
     public void markForRebuild(int layer) {
-        if (layer >= 0 && layer < layerNeedsRebuild.length) {
-            layerNeedsRebuild[layer] = true;
+        if (layer >= 0 && layer < layers.length) {
+            layers[layer].needsRebuild = true;
         }
     }
 
     public void markForRebuild() {
-        for (int i = 0; i < layerNeedsRebuild.length; i++) {
-            layerNeedsRebuild[i] = true;
+        for (int i = 0; i < layers.length; i++) {
+            layers[i].needsRebuild = true;
         }
     }
 
     @Override
     public void close() {
-        for (VertexBuffer vb : layerBuffers) {
-            if (vb != null) vb.close();
+        for (LayerState layer : layers) {
+            if (layer.buffer != null) layer.buffer.close();
+        }
+    }
+
+    @SuppressWarnings("unused")
+    private class LayerState {
+        public int index;
+        public float offsetX, offsetZ;
+        public TextureData texture;
+        public VertexBuffer buffer;
+        public int indexCount;
+        public boolean needsRebuild;
+        public int prevCellX, prevCellZ;
+        public RelativeCameraPos prevPos;
+        public CloudStatus prevStatus;
+        public long lastFadeRebuildMs;
+        public float prevFadeMix;
+        public boolean bufferEmpty;
+
+        public LayerState(int index) {
+            this.index = index;
         }
     }
 
