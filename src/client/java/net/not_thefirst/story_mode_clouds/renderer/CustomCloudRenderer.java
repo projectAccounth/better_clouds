@@ -36,9 +36,6 @@ public class CustomCloudRenderer extends CloudRenderer {
 
     private int maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
 
-    // Random offsets
-    private float[][] layerOffsets;
-
     public CustomCloudRenderer() {
         super();
 
@@ -122,8 +119,8 @@ public class CustomCloudRenderer extends CloudRenderer {
 
             double wrapX = tex.width() * CELL_SIZE_IN_BLOCKS;
             double wrapZ = tex.height() * CELL_SIZE_IN_BLOCKS;
-            double dxLayer = dx + layerOffsets[layer][0];
-            double dzLayer = dz + layerOffsets[layer][1];
+            double dxLayer = dx + currentLayer.offsetX;
+            double dzLayer = dz + currentLayer.offsetZ;
             dxLayer -= Mth.floor(dxLayer / wrapX) * wrapX;
             dzLayer -= Mth.floor(dzLayer / wrapZ) * wrapZ;
 
