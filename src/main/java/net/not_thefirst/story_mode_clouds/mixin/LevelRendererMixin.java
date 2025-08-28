@@ -15,7 +15,8 @@ import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
 
-import org.joml.Matrix4f;
+import java.util.Optional;
+
 import org.lwjgl.system.CallbackI;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -50,7 +51,6 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
     @Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true)
     private void interceptCloudRender(
         PoseStack poseStack,
-        Matrix4f modelViewMatrix,
         float partialTicks,
         double cameraX, double cameraY, double cameraZ,
         CallbackInfo ci
@@ -60,8 +60,8 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
         Minecraft client = Minecraft.getInstance();
         if (client.level == null) return;
 
-        if (this.cloudRenderer != null && this.cloudRenderer.currentTexture.isEmpty()) {
-            var texture = this.cloudRenderer.prepare(client.getResourceManager(), client.getProfiler());
+        if (this.cloudRenderer != null && this.cloudRenderer.currentTexture.isPresent()) {
+            Optional<CustomCloudRenderer.TextureData> texture = this.cloudRenderer.prepare(client.getResourceManager(), client.getProfiler());
             this.cloudRenderer.apply(texture, client.getResourceManager(), client.getProfiler());
         }
 
@@ -80,7 +80,7 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
 
         Vec3 cam = new Vec3(cameraX, cameraY, cameraZ);
 
-        renderCloud(poseStack, color, cloudHeight, status, modelViewMatrix, cam, partialTicks);
+        renderCloud(poseStack, color, cloudHeight, status, cam, partialTicks);
     }
 
     private void renderCloud(
@@ -88,7 +88,6 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
         int color,
         float cloudHeight,
         CloudStatus status,
-        Matrix4f modelViewMatrix,
         Vec3 vec3,
         float partialTicks
     ) {
@@ -99,6 +98,6 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
             this.cloudRenderer = new CustomCloudRenderer();
         }
 
-        this.cloudRenderer.render(color, status, cloudHeight, modelViewMatrix, vec3, partialTicks, poseStack);
+        this.cloudRenderer.render(color, status, cloudHeight, vec3, partialTicks, poseStack);
     }
 }

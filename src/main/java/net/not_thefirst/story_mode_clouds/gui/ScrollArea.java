@@ -1,10 +1,8 @@
 package net.not_thefirst.story_mode_clouds.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractScrollWidget;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.client.gui.components.AbstractWidget;
 
 import java.util.ArrayList;
@@ -25,7 +23,7 @@ public class ScrollArea extends AbstractScrollWidget {
     private AbstractWidget focusedChild = null;
 
     public ScrollArea(int x, int y, int width, int height) {
-        super(x, y, width, height, Component.empty());
+        super(x, y, width, height, new TranslatableComponent(""));
     }
 
     private double toLocalY(double globalY) {
@@ -163,16 +161,18 @@ public class ScrollArea extends AbstractScrollWidget {
         return nextRowY + 5;  // total height used by rows
     }
 
-    @Override
     protected double scrollRate() {
         return 12.0;
     }
 
-    @Override
-    protected void updateWidgetNarration(NarrationElementOutput narration) {
+    private class LabelEntry {
+        public Component text; 
+        public int x, y; 
+        public int color;
+        public LabelEntry(Component text, int x, int y, int color) {
+            this.text = text; this.x = x; this.y = y; this.color = color;
+        }
     }
-
-    private record LabelEntry(Component text, int x, int y, int color) {}
 
     @Override
     protected int getInnerHeight() {

@@ -2,6 +2,7 @@ package net.not_thefirst.story_mode_clouds.gui;
 
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.util.Mth;
 
 import java.util.function.Consumer;
@@ -17,7 +18,7 @@ public class SimpleSliderButton extends AbstractSliderButton {
                               String label, double initialValue,
                               double min, double max, double step,
                               Consumer<Double> onChange) {
-        super(x, y, width, height, Component.empty(),
+        super(x, y, width, height, new TranslatableComponent(""),
               clamp01((initialValue - min) / (max - min)));
         this.label = label;
         this.min = min;
@@ -53,7 +54,7 @@ public class SimpleSliderButton extends AbstractSliderButton {
     @Override
     protected void updateMessage() {
         double val = getRealValue();
-        this.setMessage(Component.literal(label + ": " + String.format("%.2f", val)));
+        this.setMessage(Component.nullToEmpty(label + ": " + String.format("%.2f", val)));
     }
 
     @Override
@@ -74,8 +75,8 @@ public class SimpleSliderButton extends AbstractSliderButton {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (this.active && this.isHoveredOrFocused()) {
-            double sliderPos = (mouseX - (this.getX() + 4)) / (this.width - 8);
+        if (this.active && (this.isHovered() || this.isFocused())) {
+            double sliderPos = (mouseX - (this.x + 4)) / (this.width - 8);
             this.value = Mth.clamp(sliderPos, 0.0D, 1.0D);
             applyValue();
             updateMessage();

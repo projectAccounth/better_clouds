@@ -3,6 +3,7 @@ package net.not_thefirst.story_mode_clouds.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.util.Mth;
 
 import java.util.Objects;
@@ -19,7 +20,7 @@ public class NumericInputField extends EditBox {
     public NumericInputField(int x, int y, int width, int height,
                              double initialValue, double min, double max, double step,
                              Consumer<Double> onChange) {
-        super(Minecraft.getInstance().font, x, y, width, height, Component.empty());
+        super(Minecraft.getInstance().font, x, y, width, height, new TranslatableComponent(""));
         this.min = min;
         this.max = max;
         this.step = step;

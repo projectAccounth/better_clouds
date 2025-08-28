@@ -12,7 +12,7 @@ public class CloudsConfigScreen extends SimpleConfigScreen {
     protected void init() {
         super.init();
 
-        var cfg = CloudsConfiguration.INSTANCE;
+        CloudsConfiguration cfg = CloudsConfiguration.INSTANCE;
 
         // === General ===
         addCategory("option.cloud_tweaks.category.general", HorizontalAlignment.CENTER);

@@ -10,7 +10,6 @@
     "LevelRendererMixin",
     "KeyMappingAccessor",
     "OptionsMixin",
-    "GameRendererMixin",
     "ClientMixin"
   ],
   "injectors": {
