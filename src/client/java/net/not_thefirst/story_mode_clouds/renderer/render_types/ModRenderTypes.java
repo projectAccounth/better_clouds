@@ -48,6 +48,22 @@ public class ModRenderTypes {
             .createCompositeState(true)
     );
 
+    public static RenderType.CompositeRenderType customCloudsFast = RenderType.create(
+        "clouds",
+        DefaultVertexFormat.POSITION_COLOR,
+        VertexFormat.Mode.QUADS,
+        RenderType.SMALL_BUFFER_SIZE,
+        false,
+        false,
+        CompositeState.builder()
+            .setShaderState(new RenderStateShard.ShaderStateShard(() -> ModRenderTypes.CLOUDS_SHADER))
+            .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY) // or your custom
+            .setCullState(RenderStateShard.NO_CULL)  // force all faces drawn
+            .setWriteMaskState(COLOR_DEPTH_WRITE)
+            .setOutputState(RenderStateShard.CLOUDS_TARGET)
+            .createCompositeState(true)
+    );
+
     public static void initialize() {
         System.out.println(customCloudsFancy);
     }
