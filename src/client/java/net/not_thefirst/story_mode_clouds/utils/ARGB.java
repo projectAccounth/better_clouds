@@ -3,6 +3,9 @@ package net.not_thefirst.story_mode_clouds.utils;
 public final class ARGB {
     private ARGB() {}
 
+    public static int WHITE = 0xFFFFFFFF;
+    public static int BLACK = 0xFF000000;
+
     public static int alpha(int color) { return (color >>> 24) & 0xFF; }
     public static int red(int color)   { return (color >>> 16) & 0xFF; }
     public static int green(int color) { return (color >>>  8) & 0xFF; }

@@ -75,7 +75,6 @@ public class CustomCloudRenderer {
         }
     }
 
-    
     public Optional<TextureData> prepare(ResourceManager resourceManager, ProfilerFiller profilerFiller) {
         try (InputStream inputStream = resourceManager.open(TEXTURE_LOCATION);
              NativeImage nativeImage = NativeImage.read(inputStream)) {
@@ -137,7 +136,7 @@ public class CustomCloudRenderer {
 
     /**
     * Renders cloud.
-    * @param i The passed in cloud color.
+    * @param cloudColor The passed in cloud color.
     * @param status The current cloud status.
     * @param cloudHeight The world's height of cloud.
     * @param proj Projection matrix.
@@ -145,7 +144,7 @@ public class CustomCloudRenderer {
     * @param cam The camera's position.
     * @param tickDelta The frame delta.
     */
-    public void render(int i, CloudStatus status, float cloudHeight, Matrix4f proj, Matrix4f modelView, Vec3 cam, float tickDelta, PoseStack poseStack) {
+    public void render(int cloudColor, CloudStatus status, float cloudHeight, Matrix4f proj, Matrix4f modelView, Vec3 cam, float tickDelta, PoseStack poseStack) {
         int layers = CloudsConfiguration.INSTANCE.CLOUD_LAYERS;
         if (layers <= 0) return;
 
@@ -197,9 +196,9 @@ public class CustomCloudRenderer {
             float relY = (float)(relYTop - cloudChunkHeight / 2.0f);
 
             if (CloudsConfiguration.INSTANCE.IS_ENABLED &&
+                CloudsConfiguration.INSTANCE.FADE_ENABLED &&
                 Math.abs(relY) <= CloudsConfiguration.INSTANCE.TRANSITION_RANGE && 
                 now - currentLayer.lastFadeRebuildMs > 40) {
-                // How should I optimize this?
 
                 currentLayer.needsRebuild = true;
                 currentLayer.lastFadeRebuildMs = now;
@@ -215,7 +214,7 @@ public class CustomCloudRenderer {
                 currentLayer.prevPos = layerPos;
                 currentLayer.prevStatus = status;
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.clouds();
+                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
                 BufferBuilder.RenderedBuffer mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, rt, relY, layer);
                 if (mesh != null) {
                     currentLayer.buffer.bind();
@@ -233,18 +232,43 @@ public class CustomCloudRenderer {
 
             if (!currentLayer.bufferEmpty) {
                 float CUSTOM_BRIGHTNESS = CloudsConfiguration.INSTANCE.BRIGHTNESS;
+
+                int appliedColor = 0;
+                
+                if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
+                    appliedColor = cloudColor;
+                }
+                else if (CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR) {
+                    appliedColor = CloudsConfiguration.INSTANCE.CLOUD_COLORS[layer];
+                } 
+                else if (!CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR && CloudsConfiguration.INSTANCE.APPEARS_SHADED) {
+                    appliedColor = cloudColor;
+                }
+                else {
+                    appliedColor = cloudColor;
+                }
                 
                 if (CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS && CloudsConfiguration.INSTANCE.IS_ENABLED)
-                    RenderSystem.setShaderColor(CUSTOM_BRIGHTNESS, CUSTOM_BRIGHTNESS, CUSTOM_BRIGHTNESS, 1.0F);
+                    RenderSystem.setShaderColor(
+                        ARGB.redFloat(appliedColor) * CUSTOM_BRIGHTNESS,
+                        ARGB.greenFloat(appliedColor) * CUSTOM_BRIGHTNESS,
+                        ARGB.blueFloat(appliedColor) * CUSTOM_BRIGHTNESS,
+                        1.0F
+                    );
                 else 
-                    RenderSystem.setShaderColor(ARGB.redFloat(i), ARGB.greenFloat(i), ARGB.blueFloat(i), 1.0F);
+                    RenderSystem.setShaderColor(
+                        ARGB.redFloat(appliedColor),
+                        ARGB.greenFloat(appliedColor),
+                        ARGB.blueFloat(appliedColor),
+                        1.0F
+                    );
 
                 if (!CloudsConfiguration.INSTANCE.FOG_ENABLED) {
                     RenderSystem.setShaderFogStart(Float.MAX_VALUE);
                     RenderSystem.setShaderFogEnd(Float.MAX_VALUE);
                 }
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.cloudsDepthOnly();
+                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
                 currentLayer.buffer.bind();
                 drawWithRenderType(rt, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
                 
@@ -259,8 +283,6 @@ public class CustomCloudRenderer {
     private void drawWithRenderType(RenderType rt, Matrix4f proj, Matrix4f mv, float ox, float oy, float oz, VertexBuffer buf) {
         rt.setupRenderState();
         ShaderInstance shader = RenderSystem.getShader();
-
-        // shader.getUniform("ModelOffset").set(new Vector3f(-ox, oy, -oz));
 
         buf.drawWithShader(proj, mv, shader);
         rt.clearRenderState();
@@ -458,6 +480,7 @@ public class CustomCloudRenderer {
 
         // Final alpha
         float finalAlpha = baseAlpha * (1.0f - fade);
+        // System.out.printf("Layer %d relY=%.2f dir=%.2f fade=%.2f alpha=%.2f%n", currentLayer, relY, dir, fade, finalAlpha);
         return ARGB.colorFromFloat(finalAlpha, r, g, b);
     }
 
