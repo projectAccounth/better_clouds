@@ -50,7 +50,6 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
     @Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true)
     private void interceptCloudRender(
         PoseStack poseStack,
-        Matrix4f projMatrix,
         Matrix4f modelViewMatrix,
         float partialTicks,
         double cameraX, double cameraY, double cameraZ,
@@ -81,7 +80,7 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
 
         Vec3 cam = new Vec3(cameraX, cameraY, cameraZ);
 
-        renderCloud(poseStack, color, cloudHeight, status, projMatrix, modelViewMatrix, cam, partialTicks);
+        renderCloud(poseStack, color, cloudHeight, status, modelViewMatrix, cam, partialTicks);
     }
 
     private void renderCloud(
@@ -89,7 +88,6 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
         int color,
         float cloudHeight,
         CloudStatus status,
-        Matrix4f projMatrix,
         Matrix4f modelViewMatrix,
         Vec3 vec3,
         float partialTicks
@@ -101,6 +99,6 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
             this.cloudRenderer = new CustomCloudRenderer();
         }
 
-        this.cloudRenderer.render(color, status, cloudHeight, projMatrix, modelViewMatrix, vec3, partialTicks, poseStack);
+        this.cloudRenderer.render(color, status, cloudHeight, modelViewMatrix, vec3, partialTicks, poseStack);
     }
 }

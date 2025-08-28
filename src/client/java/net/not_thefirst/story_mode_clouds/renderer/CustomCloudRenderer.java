@@ -144,7 +144,7 @@ public class CustomCloudRenderer {
     * @param cam The camera's position.
     * @param tickDelta The frame delta.
     */
-    public void render(int cloudColor, CloudStatus status, float cloudHeight, Matrix4f proj, Matrix4f modelView, Vec3 cam, float tickDelta, PoseStack poseStack) {
+    public void render(int cloudColor, CloudStatus status, float cloudHeight, Matrix4f modelView, Vec3 cam, float tickDelta, PoseStack poseStack) {
         int layers = CloudsConfiguration.INSTANCE.CLOUD_LAYERS;
         if (layers <= 0) return;
 
@@ -227,7 +227,6 @@ public class CustomCloudRenderer {
             }
 
             poseStack.pushPose();
-			poseStack.mulPose(proj);
 			poseStack.translate(-offX, layerY, -offZ);
 
             if (!currentLayer.bufferEmpty) {
