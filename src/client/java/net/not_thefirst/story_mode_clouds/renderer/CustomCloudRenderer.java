@@ -1,40 +1,53 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.shaders.FogShape;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.renderer.CloudRenderer;
-import net.minecraft.client.renderer.FogParameters;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
+import net.not_thefirst.story_mode_clouds.StoryModeClouds;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
 @Environment(EnvType.CLIENT)
-public class CustomCloudRenderer extends CloudRenderer {
+public class CustomCloudRenderer {
     private static final float CELL_SIZE_IN_BLOCKS = 12.0F;
     private static final float HEIGHT_IN_BLOCKS = 4.0F;
     private LayerState[] layers;
 
     private int maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
+
+    protected static final ResourceLocation TEXTURE_LOCATION = ResourceLocation.fromNamespaceAndPath("cloud_tweaks", "textures/environment/clouds.png");
+
+    @Nullable
+    public Optional<TextureData> currentTexture = Optional.empty();
 
     public CustomCloudRenderer() {
         super();
@@ -44,7 +57,7 @@ public class CustomCloudRenderer extends CloudRenderer {
         for (int i = 0; i < 10; i++) {
             layers[i] = new LayerState(i);
 
-            layers[i].buffer = new VertexBuffer(com.mojang.blaze3d.buffers.BufferUsage.STATIC_WRITE);
+            layers[i].buffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
             layers[i].bufferEmpty = true;
             layers[i].needsRebuild = true;
             layers[i].prevCellX = Integer.MIN_VALUE;
@@ -63,14 +76,48 @@ public class CustomCloudRenderer extends CloudRenderer {
         }
     }
 
-    @Override
-    protected Optional<TextureData> prepare(ResourceManager resourceManager, ProfilerFiller profilerFiller) {
-        return super.prepare(resourceManager, profilerFiller);
+    
+    public Optional<TextureData> prepare(ResourceManager resourceManager, ProfilerFiller profilerFiller) {
+        try (InputStream inputStream = resourceManager.open(TEXTURE_LOCATION);
+             NativeImage nativeImage = NativeImage.read(inputStream)) {
+
+            int w = nativeImage.getWidth();
+            int h = nativeImage.getHeight();
+            long[] cells = new long[w * h];
+
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    int pixel = nativeImage.getPixelRGBA(x, y);
+                    if (ARGB.alpha(pixel) < 10) {
+                        cells[x + y * w] = 0L;
+                    } else {
+                        boolean north = ARGB.alpha(nativeImage.getPixelRGBA(x, Math.floorMod(y - 1, h))) < 10;
+                        boolean east  = ARGB.alpha(nativeImage.getPixelRGBA(Math.floorMod(x + 1, w), y)) < 10;
+                        boolean south = ARGB.alpha(nativeImage.getPixelRGBA(x, Math.floorMod(y + 1, h))) < 10;
+                        boolean west  = ARGB.alpha(nativeImage.getPixelRGBA(Math.floorMod(x - 1, w), y)) < 10;
+                        cells[x + y * w] = packCellData(pixel, north, east, south, west);
+                    }
+                }
+            }
+
+            currentTexture = Optional.of(new TextureData(cells, w, h));
+            return currentTexture;
+        } catch (IOException e) {
+            System.out.println("Failed to load cloud texture" + e);
+            return Optional.empty();
+        }
     }
 
-    @Override
-    protected void apply(Optional<TextureData> optional, ResourceManager resourceManager, ProfilerFiller profilerFiller) {
-        TextureData baseTexture = optional.orElse(super.prepare(resourceManager, profilerFiller).orElse(null));
+    private static long packCellData(int color, boolean north, boolean east, boolean south, boolean west) {
+        return (long) color << 4 |
+               (north ? 1 : 0) << 3 |
+               (east ? 1 : 0) << 2 |
+               (south ? 1 : 0) << 1 |
+               (west ? 1 : 0);
+    }
+    
+    public void apply(Optional<TextureData> optional, ResourceManager resourceManager, ProfilerFiller profilerFiller) {
+        TextureData baseTexture = optional.orElse(prepare(resourceManager, profilerFiller).orElse(null));
         for (int i = 0; i < 10; i++) {
             layers[i].texture = resolveTextureForLayer(i, baseTexture);
             layers[i].needsRebuild = true;
@@ -89,9 +136,17 @@ public class CustomCloudRenderer extends CloudRenderer {
     private static boolean isSouthEmpty(long c) { return (c >> 1 & 1L) != 0L; }
     private static boolean isWestEmpty(long c)  { return (c & 1L) != 0L; }
 
-    // === Rendering ===
-    @Override
-    public void render(int i, CloudStatus status, float cloudHeight, Matrix4f proj, Matrix4f modelView, Vec3 cam, float tickDelta) {
+    /**
+    * Renders cloud.
+    * @param i The passed in cloud color.
+    * @param status The current cloud status.
+    * @param cloudHeight The world's height of cloud.
+    * @param proj Projection matrix.
+    * @param modelView Model view matrix.
+    * @param cam The camera's position.
+    * @param tickDelta The frame delta.
+    */
+    public void render(int i, CloudStatus status, float cloudHeight, Matrix4f proj, Matrix4f modelView, Vec3 cam, float tickDelta, PoseStack poseStack) {
         int layers = CloudsConfiguration.INSTANCE.CLOUD_LAYERS;
         if (layers <= 0) return;
 
@@ -161,7 +216,7 @@ public class CustomCloudRenderer extends CloudRenderer {
                 currentLayer.prevPos = layerPos;
                 currentLayer.prevStatus = status;
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.flatClouds();
+                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.clouds();
                 MeshData mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, rt, relY, layer);
                 if (mesh != null) {
                     currentLayer.buffer.bind();
@@ -173,6 +228,10 @@ public class CustomCloudRenderer extends CloudRenderer {
                 }
             }
 
+            poseStack.pushPose();
+			poseStack.mulPose(proj);
+			poseStack.translate(-offX, layerY, -offZ);
+
             if (!currentLayer.bufferEmpty) {
                 float CUSTOM_BRIGHTNESS = CloudsConfiguration.INSTANCE.BRIGHTNESS;
                 
@@ -181,26 +240,29 @@ public class CustomCloudRenderer extends CloudRenderer {
                 else 
                     RenderSystem.setShaderColor(ARGB.redFloat(i), ARGB.greenFloat(i), ARGB.blueFloat(i), 1.0F);
 
-                if (!CloudsConfiguration.INSTANCE.FOG_ENABLED)
-                    RenderSystem.setShaderFog(new FogParameters(Float.MAX_VALUE, 0.0F, FogShape.SPHERE, 0.0F, 0.0F, 0.0F, 0.0F));
+                if (!CloudsConfiguration.INSTANCE.FOG_ENABLED) {
+                    RenderSystem.setShaderFogStart(Float.MAX_VALUE);
+                    RenderSystem.setShaderFogEnd(Float.MAX_VALUE);
+                }
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.flatClouds();
+                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.cloudsDepthOnly();
                 currentLayer.buffer.bind();
-                drawWithRenderType(rt, proj, modelView, offX, layerY, offZ, currentLayer.buffer);
+                drawWithRenderType(rt, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
                 
                 VertexBuffer.unbind();
                 RenderSystem.setShaderColor(1, 1, 1, 1);
             }
+
+            poseStack.popPose();
         }
     }
 
     private void drawWithRenderType(RenderType rt, Matrix4f proj, Matrix4f mv, float ox, float oy, float oz, VertexBuffer buf) {
         rt.setupRenderState();
-        var shader = RenderSystem.getShader();
-        
-        if (shader != null && shader.MODEL_OFFSET != null) {
-            shader.MODEL_OFFSET.set(-ox, oy, -oz);
-        }
+        ShaderInstance shader = RenderSystem.getShader();
+
+        // shader.getUniform("ModelOffset").set(new Vector3f(-ox, oy, -oz));
+
         buf.drawWithShader(proj, mv, shader);
         rt.clearRenderState();
     }
@@ -411,7 +473,7 @@ public class CustomCloudRenderer extends CloudRenderer {
         }
     }
 
-    @Override
+    
     public void close() {
         for (LayerState layer : layers) {
             if (layer.buffer != null) layer.buffer.close();
@@ -441,4 +503,6 @@ public class CustomCloudRenderer extends CloudRenderer {
     public enum RelativeCameraPos {
         ABOVE_CLOUDS, INSIDE_CLOUDS, BELOW_CLOUDS
     }
+
+    public record TextureData(long[] cells, int width, int height) { }
 }
