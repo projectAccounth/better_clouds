@@ -9,4 +9,3 @@ accessible class net/minecraft/client/renderer/RenderType$CompositeRenderType
 accessible class net/minecraft/client/renderer/RenderStateShard$WriteMaskStateShard
 accessible class net/minecraft/client/renderer/RenderStateShard$CullStateShard
 accessible class net/minecraft/client/renderer/RenderStateShard$TransparencyStateShard
-accessible class net/minecraft/client/renderer/RenderStateShard$ShaderStateShard
