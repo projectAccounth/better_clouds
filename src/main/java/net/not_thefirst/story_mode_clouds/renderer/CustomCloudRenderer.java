@@ -229,9 +229,7 @@ public class CustomCloudRenderer {
                 if (mesh != null) {
                     currentLayer.buffer.upload(mesh);
                     currentLayer.bufferEmpty = false;
-                    System.out.println("Build successful");
                 } else {
-                    System.out.println("Build failed");
                     currentLayer.bufferEmpty = true;
                 }
             }
@@ -335,9 +333,9 @@ public class CustomCloudRenderer {
         float colorA = 1; ARGB.alphaFloat(adjustedColor);
 
         bb.vertex(x0, 0, z0).color(colorR, colorG, colorB, colorA).endVertex();
-        bb.vertex(x1, 0, z0).color(0.5f, colorG, colorB, colorA).endVertex();
-        bb.vertex(x1, 0, z1).color(colorR, 0.5f, colorB, colorA).endVertex();
-        bb.vertex(x0, 0, z1).color(colorR, colorG, 0.5f, colorA).endVertex();
+        bb.vertex(x1, 0, z0).color(colorR, colorG, colorB, colorA).endVertex();
+        bb.vertex(x1, 0, z1).color(colorR, colorG, colorB, colorA).endVertex();
+        bb.vertex(x0, 0, z1).color(colorR, colorG, colorB, colorA).endVertex();
 
         bb.vertex(x0, 0, z1).color(colorR, colorG, colorB, colorA).endVertex();
         bb.vertex(x1, 0, z1).color(colorR, colorG, colorB, colorA).endVertex();
@@ -428,7 +426,6 @@ public class CustomCloudRenderer {
             bb.vertex(x1, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
             bb.vertex(x1, scaledY1, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
         }
-
     }
 
     private int recolor(int color, int currentLayer) {
