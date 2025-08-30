@@ -1,31 +1,28 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
-import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
-import net.not_thefirst.story_mode_clouds.StoryModeClouds;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,7 +39,7 @@ public class CustomCloudRenderer {
 
     private int maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
 
-    protected static final ResourceLocation TEXTURE_LOCATION = new ResourceLocation("cloud_tweaks", "textures/environment/clouds.png");;
+    protected static final ResourceLocation TEXTURE_LOCATION = new ResourceLocation("minecraft", "textures/environment/clouds.png");;
 
     @Nullable
     public Optional<TextureData> currentTexture = Optional.empty();
@@ -55,7 +52,7 @@ public class CustomCloudRenderer {
         for (int i = 0; i < 10; i++) {
             layers[i] = new LayerState(i);
 
-            layers[i].buffer = new VertexBuffer(new VertexFormat(null));
+            layers[i].buffer = new VertexBuffer(DefaultVertexFormat.POSITION_COLOR);
             layers[i].bufferEmpty = true;
             layers[i].needsRebuild = true;
             layers[i].prevCellX = Integer.MIN_VALUE;
@@ -75,6 +72,7 @@ public class CustomCloudRenderer {
     }
 
     public Optional<TextureData> prepare(ResourceManager resourceManager, ProfilerFiller profilerFiller) {
+        System.out.println("Texture preparation phase.");
         try (Resource resource = resourceManager.getResource(TEXTURE_LOCATION);
             InputStream inputStream = resource.getInputStream();
             NativeImage nativeImage = NativeImage.read(inputStream)) {
@@ -165,6 +163,13 @@ public class CustomCloudRenderer {
             return Float.compare(Math.abs(by), Math.abs(ay));
         });
 
+        RenderSystem.disableTexture();
+        RenderSystem.pushMatrix();
+        RenderSystem.enableBlend();
+        RenderSystem.enableAlphaTest();
+        RenderSystem.shadeModel(GL11.GL_SMOOTH);
+        RenderSystem.enableFog();
+        RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
         for (int layer : layerIndices) {
             LayerState currentLayer = this.layers[layer];
             TextureData tex = currentLayer.texture;
@@ -214,14 +219,19 @@ public class CustomCloudRenderer {
                 currentLayer.prevPos = layerPos;
                 currentLayer.prevStatus = status;
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
-                BufferBuilder mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, rt, relY, layer);
+                if (currentLayer.buffer != null) {
+                    currentLayer.buffer.close();
+                }
+
+                currentLayer.buffer = new VertexBuffer(DefaultVertexFormat.POSITION_COLOR);
+                BufferBuilder mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, relY, layer);
+                
                 if (mesh != null) {
-                    currentLayer.buffer.bind();
                     currentLayer.buffer.upload(mesh);
-                    VertexBuffer.unbind();
                     currentLayer.bufferEmpty = false;
+                    System.out.println("Build successful");
                 } else {
+                    System.out.println("Build failed");
                     currentLayer.bufferEmpty = true;
                 }
             }
@@ -232,71 +242,51 @@ public class CustomCloudRenderer {
             if (!currentLayer.bufferEmpty) {
                 float CUSTOM_BRIGHTNESS = CloudsConfiguration.INSTANCE.BRIGHTNESS;
 
-                int appliedColor = 0;
-                
-                if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
-                    appliedColor = cloudColor;
-                }
-                else if (CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR) {
-                    appliedColor = CloudsConfiguration.INSTANCE.CLOUD_COLORS[layer];
-                } 
-                else if (!CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR && CloudsConfiguration.INSTANCE.APPEARS_SHADED) {
-                    appliedColor = cloudColor;
-                }
-                else {
-                    appliedColor = cloudColor;
-                }
-                /*
                 if (CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS && CloudsConfiguration.INSTANCE.IS_ENABLED)
-                    RenderSystem.setShaderColor(
-                        ARGB.redFloat(appliedColor) * CUSTOM_BRIGHTNESS,
-                        ARGB.greenFloat(appliedColor) * CUSTOM_BRIGHTNESS,
-                        ARGB.blueFloat(appliedColor) * CUSTOM_BRIGHTNESS,
+                    RenderSystem.color4f(
+                        CUSTOM_BRIGHTNESS,
+                        CUSTOM_BRIGHTNESS,
+                        CUSTOM_BRIGHTNESS,
                         1.0F
                     );
-                else 
-                    RenderSystem.setShaderColor(
-                        ARGB.redFloat(appliedColor),
-                        ARGB.greenFloat(appliedColor),
-                        ARGB.blueFloat(appliedColor),
-                        1.0F
-                    );
-                */
+                
 
                 if (!CloudsConfiguration.INSTANCE.FOG_ENABLED) {
                     RenderSystem.disableFog();
                 }
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
                 currentLayer.buffer.bind();
-                drawWithRenderType(rt, offX, layerY, offZ, currentLayer.buffer);
-
-                currentLayer.buffer.draw(poseStack.last().pose(), 7);
-                
+                drawWithRenderType(offX, layerY, offZ, currentLayer.buffer, poseStack);
                 VertexBuffer.unbind();
-                // RenderSystem.setShaderColor(1, 1, 1, 1);
             }
-
+            
             poseStack.popPose();
         }
+        RenderSystem.enableTexture();
+        RenderSystem.popMatrix();
+        RenderSystem.disableBlend();
+        RenderSystem.disableAlphaTest();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.shadeModel(GL11.GL_FLAT);
     }
 
-    private void drawWithRenderType(RenderType rt, float ox, float oy, float oz, VertexBuffer buf) {
-        rt.setupRenderState();
-        rt.clearRenderState();
+    private void drawWithRenderType(float ox, float oy, float oz, VertexBuffer buf, PoseStack poseStack) {
+        DefaultVertexFormat.POSITION_COLOR.setupBufferState(0);
+        buf.draw(poseStack.last().pose(), GL11.GL_QUADS);
+        DefaultVertexFormat.POSITION_COLOR.clearBufferState();
     }
 
     @Nullable
     private BufferBuilder buildMeshForLayer(TextureData tex, Tesselator tess, int cx, int cz,
-                                       CloudStatus status, RelativeCameraPos pos, RenderType rt, float relY, int currentLayer) {
+                                       CloudStatus status, RelativeCameraPos pos, float relY, int currentLayer) {
         int top = ARGB.colorFromFloat(0.8F, 1, 1, 1);
         int bottom = ARGB.colorFromFloat(0.8F, 0.9F, 0.9F, 0.9F);
         int side = ARGB.colorFromFloat(0.8F, 0.7F, 0.7F, 0.7F);
         int inner = ARGB.colorFromFloat(0.8F, 0.8F, 0.8F, 0.8F);
 
         BufferBuilder bb = tess.getBuilder();
-        bb.begin(rt.mode(), rt.format());
-        buildMesh(tex, pos, bb, cx, cz, side, top, bottom, inner, status == CloudStatus.FANCY, relY, currentLayer);
+        bb.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_COLOR);
+        buildMesh(tex, pos, bb, cx, cz, bottom, top, side, inner, status == CloudStatus.FANCY, relY, currentLayer);
         bb.end();
 
         return bb;
@@ -324,30 +314,35 @@ public class CustomCloudRenderer {
                             ARGB.multiply(inner, color),
                             dx, dz, cell, relY, currentLayer);
                     } else {
-                        buildFlatCell(bb, ARGB.multiply(top, color), dx, dz, currentLayer);
+                        buildFlatCell(bb, ARGB.multiply(top, color), dx, dz, currentLayer, relY);
                     }
                 }
             }
         }
     }
 
-    private void buildFlatCell(BufferBuilder bb, int color, int cx, int cz, int currentLayer) {
+    private void buildFlatCell(BufferBuilder bb, int color, int cx, int cz, int currentLayer, float y) {
         float x0 = cx * CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + CELL_SIZE_IN_BLOCKS;
         float z0 = cz * CELL_SIZE_IN_BLOCKS;
         float z1 = z0 + CELL_SIZE_IN_BLOCKS;
 
-        int adjustedColor = recolor(color, 0, currentLayer);
+        int adjustedColor = recolor(color, currentLayer);
 
-        int colorR = ARGB.red(color);
-        int colorG = ARGB.green(color);
-        int colorB = ARGB.blue(color);
-        int colorA = ARGB.alpha(color);
+        float colorR = 1; ARGB.redFloat(adjustedColor);
+        float colorG = 1; ARGB.greenFloat(adjustedColor);
+        float colorB = 1; ARGB.blueFloat(adjustedColor);
+        float colorA = 1; ARGB.alphaFloat(adjustedColor);
 
         bb.vertex(x0, 0, z0).color(colorR, colorG, colorB, colorA).endVertex();
+        bb.vertex(x1, 0, z0).color(0.5f, colorG, colorB, colorA).endVertex();
+        bb.vertex(x1, 0, z1).color(colorR, 0.5f, colorB, colorA).endVertex();
+        bb.vertex(x0, 0, z1).color(colorR, colorG, 0.5f, colorA).endVertex();
+
         bb.vertex(x0, 0, z1).color(colorR, colorG, colorB, colorA).endVertex();
         bb.vertex(x1, 0, z1).color(colorR, colorG, colorB, colorA).endVertex();
         bb.vertex(x1, 0, z0).color(colorR, colorG, colorB, colorA).endVertex();
+        bb.vertex(x0, 0, z0).color(colorR, colorG, colorB, colorA).endVertex();
     }
 
     private void buildExtrudedCell(RelativeCameraPos pos, BufferBuilder bb,
@@ -360,8 +355,8 @@ public class CustomCloudRenderer {
         float z0 = cz * CELL_SIZE_IN_BLOCKS;
         float z1 = z0 + CELL_SIZE_IN_BLOCKS;
 
-        float scaledY1 = y1 * (CloudsConfiguration.INSTANCE.IS_ENABLED ? CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE : 1.0f);
-
+        float scaledY1 = y1 * (CloudsConfiguration.INSTANCE.IS_ENABLED ? CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE : 1.0f);        
+        
         // Top face
         if (pos != RelativeCameraPos.BELOW_CLOUDS) {
             int color = recolor(topColor, scaledY1, pos, relY, currentLayer);
@@ -370,10 +365,10 @@ public class CustomCloudRenderer {
             int colorB = ARGB.blue(color);
             int colorA = ARGB.alpha(color);
 
-            bb.vertex(x0, scaledY1, z0).color(colorR, colorG, colorB, colorA).endVertex();
             bb.vertex(x0, scaledY1, z1).color(colorR, colorG, colorB, colorA).endVertex();
             bb.vertex(x1, scaledY1, z1).color(colorR, colorG, colorB, colorA).endVertex();
             bb.vertex(x1, scaledY1, z0).color(colorR, colorG, colorB, colorA).endVertex();
+            bb.vertex(x0, scaledY1, z0).color(colorR, colorG, colorB, colorA).endVertex();
         }
         // Bottom face
         if (pos != RelativeCameraPos.ABOVE_CLOUDS) {
@@ -382,52 +377,61 @@ public class CustomCloudRenderer {
             int colorG = ARGB.green(color);
             int colorB = ARGB.blue(color);
             int colorA = ARGB.alpha(color); 
+            
+            bb.vertex(x0, y0, z0).color(colorR, colorG, colorB, colorA).endVertex();
             bb.vertex(x1, y0, z0).color(colorR, colorG, colorB, colorA).endVertex();
             bb.vertex(x1, y0, z1).color(colorR, colorG, colorB, colorA).endVertex();
             bb.vertex(x0, y0, z1).color(colorR, colorG, colorB, colorA).endVertex();
-            bb.vertex(x0, y0, z0).color(colorR, colorG, colorB, colorA).endVertex();
         }
         // Sides
-        int colorA = ARGB.alpha(recolor(sideColor, y0, pos, relY, currentLayer));
-        int colorB = ARGB.alpha(recolor(sideColor, scaledY1, pos, relY, currentLayer));
+        int colorA = recolor(sideColor, scaledY1, pos, relY, currentLayer);
+        int colorB = recolor(sideColor, y0, pos, relY, currentLayer);
 
-        int colorAR = ARGB.red(colorA);
-        int colorAG = ARGB.green(colorA);
-        int colorAB = ARGB.blue(colorA);
-        int colorAA = ARGB.alpha(colorA);
+        float colorAR = ARGB.redFloat(colorA);
+        float colorAG = ARGB.greenFloat(colorA);
+        float colorAB = ARGB.blueFloat(colorA);
+        float colorAA = ARGB.alphaFloat(colorA);
 
-        int colorBR = ARGB.red(colorB);
-        int colorBG = ARGB.green(colorB);
-        int colorBB = ARGB.blue(colorB);
-        int colorBA = ARGB.alpha(colorB);
+        float colorBR = ARGB.redFloat(colorB);
+        float colorBG = ARGB.greenFloat(colorB);
+        float colorBB = ARGB.blueFloat(colorB);
+        float colorBA = ARGB.alphaFloat(colorB);
 
+        // North face (-Z)  matches cube "Back face"
         if (isNorthEmpty(cell)) {
-            bb.vertex(x0, y0, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
-            bb.vertex(x0, scaledY1, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x1, scaledY1, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x1, y0, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+            bb.vertex(x1, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x0, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x0, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+            bb.vertex(x1, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
         }
+
+        // South face (+Z) matches cube "Front face"
         if (isSouthEmpty(cell)) {
-            bb.vertex(x1, y0, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
-            bb.vertex(x1, scaledY1, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x0, scaledY1, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x0, y0, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+            bb.vertex(x0, y0, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x1, y0, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x1, scaledY1, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+            bb.vertex(x0, scaledY1, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
         }
+
+        // West face (-X) matches cube "Left face"
         if (isWestEmpty(cell)) {
-            bb.vertex(x0, y0, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
-            bb.vertex(x0, scaledY1, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x0, scaledY1, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x0, y0, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+            bb.vertex(x0, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x0, y0, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x0, scaledY1, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+            bb.vertex(x0, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
         }
+
+        // East face (+X) matches cube "Right face"
         if (isEastEmpty(cell)) {
-            bb.vertex(x1, y0, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
-            bb.vertex(x1, scaledY1, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x1, scaledY1, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x1, y0, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+            bb.vertex(x1, y0, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x1, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x1, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+            bb.vertex(x1, scaledY1, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
         }
+
     }
 
-    private int recolor(int color, float vertexY, int currentLayer) {
+    private int recolor(int color, int currentLayer) {
         if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
             return color;
         }

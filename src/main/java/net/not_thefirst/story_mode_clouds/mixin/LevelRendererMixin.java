@@ -1,30 +1,21 @@
 package net.not_thefirst.story_mode_clouds.mixin;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderBuffers;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.world.phys.Vec3;
-import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
 
 import java.util.Optional;
 
-import org.lwjgl.system.CallbackI;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = LevelRenderer.class, priority = 16384)
@@ -40,8 +31,6 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
     @Inject(method = "<init>", at = @At("TAIL"))
     private void initializeConstructor(
         Minecraft minecraft,
-        EntityRenderDispatcher entityRenderDispatcher,
-        BlockEntityRenderDispatcher blockEntityRenderDispatcher,
         RenderBuffers renderBuffers,
         CallbackInfo ci
     ) {
@@ -60,7 +49,7 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
         Minecraft client = Minecraft.getInstance();
         if (client.level == null) return;
 
-        if (this.cloudRenderer != null && this.cloudRenderer.currentTexture.isPresent()) {
+        if (this.cloudRenderer != null && !this.cloudRenderer.currentTexture.isPresent()) {
             Optional<CustomCloudRenderer.TextureData> texture = this.cloudRenderer.prepare(client.getResourceManager(), client.getProfiler());
             this.cloudRenderer.apply(texture, client.getResourceManager(), client.getProfiler());
         }

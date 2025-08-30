@@ -3,12 +3,12 @@ package net.not_thefirst.story_mode_clouds.api;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.not_thefirst.story_mode_clouds.gui.ColorPreviewBox;
 import net.not_thefirst.story_mode_clouds.gui.NumericInputField;
 import net.not_thefirst.story_mode_clouds.gui.ScrollArea;
 import net.not_thefirst.story_mode_clouds.gui.SimpleSliderButton;
+import net.not_thefirst.story_mode_clouds.gui.ToggleButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +56,6 @@ public class SimpleConfigScreen extends Screen {
             // Label
             area.addLabel(new TranslatableComponent(labelKey), rowX, rowY + 6, 0xFFFFFF);
 
-            // TODO: backport a toggle button. For now, you could just use your own On/Off cycle widget.
             ToggleButton toggle = new ToggleButton(rowX + labelWidth + 6, rowY, buttonWidth, 20, initial, onChange);
             area.addWidget(toggle);
         });

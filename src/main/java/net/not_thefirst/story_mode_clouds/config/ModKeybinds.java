@@ -10,7 +10,7 @@ public class ModKeybinds {
         return KeyMappingHelper.registerKeyBinding(new KeyMapping(id, key, category));
     }
 
-    public static KeyMapping OPEN_CONFIG_KEYBIND = addKeybind("key.bind", InputConstants.getKey("O").getValue(), "key.categories.ui");
+    public static KeyMapping OPEN_CONFIG_KEYBIND = addKeybind("key.bind", InputConstants.getKey("key.keyboard.o").getValue(), "key.categories.ui");
 
     public static void initialize() {
 
