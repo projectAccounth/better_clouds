@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.world.phys.Vec3;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
@@ -45,6 +46,8 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
         CallbackInfo ci
     ) {
         ci.cancel();
+
+        if (!CloudsConfiguration.INSTANCE.CLOUDS_RENDERED) return;
 
         Minecraft client = Minecraft.getInstance();
         if (client.level == null) return;

@@ -18,6 +18,7 @@ public class CloudsConfigScreen extends SimpleConfigScreen {
         addCategory("option.cloud_tweaks.category.general", HorizontalAlignment.CENTER);
 
         addToggle("option.cloud_tweaks.is_enabled", cfg.IS_ENABLED, (v) -> cfg.IS_ENABLED = v);
+        addToggle("option.cloud_tweaks.clouds_rendered", cfg.CLOUDS_RENDERED, (v) -> cfg.CLOUDS_RENDERED = v);
         addToggle("option.cloud_tweaks.debug_v0", cfg.DEBUG_v0, (v) -> cfg.DEBUG_v0 = v);
 
         // === Appearance ===

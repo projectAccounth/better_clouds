@@ -20,7 +20,8 @@ public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_FILE = new File("config/cloud_configs.json");
 
-    public boolean IS_ENABLED = true;
+    public boolean IS_ENABLED            = true;
+    public boolean CLOUDS_RENDERED       = true;
 
     public boolean APPEARS_SHADED        = false; // Whether clouds should appear shaded (darker) when the sun is behind them
     public boolean USES_CUSTOM_ALPHA     = true; // Whether clouds should use custom alpha values
@@ -37,7 +38,6 @@ public class CloudsConfiguration {
     public float   BASE_ALPHA            = 0.8f; // Base transparency of clouds
     public float   TRANSITION_RANGE      = 10.0f;
 
-    public int     CLOUD_COLOR           = 0xFFFFFF; // Color of the clouds in RGB format (default white)
     public int[]   CLOUD_COLORS          = new int[MAX_LAYER_COUNT];
 
     public int     CLOUD_LAYERS          = 1;      // Layers

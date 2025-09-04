@@ -8,9 +8,11 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.math.Vector3f;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.Camera;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -72,7 +74,6 @@ public class CustomCloudRenderer {
     }
 
     public Optional<TextureData> prepare(ResourceManager resourceManager, ProfilerFiller profilerFiller) {
-        System.out.println("Texture preparation phase.");
         try (Resource resource = resourceManager.getResource(TEXTURE_LOCATION);
             InputStream inputStream = resource.getInputStream();
             NativeImage nativeImage = NativeImage.read(inputStream)) {
@@ -111,7 +112,13 @@ public class CustomCloudRenderer {
                (south ? 1 : 0) << 1 |
                (west ? 1 : 0);
     }
-    
+
+    private static int getColor(long cell) { return (int)(cell >> 4 & 0xFFFFFFFFL); }
+    private static boolean isNorthEmpty(long c) { return (c >> 3 & 1L) != 0L; }
+    private static boolean isEastEmpty(long c)  { return (c >> 2 & 1L) != 0L; }
+    private static boolean isSouthEmpty(long c) { return (c >> 1 & 1L) != 0L; }
+    private static boolean isWestEmpty(long c)  { return (c & 1L) != 0L; }
+
     public void apply(Optional<TextureData> optional, ResourceManager resourceManager, ProfilerFiller profilerFiller) {
         TextureData baseTexture = optional.orElse(prepare(resourceManager, profilerFiller).orElse(null));
         for (int i = 0; i < 10; i++) {
@@ -125,12 +132,6 @@ public class CustomCloudRenderer {
         // Hook for per-layer texture overrides from config
         return fallback;
     }
-
-    private static int getColor(long cell) { return (int)(cell >> 4 & 0xFFFFFFFFL); }
-    private static boolean isNorthEmpty(long c) { return (c >> 3 & 1L) != 0L; }
-    private static boolean isEastEmpty(long c)  { return (c >> 2 & 1L) != 0L; }
-    private static boolean isSouthEmpty(long c) { return (c >> 1 & 1L) != 0L; }
-    private static boolean isWestEmpty(long c)  { return (c & 1L) != 0L; }
 
     /**
     * Renders cloud.
@@ -166,10 +167,14 @@ public class CustomCloudRenderer {
         RenderSystem.disableTexture();
         RenderSystem.pushMatrix();
         RenderSystem.enableBlend();
+        RenderSystem.enableCull();
         RenderSystem.enableAlphaTest();
-        RenderSystem.shadeModel(GL11.GL_SMOOTH);
         RenderSystem.enableFog();
+        RenderSystem.enableDepthTest();
+        RenderSystem.defaultAlphaFunc();
         RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        RenderSystem.shadeModel(GL11.GL_SMOOTH);
+        RenderSystem.depthMask(true);
         for (int layer : layerIndices) {
             LayerState currentLayer = this.layers[layer];
             TextureData tex = currentLayer.texture;
@@ -254,7 +259,12 @@ public class CustomCloudRenderer {
                 }
 
                 currentLayer.buffer.bind();
+                
+                RenderSystem.colorMask(false, false, false, false);
                 drawWithRenderType(offX, layerY, offZ, currentLayer.buffer, poseStack);
+                RenderSystem.colorMask(true, true, true, true);
+                drawWithRenderType(offX, layerY, offZ, currentLayer.buffer, poseStack);
+
                 VertexBuffer.unbind();
             }
             
@@ -265,6 +275,8 @@ public class CustomCloudRenderer {
         RenderSystem.disableBlend();
         RenderSystem.disableAlphaTest();
         RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
         RenderSystem.shadeModel(GL11.GL_FLAT);
     }
 
@@ -291,14 +303,18 @@ public class CustomCloudRenderer {
     }
 
     private void buildMesh(TextureData tex, RelativeCameraPos pos, BufferBuilder bb,
-                           int cx, int cz, int bottom, int top, int side, int inner, boolean fancy, float relY, int currentLayer) {
+                           int cx, int cz, int bottom, int top, int side, int inner,
+                           boolean fancy, float relY, int currentLayer) {
         int range = 32;
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
 
-        for (int dz = -range; dz <= range; dz++) {
-            for (int dx = -range; dx <= range; dx++) {
+        int dxStart = -range, dxEnd = range, dxStep = 1;
+        int dzStart = -range, dzEnd = range, dzStep = 1;
+
+        for (int dz = dzStart; dz != dzEnd; dz += dzStep) {
+            for (int dx = dxStart; dx != dxEnd; dx += dxStep) {
                 int x = Math.floorMod(cx + dx, w);
                 int z = Math.floorMod(cz + dz, h);
                 long cell = cells[x + z * w];
@@ -395,15 +411,7 @@ public class CustomCloudRenderer {
         float colorBB = ARGB.blueFloat(colorB);
         float colorBA = ARGB.alphaFloat(colorB);
 
-        // North face (-Z)  matches cube "Back face"
-        if (isNorthEmpty(cell)) {
-            bb.vertex(x1, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x0, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
-            bb.vertex(x0, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
-            bb.vertex(x1, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
-        }
-
-        // South face (+Z) matches cube "Front face"
+        // South (+Z)
         if (isSouthEmpty(cell)) {
             bb.vertex(x0, y0, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
             bb.vertex(x1, y0, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
@@ -411,7 +419,7 @@ public class CustomCloudRenderer {
             bb.vertex(x0, scaledY1, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
         }
 
-        // West face (-X) matches cube "Left face"
+        // West (-X)
         if (isWestEmpty(cell)) {
             bb.vertex(x0, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
             bb.vertex(x0, y0, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
@@ -419,13 +427,22 @@ public class CustomCloudRenderer {
             bb.vertex(x0, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
         }
 
-        // East face (+X) matches cube "Right face"
+        // North (-Z)
+        if (isNorthEmpty(cell)) {
+            bb.vertex(x1, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x0, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
+            bb.vertex(x0, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+            bb.vertex(x1, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
+        }
+
+        // East (+X) — FIXED
         if (isEastEmpty(cell)) {
             bb.vertex(x1, y0, z1).color(colorBR, colorBG, colorBB, colorBA).endVertex();
             bb.vertex(x1, y0, z0).color(colorBR, colorBG, colorBB, colorBA).endVertex();
             bb.vertex(x1, scaledY1, z0).color(colorAR, colorAG, colorAB, colorAA).endVertex();
             bb.vertex(x1, scaledY1, z1).color(colorAR, colorAG, colorAB, colorAA).endVertex();
         }
+
     }
 
     private int recolor(int color, int currentLayer) {
