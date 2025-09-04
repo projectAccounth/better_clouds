@@ -37,14 +37,14 @@ public class SimpleConfigScreen extends Screen {
 
         // Done button at bottom
         this.addRenderableWidget(
-            Button.builder(Component.translatable("cloud_tweaks.done"), (btn) -> {
+            new Button(this.width / 2 - 100, this.height - 28, 200, 20, Component.translatable("cloud_tweaks.done"), (btn) -> {
                 // finalize numeric fields
                 area.commitAll();
                 // run custom save actions
                 onCloseActions.forEach(Runnable::run);
                 // return
                 Minecraft.getInstance().setScreen(parent);
-            }).bounds(this.width / 2 - 100, this.height - 28, 200, 20).build()
+            })
         );
     }
 

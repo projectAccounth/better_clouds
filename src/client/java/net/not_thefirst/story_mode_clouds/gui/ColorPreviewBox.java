@@ -23,11 +23,11 @@ public class ColorPreviewBox extends AbstractWidget {
     }
 
     @Override
-    public void renderWidget(PoseStack gfx, int mouseX, int mouseY, float delta) {
-        fill(gfx, this.getX(), this.getY(), this.getX() + this.width, this.getY() + this.height, 0xFF000000 | this.color);
+    public void renderButton(PoseStack gfx, int mouseX, int mouseY, float delta) {
+        fill(gfx, this.x, this.y, this.x + this.width, this.y + this.height, 0xFF000000 | this.color);
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    public void updateNarration(NarrationElementOutput narrationElementOutput) {
     }
 }

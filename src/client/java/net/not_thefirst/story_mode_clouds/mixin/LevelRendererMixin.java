@@ -1,6 +1,7 @@
 package net.not_thefirst.story_mode_clouds.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Matrix4f;
 
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
@@ -14,7 +15,6 @@ import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
 
-import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -44,7 +44,7 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
     @Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true)
     private void interceptCloudRender(
         PoseStack poseStack,
-        Matrix4f modelViewMatrix,
+        com.mojang.math.Matrix4f modelViewMatrix,
         float partialTicks,
         double cameraX, double cameraY, double cameraZ,
         CallbackInfo ci

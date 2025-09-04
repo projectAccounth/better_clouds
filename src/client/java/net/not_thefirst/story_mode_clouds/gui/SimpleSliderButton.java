@@ -75,7 +75,7 @@ public class SimpleSliderButton extends AbstractSliderButton {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (this.active && this.isHoveredOrFocused()) {
-            double sliderPos = (mouseX - (this.getX() + 4)) / (this.width - 8);
+            double sliderPos = (mouseX - (this.x + 4)) / (this.width - 8);
             this.value = Mth.clamp(sliderPos, 0.0D, 1.0D);
             applyValue();
             updateMessage();

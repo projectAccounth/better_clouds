@@ -1,15 +1,15 @@
 package net.not_thefirst.story_mode_clouds.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.gui.components.AbstractScrollWidget;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL11;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 
@@ -26,11 +26,11 @@ public class ScrollArea extends AbstractScrollWidget {
     private AbstractWidget focusedChild = null;
 
     public ScrollArea(int x, int y, int width, int height) {
-        super(x, y, width, height, Component.empty());
+        super(x, y, width, height, Component.translatable(""));
     }
 
     private double toLocalY(double globalY) {
-        return globalY + scrollAmount();
+        return globalY + scrollRate();
     }
 
     /* --- Row system --- */
@@ -41,8 +41,8 @@ public class ScrollArea extends AbstractScrollWidget {
 
     /** Adds a new row of widgets using a builder function */
     public void addRow(RowBuilder builder) {
-        int rowX = getX() + paddingX;
-        int rowY = getY() + nextRowY;
+        int rowX = x + paddingX;
+        int rowY = y + nextRowY;
         int rowWidth = this.width - 2 * paddingX;
 
         builder.build(rowX, rowY, rowWidth);
@@ -69,47 +69,72 @@ public class ScrollArea extends AbstractScrollWidget {
         commits.forEach(Runnable::run);
     }
 
-    public int getRight() {
-        return getX() + width;
-    }
-
-    public int getBottom() {
-        return getY() + height;
-    }
-
-
     /* --- Rendering & input --- */
     @Override
-    public void renderWidget(PoseStack poseStack, int mouseX, int mouseY, float delta) {
-        enableScissor(getX(), getY(), getRight(), getBottom());
+    public void renderButton(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        if (!this.visible) return;
 
-        int offsetY = (int) scrollAmount();
+        // background
+        fill(poseStack, x, y, x + width, y + height, 0xFF202020);
+
+        // clip to scroll area
+        enableScissor(this.x, this.y, this.width, this.height);
 
         poseStack.pushPose();
-        poseStack.translate(0, -offsetY, 0);
+        poseStack.translate(0, -this.scrollAmount, 0);
 
-        // Render labels
+        // labels
         for (LabelEntry lbl : labels) {
             Minecraft.getInstance().font.draw(poseStack, lbl.text, lbl.x, lbl.y, lbl.color);
         }
 
-        // Render widgets
+        // children
         for (AbstractWidget w : children) {
-            w.render(poseStack, mouseX, mouseY + offsetY, delta);
+            w.render(poseStack, mouseX, mouseY + this.scrollAmount, partialTicks);
         }
 
         poseStack.popPose();
+
         disableScissor();
+
+        // scrollbar
+        if (scrollbarVisible()) {
+            int barHeight = getScrollBarHeight();
+            int barTop = (int)((double)this.scrollAmount * (this.height - barHeight) / getMaxScrollAmount()) + this.y;
+            fill(poseStack, this.x + this.width - 6, barTop, this.x + this.width - 2, barTop + barHeight, 0xFFAAAAAA);
+        }
     }
+
+    private static void enableScissor(int x, int y, int w, int h) {
+        Minecraft mc = Minecraft.getInstance();
+        double scale = mc.getWindow().getGuiScale();
+        int fbHeight = mc.getWindow().getHeight();
+
+        // Convert GUI coords → framebuffer coords (OpenGL origin = bottom-left)
+        int scissorX = (int)(x * scale);
+        int scissorY = (int)((mc.getWindow().getGuiScaledHeight() - (y + h)) * scale);
+        int scissorW = (int)(w * scale);
+        int scissorH = (int)(h * scale);
+
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(scissorX, scissorY, scissorW, scissorH);
+    }
+
+    private static void disableScissor() {
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+    }
+
 
     @Override
     public boolean mouseClicked(double mx, double my, int btn) {
-        double localY = toLocalY(my);
+        if (!isMouseOver(mx, my)) return false;
+
+        double localY = my + this.scrollAmount;
         for (AbstractWidget w : children) {
             if (w.mouseClicked(mx, localY, btn)) {
-                if (focusedChild != null) focusedChild.setFocused(false);
+                if (focusedChild != null) focusedChild.changeFocus(false);
                 focusedChild = w;
-                focusedChild.setFocused(true);
+                focusedChild.changeFocus(true);
                 return true;
             }
         }
@@ -118,29 +143,32 @@ public class ScrollArea extends AbstractScrollWidget {
 
     @Override
     public boolean mouseReleased(double mx, double my, int btn) {
-        double localY = toLocalY(my);
+        if (!isMouseOver(mx, my)) return false;
+
+        double localY = my + this.scrollAmount;
         boolean consumed = false;
         for (AbstractWidget w : children) {
             if (w.mouseReleased(mx, localY, btn)) consumed = true;
         }
-
         if (focusedChild != null && !(focusedChild instanceof NumericInputField)) {
-            focusedChild.setFocused(false);
+            focusedChild.changeFocus(false);
             focusedChild = null;
         }
-
         return consumed || super.mouseReleased(mx, my, btn);
     }
 
     @Override
     public boolean mouseDragged(double mx, double my, int btn, double dx, double dy) {
-        double localY = toLocalY(my);
+        if (!isMouseOver(mx, my)) return false;
+        
+        double localY = my + this.scrollAmount;
         boolean consumed = false;
         for (AbstractWidget w : children) {
             if (w.mouseDragged(mx, localY, btn, dx, dy)) consumed = true;
         }
         return consumed || super.mouseDragged(mx, my, btn, dx, dy);
     }
+
 
     @Override
     public boolean keyPressed(int key, int scancode, int mods) {
@@ -149,10 +177,11 @@ public class ScrollArea extends AbstractScrollWidget {
 
             // check Enter
             if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
-                if (focusedChild instanceof NumericInputField numeric) {
+                if (focusedChild instanceof NumericInputField) {
+                    NumericInputField numeric = (NumericInputField) focusedChild;
                     numeric.commit();               // snap to valid number
                 }
-                focusedChild.setFocused(false);    // remove focus
+                focusedChild.changeFocus(false);    // remove focus
                 focusedChild = null;
                 return true;
             }
@@ -172,29 +201,38 @@ public class ScrollArea extends AbstractScrollWidget {
         return nextRowY + 5;  // total height used by rows
     }
 
-    @Override
     protected double scrollRate() {
         return 12.0;
     }
 
-    @Override
-    protected void updateWidgetNarration(NarrationElementOutput narration) {
+    private class LabelEntry {
+        public Component text; 
+        public int x, y; 
+        public int color;
+        public LabelEntry(Component text, int x, int y, int color) {
+            this.text = text; this.x = x; this.y = y; this.color = color;
+        }
     }
 
-    private record LabelEntry(Component text, int x, int y, int color) {}
-
     @Override
-    protected int getInnerHeight() {
+    protected int getContentHeight() {
         return contentHeight();
     }
 
     @Override
-    protected void renderContents(PoseStack poseStack, int i, int j, float f) {
-        renderWidget(poseStack, i, j, f);
+    protected void renderContents(PoseStack poseStack, int mouseX, int mouseY, float partialTicks, int scrollY) {
+        // Labels
+        for (LabelEntry lbl : labels) {
+            Minecraft.getInstance().font.draw(poseStack, lbl.text, lbl.x, lbl.y, lbl.color);
+        }
+
+        // Children
+        for (AbstractWidget w : children) {
+            w.render(poseStack, mouseX, mouseY + scrollY, partialTicks);
+        }
     }
 
     @Override
-    protected boolean scrollbarVisible() {
-        return false;
+    public void updateNarration(NarrationElementOutput narrationElementOutput) {
     }
 }
