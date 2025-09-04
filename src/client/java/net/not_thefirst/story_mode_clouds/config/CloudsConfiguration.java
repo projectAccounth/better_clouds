@@ -22,6 +22,7 @@ public class CloudsConfiguration {
 
     public boolean IS_ENABLED = true;
 
+    public boolean CLOUDS_RENDERED       = true;
     public boolean APPEARS_SHADED        = false; // Whether clouds should appear shaded (darker) when the sun is behind them
     public boolean USES_CUSTOM_ALPHA     = true; // Whether clouds should use custom alpha values
     public boolean CUSTOM_BRIGHTNESS     = true; // Whether clouds should be rendered with custom brightness brightness (even at night)

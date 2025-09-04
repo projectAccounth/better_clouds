@@ -13,7 +13,6 @@ import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.server.packs.resources.ResourceProvider;
-import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.minecraft.client.renderer.RenderType.CompositeState;
 
@@ -30,7 +29,6 @@ public class ModRenderTypes {
     public static Uniform uLayerColor;
 
     public static void reloadShaders(ResourceProvider provider) throws IOException {
-        // Load your shader JSON from assets/<modid>/shaders/core/custom_clouds.json
         ModRenderTypes.CLOUDS_SHADER = new ShaderInstance(provider, "custom_clouds", DefaultVertexFormat.POSITION_COLOR);
     }
 

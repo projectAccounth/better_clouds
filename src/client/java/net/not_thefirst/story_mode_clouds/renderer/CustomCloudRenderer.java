@@ -269,8 +269,10 @@ public class CustomCloudRenderer {
 
                 RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
                 currentLayer.buffer.bind();
+                RenderSystem.colorMask(false, false, false, false);
                 drawWithRenderType(rt, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
-                
+                RenderSystem.colorMask(true, true, true, true);
+                drawWithRenderType(rt, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
                 VertexBuffer.unbind();
                 RenderSystem.setShaderColor(1, 1, 1, 1);
             }
