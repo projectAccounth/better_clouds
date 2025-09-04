@@ -1,7 +1,6 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.shaders.FogShape;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -10,23 +9,19 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
-import net.not_thefirst.story_mode_clouds.StoryModeClouds;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
-import org.joml.Vector3f;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,7 +38,7 @@ public class CustomCloudRenderer {
 
     private int maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
 
-    protected static final ResourceLocation TEXTURE_LOCATION = ResourceLocation.tryBuild("cloud_tweaks", "textures/environment/clouds.png");
+    protected static final ResourceLocation TEXTURE_LOCATION = new ResourceLocation("textures/environment/clouds.png");
 
     @Nullable
     public Optional<TextureData> currentTexture = Optional.empty();
@@ -165,6 +160,9 @@ public class CustomCloudRenderer {
             return Float.compare(Math.abs(by), Math.abs(ay));
         });
 
+        RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
+
+        rt.setupRenderState();
         for (int layer : layerIndices) {
             LayerState currentLayer = this.layers[layer];
             TextureData tex = currentLayer.texture;
@@ -214,7 +212,6 @@ public class CustomCloudRenderer {
                 currentLayer.prevPos = layerPos;
                 currentLayer.prevStatus = status;
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
                 BufferBuilder.RenderedBuffer mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, rt, relY, layer);
                 if (mesh != null) {
                     currentLayer.buffer.bind();
@@ -237,11 +234,14 @@ public class CustomCloudRenderer {
                 if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
                     appliedColor = cloudColor;
                 }
-                else if (CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR) {
+                else if (CloudsConfiguration.INSTANCE.IS_ENABLED && CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR) {
                     appliedColor = CloudsConfiguration.INSTANCE.CLOUD_COLORS[layer];
                 } 
                 else if (!CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR && CloudsConfiguration.INSTANCE.APPEARS_SHADED) {
                     appliedColor = cloudColor;
+                }
+                else if (!CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR && CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS) {
+                    appliedColor = ARGB.colorFromFloat(1, 1, 1, 1);
                 }
                 else {
                     appliedColor = cloudColor;
@@ -267,26 +267,23 @@ public class CustomCloudRenderer {
                     RenderSystem.setShaderFogEnd(Float.MAX_VALUE);
                 }
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
                 currentLayer.buffer.bind();
                 RenderSystem.colorMask(false, false, false, false);
-                drawWithRenderType(rt, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
+                drawBuffer(poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
                 RenderSystem.colorMask(true, true, true, true);
-                drawWithRenderType(rt, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
+                drawBuffer(poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
                 VertexBuffer.unbind();
                 RenderSystem.setShaderColor(1, 1, 1, 1);
             }
 
             poseStack.popPose();
         }
+        rt.clearRenderState();
     }
 
-    private void drawWithRenderType(RenderType rt, Matrix4f proj, Matrix4f mv, float ox, float oy, float oz, VertexBuffer buf) {
-        rt.setupRenderState();
+    private void drawBuffer(Matrix4f proj, Matrix4f mv, float ox, float oy, float oz, VertexBuffer buf) {
         ShaderInstance shader = RenderSystem.getShader();
-
         buf.drawWithShader(proj, mv, shader);
-        rt.clearRenderState();
     }
 
     @Nullable
