@@ -4,7 +4,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.not_thefirst.story_mode_clouds.gui.ColorPreviewBox;
 import net.not_thefirst.story_mode_clouds.gui.NumericInputField;
@@ -14,6 +13,8 @@ import net.not_thefirst.story_mode_clouds.gui.SimpleSliderButton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import com.mojang.blaze3d.vertex.PoseStack;
 
 public class SimpleConfigScreen extends Screen {
     private final Screen parent;
@@ -124,10 +125,10 @@ public class SimpleConfigScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        this.renderBackground(graphics, mouseX, mouseY, delta);
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
-        super.render(graphics, mouseX, mouseY, delta);
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+        this.renderBackground(poseStack);
+        drawCenteredString(poseStack, this.font, this.title, this.width / 2, 20, 0xFFFFFF);
+        super.render(poseStack, mouseX, mouseY, delta);
     }
 
     public void addCategory(String text, HorizontalAlignment alignment) {

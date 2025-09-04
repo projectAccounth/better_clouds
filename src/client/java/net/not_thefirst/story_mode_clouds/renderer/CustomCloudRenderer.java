@@ -51,7 +51,7 @@ public class CustomCloudRenderer {
         for (int i = 0; i < 10; i++) {
             layers[i] = new LayerState(i);
 
-            layers[i].buffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
+            layers[i].buffer = new VertexBuffer();
             layers[i].bufferEmpty = true;
             layers[i].needsRebuild = true;
             layers[i].prevCellX = Integer.MIN_VALUE;

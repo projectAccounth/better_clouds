@@ -1,6 +1,7 @@
 package net.not_thefirst.story_mode_clouds.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import com.mojang.blaze3d.vertex.PoseStack;
+
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
@@ -22,10 +23,8 @@ public class ColorPreviewBox extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics gfx, int mouseX, int mouseY, float delta) {
-        gfx.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0xFF000000 | color);
-        // Border
-        // gfx.draw(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0xFFFFFFFF);
+    public void renderWidget(PoseStack gfx, int mouseX, int mouseY, float delta) {
+        fill(gfx, this.getX(), this.getY(), this.getX() + this.width, this.getY() + this.height, 0xFF000000 | this.color);
     }
 
     @Override

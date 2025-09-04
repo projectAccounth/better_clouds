@@ -3,7 +3,6 @@ package net.not_thefirst.story_mode_clouds.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractScrollWidget;
 import net.minecraft.client.gui.components.AbstractWidget;
 
@@ -11,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.lwjgl.glfw.GLFW;
+
+import com.mojang.blaze3d.vertex.PoseStack;
 
 // --- scroll area implementation ---
 public class ScrollArea extends AbstractScrollWidget {
@@ -68,29 +69,37 @@ public class ScrollArea extends AbstractScrollWidget {
         commits.forEach(Runnable::run);
     }
 
+    public int getRight() {
+        return getX() + width;
+    }
+
+    public int getBottom() {
+        return getY() + height;
+    }
+
+
     /* --- Rendering & input --- */
     @Override
-    public void renderWidget(GuiGraphics gfx, int mouseX, int mouseY, float delta) {
-        gfx.enableScissor(getX(), getY(), getRight(), getBottom());
+    public void renderWidget(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+        enableScissor(getX(), getY(), getRight(), getBottom());
 
         int offsetY = (int) scrollAmount();
 
-        gfx.pose().pushPose();
-        gfx.pose().translate(0, -offsetY, 0);
+        poseStack.pushPose();
+        poseStack.translate(0, -offsetY, 0);
 
         // Render labels
         for (LabelEntry lbl : labels) {
-            gfx.drawString(Minecraft.getInstance().font,
-                           lbl.text, lbl.x, lbl.y, lbl.color);
+            Minecraft.getInstance().font.draw(poseStack, lbl.text, lbl.x, lbl.y, lbl.color);
         }
 
         // Render widgets
         for (AbstractWidget w : children) {
-            w.render(gfx, mouseX, mouseY + offsetY, delta);
+            w.render(poseStack, mouseX, mouseY + offsetY, delta);
         }
 
-        gfx.pose().popPose();
-        gfx.disableScissor();
+        poseStack.popPose();
+        disableScissor();
     }
 
     @Override
@@ -180,7 +189,12 @@ public class ScrollArea extends AbstractScrollWidget {
     }
 
     @Override
-    protected void renderContents(GuiGraphics guiGraphics, int i, int j, float f) {
-        renderWidget(guiGraphics, i, j, f);
+    protected void renderContents(PoseStack poseStack, int i, int j, float f) {
+        renderWidget(poseStack, i, j, f);
+    }
+
+    @Override
+    protected boolean scrollbarVisible() {
+        return false;
     }
 }
