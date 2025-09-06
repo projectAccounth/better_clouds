@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "cloud_tweaks",
   "version": "${version}",
-  "name": "story_mode_clouds",
+  "name": "Cloud Tweaks",
   "description": "Customize your clouds!",
   "authors": [],
   "license": "MIT",
@@ -22,7 +22,7 @@
   ],
   "depends": {
     "fabricloader": ">=0.16.10",
-    "minecraft": "1.21.3"
+    "minecraft": ">=1.21.2 <=1.21.3"
   },
   "suggests": {
     "cloth-config": "*",
