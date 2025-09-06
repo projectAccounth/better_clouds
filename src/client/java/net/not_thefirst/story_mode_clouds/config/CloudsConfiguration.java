@@ -14,15 +14,14 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.not_thefirst.story_mode_clouds.api.ClothConfigScreen;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
-import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
 
 public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_FILE = new File("config/cloud_configs.json");
 
-    public boolean IS_ENABLED = true;
-
+    public boolean IS_ENABLED            = true; // Customizations enabled
     public boolean CLOUDS_RENDERED       = true;
+
     public boolean APPEARS_SHADED        = false; // Whether clouds should appear shaded (darker) when the sun is behind them
     public boolean USES_CUSTOM_ALPHA     = true; // Whether clouds should use custom alpha values
     public boolean CUSTOM_BRIGHTNESS     = true; // Whether clouds should be rendered with custom brightness brightness (even at night)
@@ -80,8 +79,8 @@ public class CloudsConfiguration {
 
         Minecraft client = Minecraft.getInstance();
         LevelRenderer renderer = client.levelRenderer;
-        if (renderer != null && ((CloudRendererHolder) renderer).getCloudRenderer() != null) {
-            ((CloudRendererHolder) renderer).getCloudRenderer().markForRebuild();
+        if (renderer != null && renderer.getCloudRenderer() != null) {
+            renderer.getCloudRenderer().markForRebuild();
         }
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
