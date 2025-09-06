@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "cloud_tweaks",
   "version": "${version}",
-  "name": "story_mode_clouds",
+  "name": "Cloud Tweaks",
   "description": "Customize your clouds!",
   "authors": [],
   "license": "MIT",
@@ -26,8 +26,5 @@
   "suggests": {
     "cloth-config": "*",
     "modmenu": "*"
-  },
-  "custom": {
-    "fabric-resources": true
   }
 }
