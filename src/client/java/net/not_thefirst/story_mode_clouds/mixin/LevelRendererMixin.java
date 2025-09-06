@@ -1,7 +1,5 @@
 package net.not_thefirst.story_mode_clouds.mixin;
 
-import com.mojang.blaze3d.resource.ResourceHandle;
-
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.CloudRenderer;
@@ -11,6 +9,7 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 
 import org.spongepowered.asm.mixin.Final;
@@ -85,6 +84,8 @@ public abstract class LevelRendererMixin {
         if (this.cloudRenderer == null) {
             this.cloudRenderer = new CustomCloudRenderer();
         }
+
+        if (!CloudsConfiguration.get().CLOUDS_RENDERED) return;
 
         this.cloudRenderer.render(cloudColor, status, cloudHeight, vec3, partialTicks);
     }

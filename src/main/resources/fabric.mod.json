@@ -21,10 +21,13 @@
   ],
   "depends": {
     "fabricloader": ">=0.16.10",
-    "minecraft": "1.21.6"
+    "minecraft": ">=1.21.6 <=1.21.8"
   },
   "suggests": {
     "cloth-config": "*",
     "modmenu": "*"
+  },
+  "custom": {
+    "fabric-resources": true
   }
 }

@@ -20,16 +20,24 @@ public class ClothConfigScreen {
 
         general.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.is_enabled"),
-                        CloudsConfiguration.INSTANCE.IS_ENABLED)
+                        CloudsConfiguration.get().IS_ENABLED)
                 .setDefaultValue(true)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.IS_ENABLED = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().IS_ENABLED = v)
                 .build());
 
         general.addEntry(entryBuilder
+                .startBooleanToggle(Component.translatable("option.cloud_tweaks.clouds_rendered"),
+                        CloudsConfiguration.get().CLOUDS_RENDERED)
+                .setDefaultValue(true)
+                .setSaveConsumer(v -> CloudsConfiguration.get().CLOUDS_RENDERED = v)
+                .build());
+
+
+        general.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.debug_v0"),
-                        CloudsConfiguration.INSTANCE.DEBUG_v0)
+                        CloudsConfiguration.get().DEBUG_v0)
                 .setDefaultValue(false)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.DEBUG_v0 = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().DEBUG_v0 = v)
                 .build());
 
         // === Appearance category ===
@@ -37,68 +45,68 @@ public class ClothConfigScreen {
 
         appearance.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.is_shaded"),
-                        CloudsConfiguration.INSTANCE.APPEARS_SHADED)
+                        CloudsConfiguration.get().APPEARS_SHADED)
                 .setDefaultValue(false)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.APPEARS_SHADED = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().APPEARS_SHADED = v)
                 .build());
 
         appearance.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.fog_enabled"),
-                        CloudsConfiguration.INSTANCE.APPEARS_SHADED)
+                        CloudsConfiguration.get().APPEARS_SHADED)
                 .setDefaultValue(false)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.FOG_ENABLED = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().FOG_ENABLED = v)
                 .build());
 
         appearance.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.fade_enabled"),
-                        CloudsConfiguration.INSTANCE.FADE_ENABLED)
+                        CloudsConfiguration.get().FADE_ENABLED)
                 .setDefaultValue(false)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.FADE_ENABLED = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().FADE_ENABLED = v)
                 .build());
 
         appearance.addEntry(entryBuilder
                 .startFloatField(Component.translatable("option.cloud_tweaks.fade_alpha"),
-                        CloudsConfiguration.INSTANCE.FADE_ALPHA)
+                        CloudsConfiguration.get().FADE_ALPHA)
                 .setMin(0.0f).setMax(1.0f)
                 .setDefaultValue(0.5f)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.FADE_ALPHA = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().FADE_ALPHA = v)
                 .build());
 
         appearance.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.custom_alpha"),
-                        CloudsConfiguration.INSTANCE.USES_CUSTOM_ALPHA)
+                        CloudsConfiguration.get().USES_CUSTOM_ALPHA)
                 .setDefaultValue(true)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.USES_CUSTOM_ALPHA = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().USES_CUSTOM_ALPHA = v)
                 .build());
 
         appearance.addEntry(entryBuilder
                 .startFloatField(Component.translatable("option.cloud_tweaks.base_alpha"),
-                        CloudsConfiguration.INSTANCE.BASE_ALPHA)
+                        CloudsConfiguration.get().BASE_ALPHA)
                 .setMin(0.0f).setMax(1.0f)
                 .setDefaultValue(0.8f)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.BASE_ALPHA = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().BASE_ALPHA = v)
                 .build());
 
         appearance.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.custom_brightness"),
-                        CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS)
+                        CloudsConfiguration.get().CUSTOM_BRIGHTNESS)
                 .setDefaultValue(true)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().CUSTOM_BRIGHTNESS = v)
                 .build());
 
         appearance.addEntry(entryBuilder
                 .startFloatField(Component.translatable("option.cloud_tweaks.brightness"),
-                        CloudsConfiguration.INSTANCE.BRIGHTNESS)
+                        CloudsConfiguration.get().BRIGHTNESS)
                 .setMin(0.0f).setMax(1.0f)
                 .setDefaultValue(1.0f)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.BRIGHTNESS = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().BRIGHTNESS = v)
                 .build());
 
         appearance.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.custom_color"),
-                        CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR)
+                        CloudsConfiguration.get().USES_CUSTOM_COLOR)
                 .setDefaultValue(false)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().USES_CUSTOM_COLOR = v)
                 .build());
 
         // === Shape category ===
@@ -106,17 +114,17 @@ public class ClothConfigScreen {
 
         shape.addEntry(entryBuilder
                 .startFloatField(Component.translatable("option.cloud_tweaks.y_scale"),
-                        CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE)
+                        CloudsConfiguration.get().CLOUD_Y_SCALE)
                 .setMin(0.5f).setMax(10.0f)
                 .setDefaultValue(1.5f)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().CLOUD_Y_SCALE = v)
                 .build());
 
         shape.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.randomized_y"),
-                        CloudsConfiguration.INSTANCE.RANDOMIZED_Y)
+                        CloudsConfiguration.get().RANDOMIZED_Y)
                 .setDefaultValue(false)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.RANDOMIZED_Y = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().RANDOMIZED_Y = v)
                 .build());
 
         // === Layers category ===
@@ -124,18 +132,18 @@ public class ClothConfigScreen {
 
         layers.addEntry(entryBuilder
                 .startIntField(Component.translatable("option.cloud_tweaks.cloud_layers"),
-                        CloudsConfiguration.INSTANCE.CLOUD_LAYERS)
+                        CloudsConfiguration.get().CLOUD_LAYERS)
                 .setMin(1).setMax(10)
                 .setDefaultValue(1)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUD_LAYERS = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().CLOUD_LAYERS = v)
                 .build());
 
         layers.addEntry(entryBuilder
                 .startFloatField(Component.translatable("option.cloud_tweaks.cloud_layers_spacing"),
-                        CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING)
+                        CloudsConfiguration.get().CLOUD_LAYERS_SPACING)
                 .setMin(1.0f).setMax(512.0f)
                 .setDefaultValue(2.0f)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUD_LAYERS_SPACING = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().CLOUD_LAYERS_SPACING = v)
                 .build());
 
         for (int i = 0; i < CloudsConfiguration.MAX_LAYER_COUNT; i++) {
@@ -143,9 +151,9 @@ public class ClothConfigScreen {
             layers.addEntry(entryBuilder
                 .startColorField(
                         Component.translatable("option.cloud_tweaks.layer_color." + (i + 1)),
-                        CloudsConfiguration.INSTANCE.CLOUD_COLORS[idx])
+                        CloudsConfiguration.get().CLOUD_COLORS[idx])
                 .setDefaultValue(0xFFFFFF)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUD_COLORS[idx] = v)
+                .setSaveConsumer(v -> CloudsConfiguration.get().CLOUD_COLORS[idx] = v)
                 .build());
         }
 

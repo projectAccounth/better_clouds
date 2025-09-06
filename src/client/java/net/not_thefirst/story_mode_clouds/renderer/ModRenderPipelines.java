@@ -41,7 +41,7 @@ public class ModRenderPipelines {
                 .withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
                 // set blend/depth states similar to vanilla clouds:
                 .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
-                .withDepthWrite(false)
+                .withDepthWrite(true)
                 .withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
 		        .withUniform("CloudFaces", UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
                 .withBlend(BlendFunction.TRANSLUCENT)
