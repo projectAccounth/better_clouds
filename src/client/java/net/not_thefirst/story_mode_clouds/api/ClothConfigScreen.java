@@ -32,6 +32,7 @@ public class ClothConfigScreen {
                 .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUDS_RENDERED = v)
                 .build());
 
+
         general.addEntry(entryBuilder
                 .startBooleanToggle(Component.translatable("option.cloud_tweaks.debug_v0"),
                         CloudsConfiguration.INSTANCE.DEBUG_v0)
