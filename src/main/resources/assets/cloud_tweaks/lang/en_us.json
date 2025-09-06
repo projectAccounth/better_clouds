@@ -7,6 +7,7 @@
   "option.cloud_tweaks.category.layers": "Layers",
 
   "option.cloud_tweaks.is_enabled": "Enable Clouds",
+  "option.cloud_tweaks.clouds_rendered": "Clouds Rendered",
   "option.cloud_tweaks.debug_v0": "Debug Mode",
 
   "option.cloud_tweaks.is_shaded": "Appears Shaded",
@@ -17,7 +18,7 @@
   "option.cloud_tweaks.base_alpha": "Base Alpha",
   "option.cloud_tweaks.custom_brightness": "Use Custom Brightness",
   "option.cloud_tweaks.brightness": "Brightness",
-  "option.cloud_tweaks.uses_custom_color": "Use Custom Color",
+  "option.cloud_tweaks.custom_color": "Uses Custom Color",
   "option.cloud_tweaks.color": "Cloud Color",
 
   "option.cloud_tweaks.y_scale": "Cloud Y Scale",
