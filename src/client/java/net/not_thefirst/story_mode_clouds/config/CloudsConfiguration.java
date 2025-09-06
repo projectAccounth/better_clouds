@@ -19,7 +19,8 @@ public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_FILE = new File("config/cloud_configs.json");
 
-    public boolean IS_ENABLED = true;
+    public boolean IS_ENABLED            = true; // Customizations enabled
+    public boolean CLOUDS_RENDERED       = true;
 
     public boolean APPEARS_SHADED        = false; // Whether clouds should appear shaded (darker) when the sun is behind them
     public boolean USES_CUSTOM_ALPHA     = true; // Whether clouds should use custom alpha values
