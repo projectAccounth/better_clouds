@@ -49,6 +49,8 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
 
         if (!CloudsConfiguration.INSTANCE.CLOUDS_RENDERED) return;
 
+        if (!CloudsConfiguration.INSTANCE.CLOUDS_RENDERED) return;
+
         Minecraft client = Minecraft.getInstance();
         if (client.level == null) return;
 

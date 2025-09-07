@@ -24,7 +24,15 @@ public class ClothConfigScreen {
                 .setDefaultValue(true)
                 .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.IS_ENABLED = v)
                 .build());
-        
+
+        general.addEntry(entryBuilder
+                .startBooleanToggle(new TranslatableComponent("option.cloud_tweaks.clouds_rendered"),
+                        CloudsConfiguration.INSTANCE.CLOUDS_RENDERED)
+                .setDefaultValue(true)
+                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUDS_RENDERED = v)
+                .build());
+
+
         general.addEntry(entryBuilder
                 .startBooleanToggle(new TranslatableComponent("option.cloud_tweaks.clouds_rendered"),
                         CloudsConfiguration.INSTANCE.CLOUDS_RENDERED)
