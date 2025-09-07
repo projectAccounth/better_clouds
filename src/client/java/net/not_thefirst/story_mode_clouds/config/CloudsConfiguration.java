@@ -14,6 +14,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.not_thefirst.story_mode_clouds.api.ClothConfigScreen;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
+import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
 
 public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -79,8 +80,8 @@ public class CloudsConfiguration {
 
         Minecraft client = Minecraft.getInstance();
         LevelRenderer renderer = client.levelRenderer;
-        if (renderer != null && renderer.getCloudRenderer() != null) {
-            renderer.getCloudRenderer().markForRebuild();
+        if (renderer != null && ((CloudRendererHolder) renderer).getCloudRenderer() != null) {
+            ((CloudRendererHolder) renderer).getCloudRenderer().markForRebuild();
         }
 
         try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
