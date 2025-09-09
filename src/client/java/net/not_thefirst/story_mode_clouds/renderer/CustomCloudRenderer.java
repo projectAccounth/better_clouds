@@ -1,15 +1,20 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -17,7 +22,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 
 import org.jetbrains.annotations.Nullable;
@@ -42,6 +46,8 @@ public class CustomCloudRenderer {
 
     @Nullable
     public Optional<TextureData> currentTexture = Optional.empty();
+
+    private int prevCloudColor = 0;
 
     public CustomCloudRenderer() {
         super();
@@ -160,9 +166,26 @@ public class CustomCloudRenderer {
             return Float.compare(Math.abs(by), Math.abs(ay));
         });
 
-        RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
+        RenderSystem.enableBlend();
+        RenderSystem.blendFuncSeparate(
+            GlStateManager.SourceFactor.SRC_ALPHA,
+            GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+            GlStateManager.SourceFactor.ONE,
+            GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA
+        );
 
-        rt.setupRenderState();
+        if (status == CloudStatus.FANCY) {
+            RenderSystem.enableCull();
+        } else {
+            RenderSystem.disableCull();
+        }
+
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.depthMask(true);
+
+        if (Minecraft.useShaderTransparency()) {
+            Minecraft.getInstance().levelRenderer.getCloudsTarget().bindWrite(false);
+        }
         for (int layer : layerIndices) {
             LayerState currentLayer = this.layers[layer];
             TextureData tex = currentLayer.texture;
@@ -202,6 +225,13 @@ public class CustomCloudRenderer {
                 currentLayer.lastFadeRebuildMs = now;
             }
 
+            if (cloudColor != prevCloudColor && 
+                CloudsConfiguration.INSTANCE.IS_ENABLED &&
+                !CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS) {
+                currentLayer.needsRebuild = true;
+                prevCloudColor = cloudColor;
+            }
+
             if (currentLayer.needsRebuild ||
                 cellX != currentLayer.prevCellX || cellZ != currentLayer.prevCellZ ||
                 layerPos != currentLayer.prevPos || status != currentLayer.prevStatus) {
@@ -212,7 +242,7 @@ public class CustomCloudRenderer {
                 currentLayer.prevPos = layerPos;
                 currentLayer.prevStatus = status;
 
-                BufferBuilder.RenderedBuffer mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, rt, relY, layer);
+                BufferBuilder.RenderedBuffer mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, relY, layer, cloudColor);
                 if (mesh != null) {
                     currentLayer.buffer.bind();
                     currentLayer.buffer.upload(mesh);
@@ -228,19 +258,16 @@ public class CustomCloudRenderer {
 
             if (!currentLayer.bufferEmpty) {
                 float CUSTOM_BRIGHTNESS = CloudsConfiguration.INSTANCE.BRIGHTNESS;
-
+                
                 int appliedColor = 0;
                 
                 if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
                     appliedColor = cloudColor;
                 }
-                else if (CloudsConfiguration.INSTANCE.IS_ENABLED && CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR) {
-                    appliedColor = CloudsConfiguration.INSTANCE.CLOUD_COLORS[layer];
-                } 
-                else if (!CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR && CloudsConfiguration.INSTANCE.APPEARS_SHADED) {
+                else if (CloudsConfiguration.INSTANCE.APPEARS_SHADED) {
                     appliedColor = cloudColor;
                 }
-                else if (!CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR && CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS) {
+                else if (CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS) {
                     appliedColor = ARGB.colorFromFloat(1, 1, 1, 1);
                 }
                 else {
@@ -278,30 +305,38 @@ public class CustomCloudRenderer {
 
             poseStack.popPose();
         }
-        rt.clearRenderState();
+
+        if (Minecraft.useShaderTransparency()) {
+            Minecraft.getInstance().getMainRenderTarget().bindWrite(false);
+        }
+
+        RenderSystem.disableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableCull();
+        RenderSystem.depthMask(true);
     }
 
     private void drawBuffer(Matrix4f proj, Matrix4f mv, float ox, float oy, float oz, VertexBuffer buf) {
-        ShaderInstance shader = RenderSystem.getShader();
+        ShaderInstance shader = GameRenderer.getPositionColorShader();
         buf.drawWithShader(proj, mv, shader);
     }
 
     @Nullable
     private BufferBuilder.RenderedBuffer buildMeshForLayer(TextureData tex, Tesselator tess, int cx, int cz,
-                                       CloudStatus status, RelativeCameraPos pos, RenderType rt, float relY, int currentLayer) {
+                                       CloudStatus status, RelativeCameraPos pos, float relY, int currentLayer, int skyColor) {
         int top = ARGB.colorFromFloat(0.8F, 1, 1, 1);
         int bottom = ARGB.colorFromFloat(0.8F, 0.9F, 0.9F, 0.9F);
         int side = ARGB.colorFromFloat(0.8F, 0.7F, 0.7F, 0.7F);
         int inner = ARGB.colorFromFloat(0.8F, 0.8F, 0.8F, 0.8F);
 
         BufferBuilder bb = tess.getBuilder();
-        bb.begin(rt.mode(), rt.format());
-        buildMesh(tex, pos, bb, cx, cz, side, top, bottom, inner, status == CloudStatus.FANCY, relY, currentLayer);
+        bb.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        buildMesh(tex, pos, bb, cx, cz, side, top, bottom, inner, status == CloudStatus.FANCY, relY, currentLayer, skyColor);
         return bb.end();
     }
 
     private void buildMesh(TextureData tex, RelativeCameraPos pos, BufferBuilder bb,
-                           int cx, int cz, int bottom, int top, int side, int inner, boolean fancy, float relY, int currentLayer) {
+                           int cx, int cz, int bottom, int top, int side, int inner, boolean fancy, float relY, int currentLayer, int skyColor) {
         int range = 32;
         long[] cells = tex.cells();
         int w = tex.width();
@@ -320,29 +355,29 @@ public class CustomCloudRenderer {
                             ARGB.multiply(top, color),
                             ARGB.multiply(side, color),
                             ARGB.multiply(inner, color),
-                            dx, dz, cell, relY, currentLayer);
+                            dx, dz, cell, relY, currentLayer, skyColor);
                     } else {
-                        buildFlatCell(bb, ARGB.multiply(top, color), dx, dz, currentLayer);
+                        buildFlatCell(bb, ARGB.multiply(top, color), dx, dz, currentLayer, skyColor);
                     }
                 }
             }
         }
     }
 
-    private void buildFlatCell(BufferBuilder bb, int color, int cx, int cz, int currentLayer) {
+    private void buildFlatCell(BufferBuilder bb, int color, int cx, int cz, int currentLayer, int skyColor) {
         float x0 = cx * CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + CELL_SIZE_IN_BLOCKS;
         float z0 = cz * CELL_SIZE_IN_BLOCKS;
         float z1 = z0 + CELL_SIZE_IN_BLOCKS;
-        bb.vertex(x0, 0, z0).color(recolor(color, 0, currentLayer)).endVertex();
-        bb.vertex(x0, 0, z1).color(recolor(color, 0, currentLayer)).endVertex();
-        bb.vertex(x1, 0, z1).color(recolor(color, 0, currentLayer)).endVertex();
-        bb.vertex(x1, 0, z0).color(recolor(color, 0, currentLayer)).endVertex();
+        bb.vertex(x0, 0, z0).color(recolor(color, 0, currentLayer, skyColor)).endVertex();
+        bb.vertex(x0, 0, z1).color(recolor(color, 0, currentLayer, skyColor)).endVertex();
+        bb.vertex(x1, 0, z1).color(recolor(color, 0, currentLayer, skyColor)).endVertex();
+        bb.vertex(x1, 0, z0).color(recolor(color, 0, currentLayer, skyColor)).endVertex();
     }
 
     private void buildExtrudedCell(RelativeCameraPos pos, BufferBuilder bb,
                                    int bottomColor, int topColor, int sideColor, int innerColor,
-                                   int cx, int cz, long cell, float relY, int currentLayer) {
+                                   int cx, int cz, long cell, float relY, int currentLayer, int skyColor) {
         float x0 = cx * CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + CELL_SIZE_IN_BLOCKS;
         float y0 = 0.0F;
@@ -354,46 +389,55 @@ public class CustomCloudRenderer {
 
         // Top face
         if (pos != RelativeCameraPos.BELOW_CLOUDS) {
-            bb.vertex(x0, scaledY1, z0).color(recolor(topColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x0, scaledY1, z1).color(recolor(topColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x1, scaledY1, z1).color(recolor(topColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x1, scaledY1, z0).color(recolor(topColor, scaledY1, pos, relY, currentLayer)).endVertex();
+            int topCloudsColor = recolor(topColor, scaledY1, currentLayer, skyColor);
+            bb.vertex(x0, scaledY1, z0).color(topCloudsColor).endVertex();
+            bb.vertex(x0, scaledY1, z1).color(topCloudsColor).endVertex();
+            bb.vertex(x1, scaledY1, z1).color(topCloudsColor).endVertex();
+            bb.vertex(x1, scaledY1, z0).color(topCloudsColor).endVertex();
         }
         // Bottom face
         if (pos != RelativeCameraPos.ABOVE_CLOUDS) {
-            bb.vertex(x1, y0, z0).color(recolor(bottomColor, y0, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x1, y0, z1).color(recolor(bottomColor, y0, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x0, y0, z1).color(recolor(bottomColor, y0, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x0, y0, z0).color(recolor(bottomColor, y0, pos, relY, currentLayer)).endVertex();
+            int bottomCloudsColor = recolor(bottomColor, scaledY1, currentLayer, skyColor);
+            bb.vertex(x1, y0, z0).color(bottomCloudsColor).endVertex();
+            bb.vertex(x1, y0, z1).color(bottomCloudsColor).endVertex();
+            bb.vertex(x0, y0, z1).color(bottomCloudsColor).endVertex();
+            bb.vertex(x0, y0, z0).color(bottomCloudsColor).endVertex();
         }
         // Sides
+        int colorBottom = recolor(sideColor, y0, pos, relY, currentLayer, skyColor);
+        int colorTop = recolor(sideColor, scaledY1, pos, relY, currentLayer, skyColor);
+
+        // North
         if (isNorthEmpty(cell)) {
-            bb.vertex(x0, y0, z0).color(recolor(sideColor, y0, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x0, scaledY1, z0).color(recolor(sideColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x1, scaledY1, z0).color(recolor(sideColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x1, y0, z0).color(recolor(sideColor, y0, pos, relY, currentLayer)).endVertex();
+            bb.vertex(x0, y0, z0).color(colorBottom).endVertex();
+            bb.vertex(x0, scaledY1, z0).color(colorTop).endVertex();
+            bb.vertex(x1, scaledY1, z0).color(colorTop).endVertex();
+            bb.vertex(x1, y0, z0).color(colorBottom).endVertex();
         }
+        // South
         if (isSouthEmpty(cell)) {
-            bb.vertex(x1, y0, z1).color(recolor(sideColor, y0, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x1, scaledY1, z1).color(recolor(sideColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x0, scaledY1, z1).color(recolor(sideColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x0, y0, z1).color(recolor(sideColor, y0, pos, relY, currentLayer)).endVertex();
+            bb.vertex(x1, y0, z1).color(colorBottom).endVertex();
+            bb.vertex(x1, scaledY1, z1).color(colorTop).endVertex();
+            bb.vertex(x0, scaledY1, z1).color(colorTop).endVertex();
+            bb.vertex(x0, y0, z1).color(colorBottom).endVertex();
         }
+        // West
         if (isWestEmpty(cell)) {
-            bb.vertex(x0, y0, z1).color(recolor(sideColor, y0, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x0, scaledY1, z1).color(recolor(sideColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x0, scaledY1, z0).color(recolor(sideColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x0, y0, z0).color(recolor(sideColor, y0, pos, relY, currentLayer)).endVertex();
+            bb.vertex(x0, y0, z1).color(colorBottom).endVertex();
+            bb.vertex(x0, scaledY1, z1).color(colorTop).endVertex();
+            bb.vertex(x0, scaledY1, z0).color(colorTop).endVertex();
+            bb.vertex(x0, y0, z0).color(colorBottom).endVertex();
         }
+        // East
         if (isEastEmpty(cell)) {
-            bb.vertex(x1, y0, z0).color(recolor(sideColor, y0, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x1, scaledY1, z0).color(recolor(sideColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x1, scaledY1, z1).color(recolor(sideColor, scaledY1, pos, relY, currentLayer)).endVertex();
-            bb.vertex(x1, y0, z1).color(recolor(sideColor, y0, pos, relY, currentLayer)).endVertex();
+            bb.vertex(x1, y0, z0).color(colorBottom).endVertex();
+            bb.vertex(x1, scaledY1, z0).color(colorTop).endVertex();
+            bb.vertex(x1, scaledY1, z1).color(colorTop).endVertex();
+            bb.vertex(x1, y0, z1).color(colorBottom).endVertex();
         }
     }
 
-    private int recolor(int color, float vertexY, int currentLayer) {
+    private int recolor(int color, float vertexY, int currentLayer, int skyColor) {
         if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
             return color;
         }
@@ -414,16 +458,18 @@ public class CustomCloudRenderer {
             r = ARGB.redFloat(customColor);
             g = ARGB.greenFloat(customColor);
             b = ARGB.blueFloat(customColor);
-        } else if (useColor) {
+        } else if (shaded && useColor) {
             r *= ARGB.redFloat(customColor);
             g *= ARGB.greenFloat(customColor);
             b *= ARGB.blueFloat(customColor);
+        } else if (!shaded) {
+            r = g = b = 1.0f;
         }
 
         return ARGB.colorFromFloat(baseAlpha, r, g, b);
     }
 
-    private int recolor(int color, float vertexY, RelativeCameraPos pos, float relY, int currentLayer) {
+    private int recolor(int color, float vertexY, RelativeCameraPos pos, float relY, int currentLayer, int skyColor) {
         if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
             return color;
         }
@@ -440,12 +486,11 @@ public class CustomCloudRenderer {
         float g = ARGB.greenFloat(color);
         float b = ARGB.blueFloat(color);
 
-        // === Tint logic ===
         if (!shaded && useColor) {
             r = ARGB.redFloat(customColor);
             g = ARGB.greenFloat(customColor);
             b = ARGB.blueFloat(customColor);
-        } else if (useColor) {
+        } else if (shaded && useColor) {
             r *= ARGB.redFloat(customColor);
             g *= ARGB.greenFloat(customColor);
             b *= ARGB.blueFloat(customColor);
@@ -463,22 +508,18 @@ public class CustomCloudRenderer {
         // Normalize vertex Y position [0..1]
         float normalizedY = Mth.clamp(vertexY / cloudHeight, 0.0f, 1.0f);
 
-        // === Smooth direction logic ===
-        float transitionRange = CloudsConfiguration.INSTANCE.TRANSITION_RANGE; // e.g. 10.0f
+        float transitionRange = CloudsConfiguration.INSTANCE.TRANSITION_RANGE;
         float dir = Mth.clamp(relY / transitionRange, -1.0f, 1.0f);
 
-        // Fade if camera is well below (dir ≈ -1)
         float fadeBelow = Mth.lerp(normalizedY, 1.0f, fadeAlpha);
-        // Fade if camera is well above (dir ≈ +1)
         float fadeAbove = Mth.lerp(1.0f - normalizedY, 1.0f, fadeAlpha);
 
-        // Blend between below/above depending on dir
         float mix = (dir + 1.0f) / 2.0f; // [-1..1] → [0..1]
         float fade = Mth.lerp(mix, fadeBelow, fadeAbove);
 
         // Final alpha
         float finalAlpha = baseAlpha * (1.0f - fade);
-        // System.out.printf("Layer %d relY=%.2f dir=%.2f fade=%.2f alpha=%.2f%n", currentLayer, relY, dir, fade, finalAlpha);
+
         return ARGB.colorFromFloat(finalAlpha, r, g, b);
     }
 
