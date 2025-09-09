@@ -18,7 +18,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
 
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -151,6 +150,9 @@ public class CustomCloudRenderer extends CloudRenderer {
                 currentLayer.lastFadeRebuildMs = now;
             }
 
+            boolean isCloudFancy = status == CloudStatus.FANCY;
+            RenderType rt = isCloudFancy ? RenderType.clouds() : RenderType.flatClouds();
+
             if (currentLayer.needsRebuild ||
                 cellX != currentLayer.prevCellX || cellZ != currentLayer.prevCellZ ||
                 layerPos != currentLayer.prevPos || status != currentLayer.prevStatus) {
@@ -160,8 +162,7 @@ public class CustomCloudRenderer extends CloudRenderer {
                 currentLayer.prevCellZ = cellZ;
                 currentLayer.prevPos = layerPos;
                 currentLayer.prevStatus = status;
-
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.flatClouds();
+                
                 MeshData mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, rt, relY, layer);
                 if (mesh != null) {
                     currentLayer.buffer.bind();
@@ -184,8 +185,11 @@ public class CustomCloudRenderer extends CloudRenderer {
                 if (!CloudsConfiguration.INSTANCE.FOG_ENABLED)
                     RenderSystem.setShaderFog(new FogParameters(Float.MAX_VALUE, 0.0F, FogShape.SPHERE, 0.0F, 0.0F, 0.0F, 0.0F));
 
-                RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : RenderType.flatClouds();
                 currentLayer.buffer.bind();
+
+                if (isCloudFancy)
+                    drawWithRenderType(RenderType.cloudsDepthOnly(), proj, modelView, offX, layerY, offZ, currentLayer.buffer);
+
                 drawWithRenderType(rt, proj, modelView, offX, layerY, offZ, currentLayer.buffer);
                 
                 VertexBuffer.unbind();

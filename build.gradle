@@ -28,8 +28,6 @@ loom {
             sourceSet sourceSets.client
         }
     }
-
-    accessWidenerPath = file("src/main/resources/cloud_tweaks.accesswidener")
 }
 
 repositories {
