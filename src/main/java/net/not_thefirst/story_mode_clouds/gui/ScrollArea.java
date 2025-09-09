@@ -85,7 +85,7 @@ public class ScrollArea extends AbstractScrollWidget {
 
         // labels
         for (LabelEntry lbl : labels) {
-            Minecraft.getInstance().font.draw(poseStack, lbl.text, lbl.x, lbl.y, lbl.color);
+            GUIUtils.DrawTextShadowed(poseStack, lbl.text, lbl.x, lbl.y, lbl.color);
         }
 
         // children

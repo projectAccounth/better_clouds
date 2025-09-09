@@ -20,7 +20,6 @@ base {
 }
 
 loom {
-    accessWidenerPath = file("src/main/resources/cloud_tweaks.accesswidener")
 }
 
 minecraft {
@@ -28,7 +27,7 @@ minecraft {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:1.16.5"
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modApi "com.terraformersmc:modmenu:${project.modmenu_version}"

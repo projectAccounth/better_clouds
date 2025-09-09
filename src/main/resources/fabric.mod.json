@@ -8,7 +8,6 @@
   "license": "MIT",
   "icon": "assets/cloud_tweaks/icon.png",
   "environment": "client",
-  "accessWidener" : "cloud_tweaks.accesswidener",
   "entrypoints": {
     "client": [
       "net.not_thefirst.story_mode_clouds.StoryModeClouds"

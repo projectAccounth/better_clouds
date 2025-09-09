@@ -2,8 +2,11 @@ package net.not_thefirst.story_mode_clouds.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.util.FormattedCharSequence;
 
 import java.util.function.Consumer;
 
@@ -47,7 +50,7 @@ public class ToggleButton extends AbstractWidget {
                 this.value ? 0xFF228833 : 0xFF883333);
 
         // Draw centered ON/OFF text
-        drawCenteredString(poseStack, mc.font, this.getMessage(),
+        GUIUtils.DrawCenteredString(poseStack, mc.font, this.getMessage(),
                 this.x + this.width / 2, this.y + (this.height - 8) / 2, color);
     }
 }

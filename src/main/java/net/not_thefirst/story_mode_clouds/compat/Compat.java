@@ -8,7 +8,7 @@ public final class Compat {
     }
 
     public static boolean hasClothConfig() {
-        return FabricLoader.getInstance().isModLoaded("cloth-config");
+        return FabricLoader.getInstance().isModLoaded("cloth-config2");
     }
 
     public static boolean hasModMenu() {

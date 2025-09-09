@@ -11,7 +11,7 @@ public class ClothConfigScreen {
     public static Screen create(Screen parent) {
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
-                .setTitle(new TranslatableComponent("title.cloud_tweaks.clouds_config"));
+                .setTitle(new TranslatableComponent("cloud_tweaks.clouds_config"));
 
         ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
@@ -24,14 +24,6 @@ public class ClothConfigScreen {
                 .setDefaultValue(true)
                 .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.IS_ENABLED = v)
                 .build());
-
-        general.addEntry(entryBuilder
-                .startBooleanToggle(new TranslatableComponent("option.cloud_tweaks.clouds_rendered"),
-                        CloudsConfiguration.INSTANCE.CLOUDS_RENDERED)
-                .setDefaultValue(true)
-                .setSaveConsumer(v -> CloudsConfiguration.INSTANCE.CLOUDS_RENDERED = v)
-                .build());
-
 
         general.addEntry(entryBuilder
                 .startBooleanToggle(new TranslatableComponent("option.cloud_tweaks.clouds_rendered"),

@@ -5,6 +5,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.TranslatableComponent;
 import net.not_thefirst.story_mode_clouds.gui.ColorPreviewBox;
+import net.not_thefirst.story_mode_clouds.gui.GUIUtils;
 import net.not_thefirst.story_mode_clouds.gui.NumericInputField;
 import net.not_thefirst.story_mode_clouds.gui.ScrollArea;
 import net.not_thefirst.story_mode_clouds.gui.SimpleSliderButton;
@@ -121,7 +122,7 @@ public class SimpleConfigScreen extends Screen {
     @Override
     public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
         this.renderBackground(poseStack);
-        drawCenteredString(poseStack, this.font, this.title.getString(), this.width / 2, 20, 0xFFFFFF);
+        GUIUtils.DrawCenteredString(poseStack, this.font, this.title, this.width / 2, 20, 0xFFFFFFFF);
         super.render(poseStack, mouseX, mouseY, delta);
     }
 
