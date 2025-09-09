@@ -1,5 +1,5 @@
 {
-  "title.cloud_tweaks.clouds_config" : "Cloud Config",
+  "cloud_tweaks.clouds_config" : "Cloud Config",
 
   "option.cloud_tweaks.category.general": "General",
   "option.cloud_tweaks.category.appearance": "Appearance",
@@ -36,5 +36,7 @@
   "option.cloud_tweaks.layer_color.7": "Layer 7 Color",
   "option.cloud_tweaks.layer_color.8": "Layer 8 Color",
   "option.cloud_tweaks.layer_color.9": "Layer 9 Color",
-  "option.cloud_tweaks.layer_color.10": "Layer 10 Color"
+  "option.cloud_tweaks.layer_color.10": "Layer 10 Color",
+
+  "cloud_tweaks.done": "Done"
 }
