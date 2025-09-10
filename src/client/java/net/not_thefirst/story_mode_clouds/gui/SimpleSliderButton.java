@@ -83,6 +83,4 @@ public class SimpleSliderButton extends AbstractSliderButton {
         }
         return false;
     }
-
-    // ⛔ Do NOT override onClick/onDrag/onRelease or setValue(double) here.
 }

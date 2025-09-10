@@ -1,15 +1,20 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -17,7 +22,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 
 import org.jetbrains.annotations.Nullable;
@@ -160,9 +164,26 @@ public class CustomCloudRenderer {
             return Float.compare(Math.abs(by), Math.abs(ay));
         });
 
-        RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
+        RenderSystem.enableBlend();
+        RenderSystem.blendFuncSeparate(
+            GlStateManager.SourceFactor.SRC_ALPHA,
+            GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
+            GlStateManager.SourceFactor.ONE,
+            GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA
+        );
 
-        rt.setupRenderState();
+        if (status == CloudStatus.FANCY) {
+            RenderSystem.enableCull();
+        } else {
+            RenderSystem.disableCull();
+        }
+
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.depthMask(true);
+
+        if (Minecraft.useShaderTransparency()) {
+            Minecraft.getInstance().levelRenderer.getCloudsTarget().bindWrite(false);
+        }
         for (int layer : layerIndices) {
             LayerState currentLayer = this.layers[layer];
             TextureData tex = currentLayer.texture;
@@ -212,7 +233,7 @@ public class CustomCloudRenderer {
                 currentLayer.prevPos = layerPos;
                 currentLayer.prevStatus = status;
 
-                BufferBuilder.RenderedBuffer mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, rt, relY, layer);
+                BufferBuilder.RenderedBuffer mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, relY, layer);
                 if (mesh != null) {
                     currentLayer.buffer.bind();
                     currentLayer.buffer.upload(mesh);
@@ -278,7 +299,14 @@ public class CustomCloudRenderer {
 
             poseStack.popPose();
         }
-        rt.clearRenderState();
+        if (Minecraft.useShaderTransparency()) {
+            Minecraft.getInstance().getMainRenderTarget().bindWrite(false);
+        }
+
+        RenderSystem.disableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableCull();
+        RenderSystem.depthMask(true);
     }
 
     private void drawBuffer(Matrix4f proj, Matrix4f mv, float ox, float oy, float oz, VertexBuffer buf) {
@@ -288,14 +316,14 @@ public class CustomCloudRenderer {
 
     @Nullable
     private BufferBuilder.RenderedBuffer buildMeshForLayer(TextureData tex, Tesselator tess, int cx, int cz,
-                                       CloudStatus status, RelativeCameraPos pos, RenderType rt, float relY, int currentLayer) {
+                                       CloudStatus status, RelativeCameraPos pos, float relY, int currentLayer) {
         int top = ARGB.colorFromFloat(0.8F, 1, 1, 1);
         int bottom = ARGB.colorFromFloat(0.8F, 0.9F, 0.9F, 0.9F);
         int side = ARGB.colorFromFloat(0.8F, 0.7F, 0.7F, 0.7F);
         int inner = ARGB.colorFromFloat(0.8F, 0.8F, 0.8F, 0.8F);
 
         BufferBuilder bb = tess.getBuilder();
-        bb.begin(rt.mode(), rt.format());
+        bb.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         buildMesh(tex, pos, bb, cx, cz, side, top, bottom, inner, status == CloudStatus.FANCY, relY, currentLayer);
         return bb.end();
     }
