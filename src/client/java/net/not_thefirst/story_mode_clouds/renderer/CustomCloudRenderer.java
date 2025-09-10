@@ -44,7 +44,7 @@ public class CustomCloudRenderer {
 
     private int maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
 
-    protected static final ResourceLocation TEXTURE_LOCATION = ResourceLocation.fromNamespaceAndPath("cloud_tweaks", "textures/environment/clouds.png");
+    protected static final ResourceLocation TEXTURE_LOCATION = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/environment/clouds.png");
 
     @Nullable
     public Optional<TextureData> currentTexture = Optional.empty();
@@ -247,6 +247,11 @@ public class CustomCloudRenderer {
 
                 RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
                 currentLayer.buffer.bind();
+
+                if (status == CloudStatus.FANCY) {
+                    drawWithRenderType(ModRenderTypes.cloudsDepthOnly, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
+                }
+
                 drawWithRenderType(rt, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
                 
                 VertexBuffer.unbind();
