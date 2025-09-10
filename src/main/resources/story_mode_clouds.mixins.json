@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "net.not_thefirst.story_mode_clouds.mixin",
-  "refmap": "client-story_mode_clouds+1.21.6-refmap.json",
+  "refmap": "client-cloud_tweaks+1.21.6-refmap.json",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
   ],
