@@ -11,7 +11,7 @@ public class ClothConfigScreen {
     public static Screen create(Screen parent) {
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
-                .setTitle(Component.translatable("title.cloud_tweaks.clouds_config"));
+                .setTitle(Component.translatable("cloud_tweaks.clouds_config"));
 
         ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 

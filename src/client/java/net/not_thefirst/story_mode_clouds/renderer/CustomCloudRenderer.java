@@ -43,7 +43,7 @@ public class CustomCloudRenderer {
 
     private int maxLayerCount = CloudsConfiguration.MAX_LAYER_COUNT;
 
-    protected static final ResourceLocation TEXTURE_LOCATION = ResourceLocation.tryBuild("cloud_tweaks", "textures/environment/clouds.png");
+    protected static final ResourceLocation TEXTURE_LOCATION = ResourceLocation.tryBuild("minecraft", "textures/environment/clouds.png");
 
     @Nullable
     public Optional<TextureData> currentTexture = Optional.empty();
@@ -238,11 +238,11 @@ public class CustomCloudRenderer {
                 if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
                     appliedColor = cloudColor;
                 }
-                else if (CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR) {
-                    appliedColor = CloudsConfiguration.INSTANCE.CLOUD_COLORS[layer];
-                } 
-                else if (!CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR && CloudsConfiguration.INSTANCE.APPEARS_SHADED) {
+                else if (CloudsConfiguration.INSTANCE.APPEARS_SHADED) {
                     appliedColor = cloudColor;
+                }
+                else if (CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS) {
+                    appliedColor = ARGB.colorFromFloat(1, 1, 1, 1);
                 }
                 else {
                     appliedColor = cloudColor;
@@ -270,6 +270,11 @@ public class CustomCloudRenderer {
 
                 RenderType rt = status == CloudStatus.FANCY ? ModRenderTypes.customCloudsFancy : ModRenderTypes.customCloudsFast;
                 currentLayer.buffer.bind();
+
+                RenderSystem.colorMask(false, false, false, false);
+                drawWithRenderType(rt, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
+
+                RenderSystem.colorMask(true, true, true, true);
                 drawWithRenderType(rt, poseStack.last().pose(), modelView, offX, layerY, offZ, currentLayer.buffer);
                 
                 VertexBuffer.unbind();
