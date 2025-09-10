@@ -255,13 +255,10 @@ public class CustomCloudRenderer {
                 if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
                     appliedColor = cloudColor;
                 }
-                else if (CloudsConfiguration.INSTANCE.IS_ENABLED && CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR) {
-                    appliedColor = CloudsConfiguration.INSTANCE.CLOUD_COLORS[layer];
-                } 
-                else if (!CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR && CloudsConfiguration.INSTANCE.APPEARS_SHADED) {
+                else if (CloudsConfiguration.INSTANCE.APPEARS_SHADED) {
                     appliedColor = cloudColor;
                 }
-                else if (!CloudsConfiguration.INSTANCE.USES_CUSTOM_COLOR && CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS) {
+                else if (CloudsConfiguration.INSTANCE.CUSTOM_BRIGHTNESS) {
                     appliedColor = ARGB.colorFromFloat(1, 1, 1, 1);
                 }
                 else {
