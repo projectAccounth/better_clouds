@@ -71,7 +71,7 @@ public class ScrollArea extends AbstractScrollWidget {
     /* --- Rendering & input --- */
     @Override
     public void renderWidget(GuiGraphics gfx, int mouseX, int mouseY, float delta) {
-        gfx.enableScissor(getX(), getY(), getRight(), getBottom());
+        gfx.enableScissor(getX(), getY(), getX() + width, getY() + height);
 
         int offsetY = (int) scrollAmount();
 
