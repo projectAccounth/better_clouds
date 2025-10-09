@@ -14,10 +14,30 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.not_thefirst.story_mode_clouds.api.ClothConfigScreen;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
+import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.CloudMeshMode;
 
 public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_FILE = new File("config/cloud_configs.json");
+
+    public static class LayerConfiguration {
+        public boolean ENABLED        = true;
+        public int COLOR              = 0xFFFFFF;
+        public float HEIGHT_OFFSET    = 0.0f;
+        public float Y_SCALE          = 1.5f;
+        public float FADE_ALPHA       = 0.2f;
+        public float BRIGHTNESS       = 1.0f;
+        public float ALPHA            = 0.8f;
+        public float TRANSITION_RANGE = 10.0f;
+
+        public boolean APPEARS_SHADED        = false;
+        public boolean USES_CUSTOM_ALPHA     = true;
+        public boolean CUSTOM_BRIGHTNESS     = true;
+        public boolean USES_CUSTOM_COLOR     = false;
+        public boolean FADE_ENABLED          = true;
+        public boolean FOG_ENABLED           = true;
+
+    };
 
     public boolean IS_ENABLED            = true; // Customizations enabled
     public boolean CLOUDS_RENDERED       = true;
@@ -45,6 +65,7 @@ public class CloudsConfiguration {
     public boolean CLOUD_RANDOM_LAYERS   = true;
 
     public static int MAX_LAYER_COUNT = 10; // Constant for now
+    public CloudMeshMode MESH_MODE = CloudMeshMode.PUFFY;
 
     public static CloudsConfiguration INSTANCE = new CloudsConfiguration();
 

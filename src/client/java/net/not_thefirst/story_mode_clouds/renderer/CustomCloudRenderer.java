@@ -229,6 +229,8 @@ public class CustomCloudRenderer extends CloudRenderer {
         int w = tex.width();
         int h = tex.height();
 
+        boolean isCustom = CloudsConfiguration.INSTANCE.DEBUG_v0;
+
         for (int dz = -range; dz <= range; dz++) {
             for (int dx = -range; dx <= range; dx++) {
                 int x = Math.floorMod(cx + dx, w);
@@ -237,12 +239,15 @@ public class CustomCloudRenderer extends CloudRenderer {
                 if (cell != 0L) {
                     int color = getColor(cell);
                     if (fancy) {
-                        buildExtrudedCell(pos, bb,
+                        if (!isCustom) buildExtrudedCell(pos, bb,
                             ARGB.multiply(bottom, color),
                             ARGB.multiply(top, color),
                             ARGB.multiply(side, color),
                             ARGB.multiply(inner, color),
                             dx, dz, cell, relY, currentLayer);
+                        else buildExtrudedCellFancyScattered(pos, bb,
+                            ARGB.multiply(top, color),
+                            dx, dz, cell, cells, w, h, relY, currentLayer);
                     } else {
                         buildFlatCell(bb, ARGB.multiply(top, color), dx, dz, currentLayer);
                     }
@@ -276,44 +281,221 @@ public class CustomCloudRenderer extends CloudRenderer {
 
         // Top face
         if (pos != RelativeCameraPos.BELOW_CLOUDS) {
-            bb.addVertex(x0, scaledY1, z0).setColor(recolor(topColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z1).setColor(recolor(topColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z1).setColor(recolor(topColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z0).setColor(recolor(topColor, scaledY1, pos, relY, currentLayer));
+            int colorTop = recolor(topColor, scaledY1, pos, relY, currentLayer);
+            bb.addVertex(x0, scaledY1, z0).setColor(colorTop);
+            bb.addVertex(x0, scaledY1, z1).setColor(colorTop);
+            bb.addVertex(x1, scaledY1, z1).setColor(colorTop);
+            bb.addVertex(x1, scaledY1, z0).setColor(colorTop);
         }
         // Bottom face
         if (pos != RelativeCameraPos.ABOVE_CLOUDS) {
-            bb.addVertex(x1, y0, z0).setColor(recolor(bottomColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x1, y0, z1).setColor(recolor(bottomColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x0, y0, z1).setColor(recolor(bottomColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x0, y0, z0).setColor(recolor(bottomColor, y0, pos, relY, currentLayer));
+            int colorBottom = recolor(bottomColor, y0, pos, relY, currentLayer);
+            bb.addVertex(x1, y0, z0).setColor(colorBottom);
+            bb.addVertex(x1, y0, z1).setColor(colorBottom);
+            bb.addVertex(x0, y0, z1).setColor(colorBottom);
+            bb.addVertex(x0, y0, z0).setColor(colorBottom);
         }
+
+        int colorSideBottom = recolor(sideColor, y0, pos, relY, currentLayer);
+        int colorSideTop    = recolor(sideColor, scaledY1, pos, relY, currentLayer);
+
         // Sides
         if (isNorthEmpty(cell)) {
-            bb.addVertex(x0, y0, z0).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z0).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z0).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, y0, z0).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
+            bb.addVertex(x0, y0, z0).setColor(colorSideBottom);
+            bb.addVertex(x0, scaledY1, z0).setColor(colorSideTop);
+            bb.addVertex(x1, scaledY1, z0).setColor(colorSideTop);
+            bb.addVertex(x1, y0, z0).setColor(colorSideBottom);
         }
         if (isSouthEmpty(cell)) {
-            bb.addVertex(x1, y0, z1).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z1).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z1).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, y0, z1).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
+            bb.addVertex(x1, y0, z1).setColor(colorSideBottom);
+            bb.addVertex(x1, scaledY1, z1).setColor(colorSideTop);
+            bb.addVertex(x0, scaledY1, z1).setColor(colorSideTop);
+            bb.addVertex(x0, y0, z1).setColor(colorSideBottom);
         }
         if (isWestEmpty(cell)) {
-            bb.addVertex(x0, y0, z1).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z1).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, scaledY1, z0).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x0, y0, z0).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
+            bb.addVertex(x0, y0, z1).setColor(colorSideBottom);
+            bb.addVertex(x0, scaledY1, z1).setColor(colorSideTop);
+            bb.addVertex(x0, scaledY1, z0).setColor(colorSideTop);
+            bb.addVertex(x0, y0, z0).setColor(colorSideBottom);
         }
         if (isEastEmpty(cell)) {
-            bb.addVertex(x1, y0, z0).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z0).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, scaledY1, z1).setColor(recolor(sideColor, scaledY1, pos, relY, currentLayer));
-            bb.addVertex(x1, y0, z1).setColor(recolor(sideColor, y0, pos, relY, currentLayer));
+            bb.addVertex(x1, y0, z0).setColor(colorSideBottom);
+            bb.addVertex(x1, scaledY1, z0).setColor(colorSideTop);
+            bb.addVertex(x1, scaledY1, z1).setColor(colorSideTop);
+            bb.addVertex(x1, y0, z1).setColor(colorSideBottom);
         }
     }
+
+    // Full implementation of extruded cloud cells with scattered macro/micro cubes
+    private void buildExtrudedCellFancyScattered(RelativeCameraPos pos, BufferBuilder bb,
+                                                int color, int cx, int cz, long cell,
+                                                long[] cells, int w, int h,
+                                                float relY, int currentLayer) {
+        if (!CloudsConfiguration.INSTANCE.IS_ENABLED) return;
+
+        // Parent cell vertical bounds
+        final float parentY0 = 0.0f;
+        final float parentY1 = HEIGHT_IN_BLOCKS;
+        final float scaledParentY1 = parentY1 * (CloudsConfiguration.INSTANCE.IS_ENABLED
+                                                ? CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE
+                                                : 1.0f);
+
+        // Some tunables (feel free to tweak)
+        final int CLUSTER_MIN = 2;        // per-cell clusters
+        final int CLUSTER_MAX = 4;
+        final float SZ_MIN_FRAC = 0.45f;  // sub-cube XZ size = CELL * (SZ_MIN_FRAC .. SZ_MIN_FRAC+SZ_RANGE)
+        final float SZ_RANGE_FRAC = 0.35f;
+        final float Y_MIN_FRAC = 0.35f;   // sub-cube Y size fraction of vertical range
+        final float Y_RANGE_FRAC = 0.5f;
+        final float CENTER_PULL = 0.25f;  // neighbor pull into cell center
+        final float EDGE_SHRINK = 0.85f;  // shrink height when cell has many empty neighbors
+
+        // neighbor influence (same logic you've used)
+        float neighborX = 0f, neighborZ = 0f;
+        int neighborCount = 0;
+        if (!isNorthEmpty(cell)) { neighborZ -= 0.2f; neighborCount++; }
+        if (!isSouthEmpty(cell)) { neighborZ += 0.2f; neighborCount++; }
+        if (!isWestEmpty(cell))  { neighborX -= 0.2f; neighborCount++; }
+        if (!isEastEmpty(cell))  { neighborX += 0.2f; neighborCount++; }
+        if (neighborCount > 0) {
+            neighborX /= neighborCount;
+            neighborZ /= neighborCount;
+        }
+
+        // Determine number of clusters deterministically per cell
+        float selector = (deterministicOffset(cx, cz, 7777, 1.0f) + 1f) * 0.5f; // [0..1]
+        int clusterCount = CLUSTER_MIN + (int)(selector * (CLUSTER_MAX - CLUSTER_MIN + 1));
+        clusterCount = Math.max(CLUSTER_MIN, Math.min(CLUSTER_MAX, clusterCount));
+
+        float cellSize = CELL_SIZE_IN_BLOCKS;
+        float verticalRange = scaledParentY1 - parentY0;
+        float cellCenterX = cx * cellSize + cellSize * 0.5f;
+        float cellCenterZ = cz * cellSize + cellSize * 0.5f;
+
+        for (int ci = 0; ci < clusterCount; ci++) {
+            // deterministic-ish random in [0..1] per cluster
+            float rnd = (deterministicOffset(cx, cz, 8000 + ci, 1.0f) + 1f) * 0.5f;
+
+            // sub-cube dimensions
+            float sizeXZ = cellSize * (SZ_MIN_FRAC + rnd * SZ_RANGE_FRAC);            // ~0.45..0.8 * cell
+            float sizeY  = verticalRange * (Y_MIN_FRAC + rnd * Y_RANGE_FRAC);        // fraction of parent vertical span
+
+            // horizontal offset range inside parent cell so cube stays inside bounds
+            float maxOffsetXZ = Math.max(0f, (cellSize - sizeXZ) * 0.5f);
+            float offsetX = deterministicOffset(cx, cz, 9000 + ci, maxOffsetXZ) + neighborX * cellSize * CENTER_PULL;
+            float offsetZ = deterministicOffset(cz, cx, 9100 + ci, maxOffsetXZ) + neighborZ * cellSize * CENTER_PULL;
+
+            float centerX = cellCenterX + offsetX;
+            float centerZ = cellCenterZ + offsetZ;
+
+            // vertical placement — **only upwards** from parentY0, clamp inside parent vertical band
+            float minCenterY = parentY0 + sizeY * 0.5f;
+            float maxCenterY = scaledParentY1 - sizeY * 0.5f;
+            float vOffsetRange = Math.max(0f, (maxCenterY - minCenterY) * 0.5f);
+            float vDet = deterministicOffset(cx + cz, 9200 + ci, 1, vOffsetRange);
+            float centerY = minCenterY + (rnd * 0.9f) * (maxCenterY - minCenterY) + vDet;
+            centerY = Math.max(minCenterY, Math.min(maxCenterY, centerY));
+
+            // extents
+            float x0 = centerX - sizeXZ * 0.5f;
+            float x1 = centerX + sizeXZ * 0.5f;
+            float z0 = centerZ - sizeXZ * 0.5f;
+            float z1 = centerZ + sizeXZ * 0.5f;
+            float y0 = centerY - sizeY * 0.5f;
+            float y1 = centerY + sizeY * 0.5f;
+
+            // clamp vertically to strict parent band (safety)
+            if (y0 < parentY0) y0 = parentY0;
+            if (y1 > scaledParentY1) y1 = scaledParentY1;
+
+            // optionally shrink heights for exposed cells (soft taper at edges)
+            int emptySides = 0;
+            if (isNorthEmpty(cell)) emptySides++;
+            if (isSouthEmpty(cell)) emptySides++;
+            if (isWestEmpty(cell))  emptySides++;
+            if (isEastEmpty(cell))  emptySides++;
+
+            if (emptySides >= 2) {
+                float h0 = y1 - y0;
+                float newH = Math.max(0.001f, h0 * EDGE_SHRINK);
+                y1 = y0 + newH;
+            }
+
+            // color per-subcube (vary alpha a bit with rnd)
+            float alphaScale = 0.32f + rnd * 0.28f; // ~0.32..0.6
+            int subColor = scaleAlpha(color, alphaScale);
+
+            // Top face
+            if (pos != RelativeCameraPos.BELOW_CLOUDS) {
+                int cTop = recolor(subColor, y1, pos, relY, currentLayer);
+                bb.addVertex(x0, y1, z0).setColor(cTop);
+                bb.addVertex(x0, y1, z1).setColor(cTop);
+                bb.addVertex(x1, y1, z1).setColor(cTop);
+                bb.addVertex(x1, y1, z0).setColor(cTop);
+            }
+
+            // Bottom face
+            if (pos != RelativeCameraPos.ABOVE_CLOUDS) {
+                int cBot = recolor(subColor, y0, pos, relY, currentLayer);
+                bb.addVertex(x1, y0, z0).setColor(cBot);
+                bb.addVertex(x1, y0, z1).setColor(cBot);
+                bb.addVertex(x0, y0, z1).setColor(cBot);
+                bb.addVertex(x0, y0, z0).setColor(cBot);
+            }
+
+            // Side colors
+            int cSideBottom = recolor(subColor, y0, pos, relY, currentLayer);
+            int cSideTop    = recolor(subColor, y1, pos, relY, currentLayer);
+
+            // Render full sides for these chunky sub-cubes (keeps them visible when overlapping neighbors)
+            // North
+            bb.addVertex(x0, y0, z0).setColor(cSideBottom);
+            bb.addVertex(x0, y1, z0).setColor(cSideTop);
+            bb.addVertex(x1, y1, z0).setColor(cSideTop);
+            bb.addVertex(x1, y0, z0).setColor(cSideBottom);
+
+            // South
+            bb.addVertex(x1, y0, z1).setColor(cSideBottom);
+            bb.addVertex(x1, y1, z1).setColor(cSideTop);
+            bb.addVertex(x0, y1, z1).setColor(cSideTop);
+            bb.addVertex(x0, y0, z1).setColor(cSideBottom);
+
+            // West
+            bb.addVertex(x0, y0, z1).setColor(cSideBottom);
+            bb.addVertex(x0, y1, z1).setColor(cSideTop);
+            bb.addVertex(x0, y1, z0).setColor(cSideTop);
+            bb.addVertex(x0, y0, z0).setColor(cSideBottom);
+
+            // East
+            bb.addVertex(x1, y0, z0).setColor(cSideBottom);
+            bb.addVertex(x1, y1, z0).setColor(cSideTop);
+            bb.addVertex(x1, y1, z1).setColor(cSideTop);
+            bb.addVertex(x1, y0, z1).setColor(cSideBottom);
+        }
+    }
+
+    // === Helpers ===
+
+    // Deterministic offset: stable per (x,z,seed), avoids RNG desync
+    private float deterministicOffset(int x, int z, int seed, float scale) {
+        long h = (long)x * 73428767L ^ (long)z * 91293199L ^ (long)seed * 1234567L;
+        h = (h ^ (h >> 13)) * 1274126177L;
+
+        float v = ((h & 0x7FFFFFFFL) / (float) Integer.MAX_VALUE); // [0..1]
+        return (v * 2f - 1f) * scale; // [-scale..scale]
+    }
+
+    // Scale only alpha
+    private int scaleAlpha(int color, float alphaScale) {
+        int a = (color >>> 24) & 0xFF;
+        int r = (color >>> 16) & 0xFF;
+        int g = (color >>> 8) & 0xFF;
+        int b = color & 0xFF;
+
+        a = Math.min(255, Math.max(0, (int) (a * alphaScale)));
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
 
     private int recolor(int color, float vertexY, int currentLayer) {
         if (!CloudsConfiguration.INSTANCE.IS_ENABLED) {
@@ -379,26 +561,18 @@ public class CustomCloudRenderer extends CloudRenderer {
             return ARGB.colorFromFloat(baseAlpha, r, g, b);
         }
 
-        // Cloud vertical thickness
         float cloudHeight = HEIGHT_IN_BLOCKS * CloudsConfiguration.INSTANCE.CLOUD_Y_SCALE;
-
-        // Normalize vertex Y position [0..1]
         float normalizedY = Mth.clamp(vertexY / cloudHeight, 0.0f, 1.0f);
 
-        // === Smooth direction logic ===
-        float transitionRange = CloudsConfiguration.INSTANCE.TRANSITION_RANGE; // e.g. 10.0f
+        float transitionRange = CloudsConfiguration.INSTANCE.TRANSITION_RANGE;
         float dir = Mth.clamp(relY / transitionRange, -1.0f, 1.0f);
 
-        // Fade if camera is well below (dir ≈ -1)
         float fadeBelow = Mth.lerp(normalizedY, 1.0f, fadeAlpha);
-        // Fade if camera is well above (dir ≈ +1)
         float fadeAbove = Mth.lerp(1.0f - normalizedY, 1.0f, fadeAlpha);
 
-        // Blend between below/above depending on dir
-        float mix = (dir + 1.0f) / 2.0f; // [-1..1] → [0..1]
+        float mix = (dir + 1.0f) / 2.0f;
         float fade = Mth.lerp(mix, fadeBelow, fadeAbove);
 
-        // Final alpha
         float finalAlpha = baseAlpha * (1.0f - fade);
         return ARGB.colorFromFloat(finalAlpha, r, g, b);
     }
@@ -444,5 +618,10 @@ public class CustomCloudRenderer extends CloudRenderer {
 
     public enum RelativeCameraPos {
         ABOVE_CLOUDS, INSIDE_CLOUDS, BELOW_CLOUDS
+    }
+
+    public enum CloudMeshMode {
+        CLASSIC,   // current cuboid clouds
+        PUFFY      // new detailed style
     }
 }
