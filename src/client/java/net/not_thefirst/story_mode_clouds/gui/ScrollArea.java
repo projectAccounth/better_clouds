@@ -1,6 +1,9 @@
 package net.not_thefirst.story_mode_clouds.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractScrollArea;
@@ -91,29 +94,29 @@ public class ScrollArea extends AbstractScrollArea {
         gfx.pose().popMatrix();
         gfx.disableScissor();
 
-        renderScrollbar(gfx);
+        renderScrollbar(gfx, mouseX, mouseY);
     }
 
     @Override
-    public boolean mouseClicked(double mx, double my, int btn) {
-        double localY = toLocalY(my);
+    public boolean mouseClicked(MouseButtonEvent event, boolean bool) {
+        double localY = toLocalY(event.y());
         for (AbstractWidget w : children) {
-            if (w.mouseClicked(mx, localY, btn)) {
+            if (w.mouseClicked(new MouseButtonEvent(event.x(), localY, event.buttonInfo()), bool)) {
                 if (focusedChild != null) focusedChild.setFocused(false);
                 focusedChild = w;
                 focusedChild.setFocused(true);
                 return true;
             }
         }
-        return super.mouseClicked(mx, my, btn);
+        return super.mouseClicked(event, bool);
     }
 
     @Override
-    public boolean mouseReleased(double mx, double my, int btn) {
-        double localY = toLocalY(my);
+    public boolean mouseReleased(MouseButtonEvent event) {
+        double localY = toLocalY(event.y());
         boolean consumed = false;
         for (AbstractWidget w : children) {
-            if (w.mouseReleased(mx, localY, btn)) consumed = true;
+            if (w.mouseReleased(new MouseButtonEvent(event.x(), localY, event.buttonInfo()))) consumed = true;
         }
 
         if (focusedChild != null && !(focusedChild instanceof NumericInputField)) {
@@ -121,26 +124,26 @@ public class ScrollArea extends AbstractScrollArea {
             focusedChild = null;
         }
 
-        return consumed || super.mouseReleased(mx, my, btn);
+        return consumed || super.mouseReleased(event);
     }
 
     @Override
-    public boolean mouseDragged(double mx, double my, int btn, double dx, double dy) {
-        double localY = toLocalY(my);
+    public boolean mouseDragged(MouseButtonEvent mouse, double dx, double dy) {
+        double localY = toLocalY(mouse.y());
         boolean consumed = false;
         for (AbstractWidget w : children) {
-            if (w.mouseDragged(mx, localY, btn, dx, dy)) consumed = true;
+            if (w.mouseDragged(new MouseButtonEvent(mouse.x(), localY, mouse.buttonInfo()), dx, dy)) consumed = true;
         }
-        return consumed || super.mouseDragged(mx, my, btn, dx, dy);
+        return consumed || super.mouseDragged(mouse, dx, dy);
     }
 
     @Override
-    public boolean keyPressed(int key, int scancode, int mods) {
+    public boolean keyPressed(KeyEvent event) {
         if (focusedChild != null) {
-            boolean consumed = focusedChild.keyPressed(key, scancode, mods);
+            boolean consumed = focusedChild.keyPressed(event);
 
             // check Enter
-            if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+            if (event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) {
                 if (focusedChild instanceof NumericInputField numeric) {
                     numeric.commit();               // snap to valid number
                 }
@@ -151,13 +154,13 @@ public class ScrollArea extends AbstractScrollArea {
 
             return consumed;
         }
-        return super.keyPressed(key, scancode, mods);
+        return super.keyPressed(event);
     }
 
     @Override
-    public boolean charTyped(char chr, int mods) {
-        if (focusedChild != null && focusedChild.charTyped(chr, mods)) return true;
-        return super.charTyped(chr, mods);
+    public boolean charTyped(CharacterEvent event) {
+        if (focusedChild != null && focusedChild.charTyped(event)) return true;
+        return super.charTyped(event);
     }
 
 

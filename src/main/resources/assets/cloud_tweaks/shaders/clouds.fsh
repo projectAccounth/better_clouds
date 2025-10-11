@@ -1,4 +1,4 @@
-#version 150
+#version 300
 #moj_import <minecraft:fog.glsl>
 
 in float vVertexDistance;

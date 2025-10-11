@@ -1,6 +1,7 @@
 package net.not_thefirst.story_mode_clouds.gui;
 
 import net.minecraft.client.gui.components.AbstractSliderButton;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -73,9 +74,9 @@ public class SimpleSliderButton extends AbstractSliderButton {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(MouseButtonEvent mouse, double dx, double dy) {
         if (this.active && this.isHoveredOrFocused()) {
-            double sliderPos = (mouseX - (this.getX() + 4)) / (this.width - 8);
+            double sliderPos = (mouse.x() - (this.getX() + 4)) / (this.width - 8);
             this.value = Mth.clamp(sliderPos, 0.0D, 1.0D);
             applyValue();
             updateMessage();

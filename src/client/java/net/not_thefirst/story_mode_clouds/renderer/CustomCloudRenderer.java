@@ -356,7 +356,7 @@ public class CustomCloudRenderer extends CloudRenderer {
             pass.setUniform("CloudInfo", layer.ubo.currentBuffer());
             pass.setUniform("CloudFaces", layer.utb.currentBuffer()); // per-layer
             pass.setIndexBuffer(gpuBuffer, indices.type());
-            pass.setVertexBuffer(0, RenderSystem.getQuadVertexBuffer());
+            pass.setVertexBuffer(0, RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS).getBuffer(quadCount));
             pass.setPipeline(pipeline);
             pass.drawIndexed(0, 0, 6 * quadCount, 1);
         }

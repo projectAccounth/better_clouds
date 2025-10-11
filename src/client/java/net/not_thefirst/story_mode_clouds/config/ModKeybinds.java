@@ -6,11 +6,11 @@ import net.minecraft.client.KeyMapping;
 import net.not_thefirst.story_mode_clouds.api.keybindings.KeyMappingHelper;
 
 public class ModKeybinds {
-    public static KeyMapping addKeybind(String id, int key, String category) {
+    public static KeyMapping addKeybind(String id, int key, KeyMapping.Category category) {
         return KeyMappingHelper.registerKeyBinding(new KeyMapping(id, key, category));
     }
 
-    public static KeyMapping OPEN_CONFIG_KEYBIND = addKeybind("key.bind", InputConstants.KEY_O, "key.categories.ui");
+    public static KeyMapping OPEN_CONFIG_KEYBIND = new KeyMapping("key.bind", InputConstants.KEY_O, KeyMapping.Category.MISC);
 
     public static void initialize() {
 

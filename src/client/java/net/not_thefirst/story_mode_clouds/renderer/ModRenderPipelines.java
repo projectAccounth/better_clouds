@@ -24,28 +24,20 @@ public class ModRenderPipelines {
 	private static final RenderPipeline.Snippet MATRICES_FOG_SNIPPET = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET, FOG_SNIPPET).buildSnippet();
 
     public static void registerCloudPipelines() {
-        // shader paths (resource path: assets/<modid>/shaders/...)
         ResourceLocation vs = ResourceLocation.fromNamespaceAndPath(StoryModeClouds.MOD_ID, "clouds");
         ResourceLocation fs = ResourceLocation.fromNamespaceAndPath(StoryModeClouds.MOD_ID, "clouds");
         ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(StoryModeClouds.MOD_ID, "pipeline/clouds");
         
-        // Create shader program / pipeline description
-        // NOTE: exact builder API may vary — adapt to your runtime mappings if needed.
-        // The idea: compile/attach vertex+fragment into a pipeline object that accepts
-        // the UBO "CloudInfo" and the isamplerBuffer "CloudFaces".
         RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_FOG_SNIPPET)
                 .withVertexShader(vs)
                 .withFragmentShader(fs)
                 .withLocation(loc)
-                // ensure vertex format matches the quad vertex buffer (no extra attributes)
                 .withVertexFormat(DefaultVertexFormat.EMPTY, VertexFormat.Mode.QUADS)
-                // set blend/depth states similar to vanilla clouds:
                 .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
                 .withDepthWrite(true)
                 .withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
 		        .withUniform("CloudFaces", UniformType.TEXEL_BUFFER, TextureFormat.RED8I)
                 .withBlend(BlendFunction.TRANSLUCENT)
-                // set other state as needed (cull face, polygon offset, etc.)
                 ;
 
         CLOUDS_CUSTOM_PIPELINE = builder.build();

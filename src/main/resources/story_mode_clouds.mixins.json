@@ -8,8 +8,6 @@
   ],
   "client": [
     "LevelRendererMixin",
-    "KeyMappingAccessor",
-    "OptionsMixin",
     "ClientMixin"
   ],
   "injectors": {

@@ -7,6 +7,8 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.feature.FeatureRenderDispatcher;
+import net.minecraft.client.renderer.state.LevelRenderState;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -21,6 +23,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.mojang.blaze3d.framegraph.FrameGraphBuilder;
+
 @Mixin(value = LevelRenderer.class, priority = 16384)
 public abstract class LevelRendererMixin {
 
@@ -28,11 +32,12 @@ public abstract class LevelRendererMixin {
     private CloudRenderer cloudRenderer;
 
     @Inject(method = "<init>", at = @At("TAIL"))
-    private void initCloudRenderer(
-        Minecraft minecraft,
-        EntityRenderDispatcher entityRenderDispatcher,
-        BlockEntityRenderDispatcher blockEntityRenderDispatcher,
-        RenderBuffers renderBuffers,
+    private void initCloudRenderer(Minecraft minecraft,
+		EntityRenderDispatcher entityRenderDispatcher,
+		BlockEntityRenderDispatcher blockEntityRenderDispatcher,
+		RenderBuffers renderBuffers,
+		LevelRenderState levelRenderState,
+		FeatureRenderDispatcher featureRenderDispatcher,
         CallbackInfo ci
     ) {
         this.cloudRenderer = new CustomCloudRenderer();

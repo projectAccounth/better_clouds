@@ -4,19 +4,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import java.util.HashMap;
 
 import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.not_thefirst.story_mode_clouds.mixin.KeyMappingAccessor;
 
 public final class KeyMappingHelper {
 
     private static final List<KeyMapping> KEY_MAPPINGS = new ReferenceArrayList<>();
 
-    private static Map<String, Integer> getCategoryMap() {
-        return KeyMappingAccessor.GetCategoryMap();
+    private static Map<KeyMapping.Category, Integer> getCategoryMap() {
+        return new HashMap<KeyMapping.Category, Integer>();
     }
+
+    public static boolean shouldIgnore = true;
 
     /**
      * Adds a new category to the category map if it does not already exist.
@@ -24,9 +26,9 @@ public final class KeyMappingHelper {
      * @param categoryTranslationKey The key for the category.
      * @return true if the category exists (either after creating or found in the map), false otherwise.
      */
-    public static boolean addCategory(String categoryTranslationKey) {
+    public static boolean addCategory(KeyMapping.Category category) {
         return getCategoryMap().computeIfAbsent(
-            categoryTranslationKey, 
+            category, 
             // compute the category key if not in the map
             key -> getCategoryMap()
                     .values() // get all existing category IDs
@@ -44,6 +46,7 @@ public final class KeyMappingHelper {
      * @return The exact KeyMapping passed in.
      */
     public static KeyMapping registerKeyBinding(KeyMapping binding) {
+        if (KeyMappingHelper.shouldIgnore) return binding;
         if (Minecraft.getInstance().options != null) {
             throw new IllegalStateException("Key mappings cannot be registered in run-time!");
         }
