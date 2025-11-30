@@ -11,6 +11,7 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
+import net.not_thefirst.story_mode_clouds.utils.Texture;
 
 import java.util.Optional;
 
@@ -53,7 +54,7 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
         if (client.level == null) return;
 
         if (this.cloudRenderer != null && !this.cloudRenderer.currentTexture.isPresent()) {
-            Optional<CustomCloudRenderer.TextureData> texture = this.cloudRenderer.prepare(client.getResourceManager(), client.getProfiler());
+            Optional<Texture.TextureData> texture = this.cloudRenderer.prepare(client.getResourceManager(), client.getProfiler());
             this.cloudRenderer.apply(texture, client.getResourceManager(), client.getProfiler());
         }
 
