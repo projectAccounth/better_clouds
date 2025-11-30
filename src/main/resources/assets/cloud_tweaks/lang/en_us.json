@@ -1,5 +1,5 @@
 {
-  "cloud_tweaks.clouds_config" : "Cloud Config (Consider using Cloth Config for now)",
+  "cloud_tweaks.cloud_config" : "Cloud Config (Deprecated, consider using Cloth Config for now)",
 
   "option.cloud_tweaks.category.general": "General",
   "option.cloud_tweaks.category.appearance": "Appearance",
@@ -39,7 +39,7 @@
   "option.cloud_tweaks.layer_color.10": "Layer 10 Color",
 
   "cloud_tweaks.done": "Done",
-
+  "text.autoconfig.cloud_tweaks.option.title": "Cloud Configuration",
   "text.autoconfig.cloud_tweaks.option.layers": "Layer Settings",
   "text.autoconfig.cloud_tweaks.option.layers.layers": "Layers",
   "text.autoconfig.cloud_tweaks.option.LayerConfiguration": "Layer",
