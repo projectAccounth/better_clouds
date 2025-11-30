@@ -65,6 +65,6 @@ body:
       label: Checklist
       options:
         - label: I am using the latest version of the mod.
-          required: true
+          required: false
         - label: I have checked that this issue isn’t already reported.
           required: true
