@@ -65,8 +65,7 @@ public final class ARGB {
         int b = (int)(blue(color)  * scalar);
         return color(a, r, g, b);
     }
-
-    // === Helpers ===
+    
     private static float clamp01(float v) {
         return v < 0f ? 0f : (v > 1f ? 1f : v);
     }
