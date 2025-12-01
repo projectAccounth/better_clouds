@@ -1,5 +1,5 @@
 {
-  "cloud_tweaks.clouds_config" : "Cloud Config",
+  "cloud_tweaks.cloud_config" : "Cloud Config (Deprecated, consider using Cloth Config for now)",
 
   "option.cloud_tweaks.category.general": "General",
   "option.cloud_tweaks.category.appearance": "Appearance",
@@ -38,5 +38,31 @@
   "option.cloud_tweaks.layer_color.9": "Layer 9 Color",
   "option.cloud_tweaks.layer_color.10": "Layer 10 Color",
 
-  "cloud_tweaks.done": "Done"
+  "cloud_tweaks.done": "Done",
+  "text.autoconfig.cloud_tweaks.option.title": "Cloud Configuration",
+  "text.autoconfig.cloud_tweaks.option.layers": "Layer Settings",
+  "text.autoconfig.cloud_tweaks.option.layers.layers": "Layers",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration": "Layer",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.NAME": "Layer Name",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.APPEARS_SHADED": "Appears Shaded",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.USES_CUSTOM_ALPHA": "Uses Custom Alpha",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.CUSTOM_BRIGHTNESS": "Custom Brightness",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.USES_CUSTOM_COLOR": "Uses Custom Color",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.FADE_ENABLED": "Enable Fading",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.FOG_ENABLED": "Enable Fog",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.IS_ENABLED": "Layer Enabled",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.LAYER_RENDERED": "Layer Rendered",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.FADE_ALPHA": "Fade Alpha",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.LAYER_HEIGHT": "Layer Height",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.CLOUD_Y_SCALE": "Cloud Y Scale",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.BRIGHTNESS": "Brightness",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.BASE_ALPHA": "Base Alpha",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.TRANSITION_RANGE": "Transition Range",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.LAYER_OFFSET_X": "Layer Offset X",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.LAYER_OFFSET_Z": "Layer Offset Z",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.LAYER_COLOR": "Layer Color",
+  "text.autoconfig.cloud_tweaks.option.LayerConfiguration.MODE": "Cloud Rendering Mode",
+
+  "text.autoconfig.cloud_tweaks.option.global": "Global Settings",
+  "text.autoconfig.cloud_tweaks.option.global.CLOUDS_RENDERED": "Clouds Rendered (Global)"
 }
