@@ -85,7 +85,7 @@ public abstract class LevelRendererMixin {
             this.cloudRenderer = new CustomCloudRenderer();
         }
 
-        if (!CloudsConfiguration.get().CLOUDS_RENDERED) return;
+        if (!CloudsConfiguration.INSTANCE.CLOUDS_RENDERED) return;
 
         this.cloudRenderer.render(cloudColor, status, cloudHeight, vec3, partialTicks);
     }

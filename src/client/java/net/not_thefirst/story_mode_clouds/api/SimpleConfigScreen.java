@@ -56,7 +56,7 @@ public class SimpleConfigScreen extends Screen {
             int labelWidth = rowWidth - buttonWidth - 6;
 
             // Label on left
-            area.addLabel(Component.translatable(label), rowX, rowY + 6, 0xFFFFFFFF);
+            area.addLabel(Component.translatable(label), rowX, rowY + 6, 0xFFFFFF);
 
             // Toggle on right
             CycleButton<Boolean> button = CycleButton.onOffBuilder(initial)
@@ -77,7 +77,7 @@ public class SimpleConfigScreen extends Screen {
             int sliderWidth = rowWidth - labelWidth - boxWidth - 2 * gap;
 
             // Label
-            area.addLabel(Component.translatable(label), rowX, rowY + 6, 0xFFFFFFFF);
+            area.addLabel(Component.translatable(label), rowX, rowY + 6, 0xFFFFFF);
 
             // Slider
             SimpleSliderButton slider = new SimpleSliderButton(
@@ -110,7 +110,7 @@ public class SimpleConfigScreen extends Screen {
             int sliderWidth = rowWidth - labelWidth - 6;
 
             // Label
-            area.addLabel(Component.translatable(label), rowX, rowY + 6, 0xFFFFFFFF);
+            area.addLabel(Component.translatable(label), rowX, rowY + 6, 0xFFFFFF);
 
             // Slider
             area.addWidget(new SimpleSliderButton(
@@ -127,7 +127,7 @@ public class SimpleConfigScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        // this.renderWithTooltip(graphics, mouseX, mouseY, delta);
+        this.renderBackground(graphics, mouseX, mouseY, delta);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xFFFFFF);
         super.render(graphics, mouseX, mouseY, delta);
     }
@@ -145,7 +145,7 @@ public class SimpleConfigScreen extends Screen {
                 default -> labelX = rowX;
             }
 
-            area.addLabel(Component.translatable(text), labelX, rowY + yOffset, 0xFFFFFFFF);
+            area.addLabel(Component.translatable(text), labelX, rowY + yOffset, 0xFFFFFF);
         });
     }
 
