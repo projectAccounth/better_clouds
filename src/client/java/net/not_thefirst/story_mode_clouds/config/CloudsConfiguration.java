@@ -4,53 +4,173 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.annotation.ConfigEntry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.not_thefirst.story_mode_clouds.api.ClothConfigScreen;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
+import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
 
 public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File CONFIG_FILE = new File("config/cloud_configs.json");
 
-    public boolean IS_ENABLED            = true; // Customizations enabled
-    public boolean CLOUDS_RENDERED       = true;
-
-    public boolean APPEARS_SHADED        = false; // Whether clouds should appear shaded (darker) when the sun is behind them
-    public boolean USES_CUSTOM_ALPHA     = true; // Whether clouds should use custom alpha values
-    public boolean CUSTOM_BRIGHTNESS     = true; // Whether clouds should be rendered with custom brightness brightness (even at night)
-    public boolean USES_CUSTOM_COLOR     = false; // Uses custom color for clouds
-    public boolean DEBUG_v0              = true;
-    public boolean RANDOMIZED_Y          = true;
-    public boolean FADE_ENABLED          = true;
-    public boolean FOG_ENABLED           = true;
-
-    public float   FADE_ALPHA            = 0.2f; // The maximum fade alpha.
-    public float   CLOUD_Y_SCALE         = 1.5f; // Scale factor for cloud height
-    public float   BRIGHTNESS            = 1.0f; // Base brightness color for clouds
-    public float   BASE_ALPHA            = 0.8f; // Base transparency of clouds
-    public float   TRANSITION_RANGE      = 10.0f;
-
-    public int     CLOUD_COLOR           = 0xFFFFFF; // Color of the clouds in RGB format (default white)
-    public int[]   CLOUD_COLORS          = new int[MAX_LAYER_COUNT];
-
-    public int     CLOUD_LAYERS          = 1;      // Layers
-    public float   CLOUD_LAYERS_SPACING  = 14.0f;  // Vertical spacing
-    public boolean CLOUD_RANDOM_LAYERS   = true;
-
-    public static int MAX_LAYER_COUNT = 10; // Constant for now
+    public boolean CLOUDS_RENDERED = true;
 
     public static CloudsConfiguration INSTANCE = new CloudsConfiguration();
 
-    CloudsConfiguration() {
-        Arrays.fill(CLOUD_COLORS, 0xFFFFFF);
+    private LayerHolder LAYERS = new LayerHolder();
+
+    public LayerHolder getHolder() { return LAYERS; }
+
+    public LayerConfiguration getLayer(int idx) {
+        if (LAYERS == null || idx < 0 || idx >= LAYERS.layers.size()) {
+            throw new IndexOutOfBoundsException("Layer index out of bounds: " + idx);
+        }
+        return LAYERS.layers.get(idx);
+    }
+ 
+     public int getLayerCount() {
+         return LAYERS == null ? 0 : LAYERS.layers.size();
+     }
+
+    public void applyFromCloth(ClothConfigClass config) {
+        if (config == null) return;
+
+        this.CLOUDS_RENDERED = config.global.CLOUDS_RENDERED;
+        if (this.LAYERS == null) this.LAYERS = new LayerHolder();
+
+        int needed = config.layers != null ? config.layers.layers.size() : 0;
+        if (this.LAYERS.layers.size() > needed) {
+            while (this.LAYERS.layers.size() > needed) {
+                this.LAYERS.layers.remove(this.LAYERS.layers.size() - 1);
+            }
+        } else {
+            int start = this.LAYERS.layers.size();
+            for (int i = start; i < needed; i++) {
+                this.LAYERS.layers.add(new LayerConfiguration(i));
+            }
+        }
+
+        for (int i = 0; i < needed; i++) {
+            LayerConfiguration mainLayer = this.LAYERS.layers.get(i);
+            LayerConfiguration clothLayer = config.layers.layers.get(i);
+            mainLayer.copy(clothLayer);
+        }
+    }
+    public static class LayerConfiguration {
+        public LayerConfiguration(int idx) {
+            LAYER_IDX = idx; 
+        }
+
+        public LayerConfiguration() {
+            this(0);
+        }
+
+        @ConfigEntry.Gui.Excluded
+        // maybe_unused
+        private int LAYER_IDX;
+
+        public String  NAME                  = "Minecraft";
+        public boolean APPEARS_SHADED        = false; // Whether clouds should appear shaded (darker) when the sun is behind them
+        public boolean USES_CUSTOM_ALPHA     = true; // Whether clouds should use custom alpha values
+        public boolean CUSTOM_BRIGHTNESS     = true; // Whether clouds should be rendered with custom brightness' brightness (what the hell)
+        public boolean USES_CUSTOM_COLOR     = false; // Uses custom color for clouds
+        public boolean FADE_ENABLED          = true;
+        public boolean FOG_ENABLED           = true;
+        public boolean IS_ENABLED            = true;
+        public boolean LAYER_RENDERED        = true;
+
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 255)
+        public int     FADE_ALPHA            = (int) (0.2f * 255); // The minimum fade alpha (fade at the top)
+        public int     LAYER_HEIGHT          = 128;
+        public float   CLOUD_Y_SCALE         = 1.5f; // Scale factor for cloud height
+        public float   BRIGHTNESS            = 1.0f; // Base brightness color for clouds
+        
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 255)
+        public int     BASE_ALPHA            = (int) (0.8f * 255); // Base transparency of clouds (considering no fade applied)
+        public float   TRANSITION_RANGE      = 10.0f;
+        public int     LAYER_OFFSET_X        = 0;
+        public int     LAYER_OFFSET_Z        = 0;
+
+        @ConfigEntry.ColorPicker
+        public int     LAYER_COLOR           = 0xffffff;
+
+        @ConfigEntry.Gui.EnumHandler(option=ConfigEntry.Gui.EnumHandler.EnumDisplayOption.BUTTON)
+        public CustomCloudRenderer.CloudMode MODE = CustomCloudRenderer.CloudMode.NORMAL;
+
+        public int GetLayerIndex() { return LAYER_IDX; }
+
+        void copy(CloudsConfiguration.LayerConfiguration layerData) {
+            APPEARS_SHADED        = layerData.APPEARS_SHADED;
+            USES_CUSTOM_ALPHA     = layerData.USES_CUSTOM_ALPHA;
+            CUSTOM_BRIGHTNESS     = layerData.CUSTOM_BRIGHTNESS;
+            USES_CUSTOM_COLOR     = layerData.USES_CUSTOM_COLOR;
+            FADE_ENABLED          = layerData.FADE_ENABLED;
+            FOG_ENABLED           = layerData.FOG_ENABLED;
+            LAYER_HEIGHT          = layerData.LAYER_HEIGHT;
+
+            FADE_ALPHA            = layerData.FADE_ALPHA;
+            CLOUD_Y_SCALE         = layerData.CLOUD_Y_SCALE;
+            BRIGHTNESS            = layerData.BRIGHTNESS;
+            BASE_ALPHA            = layerData.BASE_ALPHA;
+            TRANSITION_RANGE      = layerData.TRANSITION_RANGE;
+
+            LAYER_COLOR           = layerData.LAYER_COLOR;
+            LAYER_IDX             = layerData.GetLayerIndex();
+            MODE                  = layerData.MODE;
+            IS_ENABLED            = layerData.IS_ENABLED;
+            LAYER_OFFSET_X        = layerData.LAYER_OFFSET_X;
+            LAYER_OFFSET_Z        = layerData.LAYER_OFFSET_Z;
+            LAYER_RENDERED        = layerData.LAYER_RENDERED;
+        }
+    };
+
+    public static class LayerHolder {
+
+        public List<LayerConfiguration> layers = new ArrayList<>();
+
+        public LayerHolder() {
+        }
+
+        public LayerHolder(int layer) {
+            this();
+            addDefaultLayers(layer, (idx) -> { return new LayerConfiguration(idx != null ? idx : -1); });
+        }
+
+        public void addLayer(LayerConfiguration l) {
+            layers.add(l);
+        }
+
+
+        public void addDefaultLayers(int count, Function<Integer, LayerConfiguration> factory) {
+            for (int i = 0; i < count; i++) {
+                layers.add(factory.apply(i));
+            }
+        }
+
+        public void removeLayer(int index) {
+            if (index >= 0 && index < layers.size()) {
+                layers.remove(index);
+            }
+        }
+
+        public void clear() {
+            layers.clear();
+        }
+    }
+
+    public CloudsConfiguration() {
+        LAYERS.addLayer(new LayerConfiguration(0));
     }
 
     public static void load() {
@@ -61,15 +181,6 @@ public class CloudsConfiguration {
 
         try (FileReader reader = new FileReader(CONFIG_FILE)) {
             INSTANCE = GSON.fromJson(reader, CloudsConfiguration.class);
-
-            if (INSTANCE.CLOUD_COLORS == null || INSTANCE.CLOUD_COLORS.length < MAX_LAYER_COUNT) {
-                int[] newArr = new int[MAX_LAYER_COUNT];
-                Arrays.fill(newArr, 0xFFFFFF);
-                if (INSTANCE.CLOUD_COLORS != null) {
-                    System.arraycopy(INSTANCE.CLOUD_COLORS, 0, newArr, 0, INSTANCE.CLOUD_COLORS.length);
-                }
-                INSTANCE.CLOUD_COLORS = newArr;
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -93,7 +204,7 @@ public class CloudsConfiguration {
 
     public static Screen createConfigScreen(Screen parent) {
         if (Compat.hasClothConfig()) {
-            return ClothConfigScreen.create(parent);
+            return AutoConfig.getConfigScreen(ClothConfigClass.class, parent).get();
         } else {
             return new CloudsConfigScreen(parent);
         }
