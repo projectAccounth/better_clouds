@@ -152,6 +152,9 @@ public class CustomCloudRenderer extends CloudRenderer {
 
             if (!layerConfiguration.LAYER_RENDERED) continue;
 
+            currentLayer.offsetX = layerConfiguration.LAYER_OFFSET_X;
+            currentLayer.offsetZ = layerConfiguration.LAYER_OFFSET_Z;
+
             TextureData tex = currentLayer.texture;
             if (tex == null) continue;
 
