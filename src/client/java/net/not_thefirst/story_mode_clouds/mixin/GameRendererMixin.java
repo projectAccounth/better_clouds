@@ -15,6 +15,6 @@ import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
 public class GameRendererMixin {
     @Inject(method = "reloadShaders", at = @At("TAIL"))
     private void afterReloadShaders(ResourceProvider provider, CallbackInfo ci) throws IOException {
-        ModRenderTypes.reloadShaders(provider);
+        // ModRenderTypes.reloadShaders(provider);
     }
 }
