@@ -13,7 +13,6 @@ import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeC
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder.PuffMode;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
-import net.not_thefirst.story_mode_clouds.utils.Texture;
 
 public class PuffMeshBuilder implements MeshTypeBuilder {
     private static final long PHI = 0x9E3779B97F4A7C15L;

@@ -27,7 +27,6 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshTypeBuilder;
-import net.not_thefirst.story_mode_clouds.renderer.render_types.ModRenderTypes;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 
 import org.jetbrains.annotations.Nullable;
@@ -275,12 +274,11 @@ public class CustomCloudRenderer extends CloudRenderer {
                     RenderSystem.setShaderFog(new FogParameters(Float.MAX_VALUE, 0.0F, FogShape.SPHERE, 0.0F, 0.0F, 0.0F, 0.0F));
                 }
 
-                RenderType rt = ModRenderTypes.customCloudsFancy;
                 currentLayer.buffer.bind();
                 if (status == CloudStatus.FANCY) {
-                    drawWithRenderType(ModRenderTypes.cloudsDepthOnly, proj, modelView, offX, layerY, offZ, currentLayer.buffer);
+                    drawWithRenderType(RenderType.cloudsDepthOnly(), proj, modelView, offX, layerY, offZ, currentLayer.buffer);
                 }
-                drawWithRenderType(rt, proj, modelView, offX, layerY, offZ, currentLayer.buffer);
+                drawWithRenderType(RenderType.clouds(), proj, modelView, offX, layerY, offZ, currentLayer.buffer);
 
                 VertexBuffer.unbind();
                 RenderSystem.setShaderFog(originalFog);
