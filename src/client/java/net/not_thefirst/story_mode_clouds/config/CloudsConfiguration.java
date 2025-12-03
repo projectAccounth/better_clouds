@@ -205,8 +205,7 @@ public class CloudsConfiguration {
     public static Screen createConfigScreen(Screen parent) {
         if (Compat.hasClothConfig()) {
             return AutoConfig.getConfigScreen(ClothConfigClass.class, parent).get();
-        } else {
-            return new CloudsConfigScreen(parent);
-        }
+        } 
+        return null;
     }
 }
