@@ -83,6 +83,16 @@ public class ColorUtils {
             r = g = b = 1.0f;
         }
 
+        if (!layerConfiguration.CUSTOM_BRIGHTNESS) {
+            float cloudR = ARGB.redFloat(skyColor);
+            float cloudG = ARGB.greenFloat(skyColor);
+            float cloudB = ARGB.blueFloat(skyColor);
+
+            r *= cloudR;
+            g *= cloudG;
+            b *= cloudB;
+        }
+
         if (!layerConfiguration.FADE_ENABLED) {
             return ARGB.colorFromFloat(baseAlpha, r, g, b);
         }
@@ -100,16 +110,6 @@ public class ColorUtils {
         float fade = Mth.lerp(mix, fadeBelow, fadeAbove);
 
         float finalAlpha = baseAlpha * (1.0f - fade);
-
-        if (!layerConfiguration.CUSTOM_BRIGHTNESS) {
-            float cloudR = ARGB.redFloat(skyColor);
-            float cloudG = ARGB.greenFloat(skyColor);
-            float cloudB = ARGB.blueFloat(skyColor);
-
-            r *= cloudR;
-            g *= cloudG;
-            b *= cloudB;
-        }
 
         return ARGB.colorFromFloat(finalAlpha, r, g, b);
     }

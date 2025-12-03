@@ -241,7 +241,7 @@ public class CustomCloudRenderer extends CloudRenderer {
             if (currentLayer.needsRebuild ||
                 cellX != currentLayer.prevCellX || cellZ != currentLayer.prevCellZ ||
                 layerPos != currentLayer.prevPos || status != currentLayer.prevStatus ||
-                cloudColor != prevSkyColor) {
+                (cloudColor != prevSkyColor && !layerConfiguration.CUSTOM_BRIGHTNESS)) {
 
                 currentLayer.needsRebuild = false;
                 currentLayer.prevCellX = cellX;
@@ -277,6 +277,9 @@ public class CustomCloudRenderer extends CloudRenderer {
 
                 RenderType rt = ModRenderTypes.customCloudsFancy;
                 currentLayer.buffer.bind();
+                if (status == CloudStatus.FANCY) {
+                    drawWithRenderType(ModRenderTypes.cloudsDepthOnly, proj, modelView, offX, layerY, offZ, currentLayer.buffer);
+                }
                 drawWithRenderType(rt, proj, modelView, offX, layerY, offZ, currentLayer.buffer);
 
                 VertexBuffer.unbind();
