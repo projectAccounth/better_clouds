@@ -34,6 +34,7 @@ public class StoryModeClouds {
             
             holder.registerSaveListener((manager, data) -> {
                 CloudsConfiguration.INSTANCE.applyFromCloth(data);
+                CloudsConfiguration.save();
                 return InteractionResult.SUCCESS;
             });
 

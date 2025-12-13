@@ -21,6 +21,7 @@ public class StoryModeClouds implements ClientModInitializer {
             
             holder.registerSaveListener((manager, data) -> {
                 CloudsConfiguration.INSTANCE.applyFromCloth(data);
+                CloudsConfiguration.save();
                 return InteractionResult.SUCCESS;
             });
 
