@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="${forge_loader_version}"
+loaderVersion="[1,)"
 license="MIT"
 [[mods]]
 modId="cloud_tweaks"
@@ -9,13 +9,6 @@ description="Customize your clouds!"
 authors="not_thefirst"
 credits="Tixork for burning down my house!"
 logoFile="assets/cloud_tweaks/icon.png"
-
-[[dependencies.cloud_tweaks]]
-    modId="forge"
-    mandatory=true
-    versionRange="${forge_loader_version}"
-    ordering="NONE"
-    side="CLIENT"
 
 [[dependencies.cloud_tweaks]]
     modId="cloth_config"
@@ -30,3 +23,6 @@ logoFile="assets/cloud_tweaks/icon.png"
     mandatory=true
     ordering="NONE"
     side="CLIENT"
+
+[[mixins]]
+config = "cloud_tweaks.mixins.json"
