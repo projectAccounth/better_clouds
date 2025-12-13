@@ -70,7 +70,6 @@ public class ColorUtils {
         float g = ARGB.greenFloat(color);
         float b = ARGB.blueFloat(color);
 
-        // === Tint logic ===
         if (!shaded && useColor) {
             r = ARGB.redFloat(customColor);
             g = ARGB.greenFloat(customColor);

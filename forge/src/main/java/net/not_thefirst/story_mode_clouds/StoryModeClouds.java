@@ -3,7 +3,6 @@ package net.not_thefirst.story_mode_clouds;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.ConfigHolder;
 import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.world.InteractionResult;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
