@@ -30,7 +30,3 @@ logoFile="assets/cloud_tweaks/icon.png"
     mandatory=true
     ordering="NONE"
     side="CLIENT"
-
-mixins = [
-  "cloud_tweaks.mixins.json"
-]
