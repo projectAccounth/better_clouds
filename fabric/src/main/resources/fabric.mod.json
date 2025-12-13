@@ -17,7 +17,7 @@
     ]
   },
   "mixins": [
-    "mixins.cloud_tweaks.json"
+    "cloud_tweaks.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.16.10",
