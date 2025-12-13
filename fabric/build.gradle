@@ -1,0 +1,93 @@
+plugins {
+    id "maven-publish"
+    id "com.gradleup.shadow" version "9.2.2"
+    id "fabric-loom" version "1.10-SNAPSHOT"
+}
+
+architectury {
+    platformSetupLoomIde()
+    fabric()
+}
+
+repositories {
+    maven { url "https://maven.shedaniel.me/" }
+    maven { url "https://maven.terraformersmc.com/releases" }
+}
+
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
+
+version = project.mod_version
+group = project.maven_group
+
+
+dependencies {
+    common(project(path: ":common", configuration: "namedElements")) { transitive false }
+    shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
+
+    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    modApi "com.terraformersmc:modmenu:${project.modmenu_version}"
+    modApi "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}"
+}
+
+loom {
+    mods {
+        "story_mode_clouds" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "loader_version", project.loader_version
+
+    filteringCharset = "UTF-8"
+
+    filesMatching("fabric.mod.json") {
+        expand(
+            "version": project.version,
+            "minecraft_version": project.minecraft_version,
+            "loader_version": project.loader_version
+        )
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowCommon]
+    archiveClassifier = "shadow"
+}
+
+remapJar {
+    input.set(shadowJar.archiveFile)
+    dependsOn(shadowJar)
+    archiveClassifier = "fabric"
+
+    from rootProject.file("LICENSE.txt")
+}
+
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release.set(21)
+}
+
+jar {
+    from("LICENSE") {
+        rename { "fabric_${it}_${project.archiveNames}" }
+    }
+}
