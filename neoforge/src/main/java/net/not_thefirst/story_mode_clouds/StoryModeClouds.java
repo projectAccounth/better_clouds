@@ -11,20 +11,17 @@ import net.not_thefirst.story_mode_clouds.compat.ForgeModChecker;
 import net.not_thefirst.story_mode_clouds.config.ClothConfigClass;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 @Mod("cloud_tweaks")
 public class StoryModeClouds {
     public StoryModeClouds() {
         ModLoadingContext ctx = ModLoadingContext.get();
-        if (FMLEnvironment.getDist().isClient()) {
-            StoryModeClouds.initialize();
+        StoryModeClouds.initialize();
         
-            ctx.getActiveContainer().registerExtensionPoint(IConfigScreenFactory.class, (container, parent) -> {
-                return CloudsConfiguration.createConfigScreen(parent);
-            });
-        }
+        ctx.getActiveContainer().registerExtensionPoint(IConfigScreenFactory.class, (container, parent) -> {
+            return CloudsConfiguration.createConfigScreen(parent);
+        });
     }
 
     public static void initialize() {

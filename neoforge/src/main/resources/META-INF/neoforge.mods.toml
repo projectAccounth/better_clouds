@@ -19,14 +19,14 @@ logoFile="assets/cloud_tweaks/icon.png"
 
 [[dependencies.cloud_tweaks]]
     modId="cloth_config"
-    versionRange="[11,)"
+    versionRange="[1,)"
     type = "optional"
     ordering="AFTER"
     side="CLIENT"
 
 [[dependencies.cloud_tweaks]]
     modId="minecraft"
-    versionRange="[1.21.9, 1.21.11]"
+    versionRange="[1.21.6, 1.21.10]"
     type = "required"
     ordering="NONE"
     side="CLIENT"
