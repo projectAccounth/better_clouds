@@ -119,7 +119,7 @@ processResources {
     filesMatching("META-INF/mods.toml") {
         expand(
             "version": rootProject.version,
-            "forge_loader_version": rootProject.version
+            "forge_loader_version": "[1,)"
         )
     }
     

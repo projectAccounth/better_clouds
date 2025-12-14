@@ -3,7 +3,7 @@ loaderVersion="[1,)"
 license="MIT"
 [[mods]]
 modId="cloud_tweaks"
-version="0.1.1"
+version="${version}"
 displayName="Cloud Tweaks"
 description="Customize your clouds!"
 authors="not_thefirst"
