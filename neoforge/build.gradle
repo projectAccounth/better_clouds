@@ -2,72 +2,61 @@ plugins {
     id "maven-publish"
     id "com.gradleup.shadow" version "9.2.2"
 }
-def targets = [
-    "1.21.11"  : "[21.9,)"
-]
 
-def versionTasks = []
-
+def mc = rootProject.minecraft_version
+def safeMc = mc.replace('.', '_')
 def loaderName = "neoforge"
 
-targets.each { mc, loaderRange ->
+def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
+    from(sourceSets.main.resources.srcDirs)
+    into("$buildDir/resources_${safeMc}")
 
-    def safeMc = mc.replace('.', '_')
-
-    def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
-        from(sourceSets.main.resources.srcDirs)
-        into("$buildDir/resources_${safeMc}")
-
-        filteringCharset = "UTF-8"
-        filesMatching("META-INF/neoforge.mods.toml") {
-            expand(
-                "version": rootProject.version,
-                "forge_loader_version": loaderRange
-            )
-        }
-
-        exclude "fabric.mod.json"
-        exclude "**/*.refmap.json"
-        exclude "mods.toml"
-    }
-
-    def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
-        group = "build"
-        archiveClassifier.set("shadow_${mc}")
-
-        configurations = [project.configurations.shadowCommon]
-        from sourceSets.main.output
-        from(processResourcesTask.map { it.destinationDir })
-
-        manifest.attributes(
-            "MixinConfigs": "cloud_tweaks.mixins.json"
+    filteringCharset = "UTF-8"
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(
+            "version": rootProject.version,
+            "forge_loader_version": project.neoforge_version
         )
     }
 
-    def remapTask = tasks.register("remapJar_${safeMc}", net.fabricmc.loom.task.RemapJarTask) {
-        group = "build"
-        dependsOn(shadowTask)
+    exclude "fabric.mod.json"
+    exclude "mods.toml"
+}
 
-        input.set(shadowTask.flatMap { it.archiveFile })
-        archiveClassifier.set("")
+def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    group = "build"
+    archiveClassifier.set("shadow_${mc}")
 
-        archiveFileName.set(
-            "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
-        )
+    configurations = [project.configurations.shadowCommon]
+    from sourceSets.main.output
+    from(processResourcesTask.map { it.destinationDir })
 
-        manifest.attributes(
-            "MixinConfigs": "cloud_tweaks.mixins.json"
-        )
-    }
+    manifest.attributes(
+        "MixinConfigs": "cloud_tweaks.mixins.json"
+    )
+}
 
-    versionTasks << remapTask
+def remapTask = tasks.register("remapJar_${safeMc}", net.fabricmc.loom.task.RemapJarTask) {
+    group = "build"
+    dependsOn(shadowTask)
+
+    input.set(shadowTask.flatMap { it.archiveFile })
+    archiveClassifier.set("")
+
+    archiveFileName.set(
+        "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
+    )
+
+    manifest.attributes(
+        "MixinConfigs": "cloud_tweaks.mixins.json"
+    )
 }
 
 tasks.register("buildAll") {
     group = "build"
-    description = "Builds JARs for all supported Minecraft versions."
+    description = "Builds JAR for ${mc}."
 
-    dependsOn(versionTasks)
+    dependsOn(remapTask)
 }
 
 architectury {
@@ -117,12 +106,6 @@ processResources {
             "forge_loader_version": project.neoforge_version
         )
     }
-    
-    exclude "**/*.refmap.json"
-}
-
-tasks.named('processResources') {
-    exclude "**/*.refmap.json"
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -132,7 +115,7 @@ tasks.withType(JavaCompile).configureEach {
 
 shadowJar {
     exclude "fabric.mod.json"
-    exclude "**/*.refmap.json"
+    exclude "**/*-refmap.json"
 
     configurations = [project.configurations.shadowCommon]
     archiveClassifier = "shadow"
@@ -153,7 +136,7 @@ jar {
         rename { "neoforge_${it}_${project.archivesName}" }
     }
     
-    exclude "**/*.refmap.json"
+    exclude "**/*-refmap.json"
 
     manifest.attributes(
         "MixinConfigs": "cloud_tweaks.mixins.json"

@@ -48,4 +48,12 @@ allprojects {
         options.encoding = "UTF-8"
         options.release = 21
     }
+
+    tasks.withType(JavaExec).configureEach {
+        onlyIf { !System.getenv().containsKey("CI"); }
+    }
+}
+
+tasks.withType(JavaExec).configureEach {
+    onlyIf { !System.getenv().containsKey("CI"); }
 }
