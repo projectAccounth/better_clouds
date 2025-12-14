@@ -1,0 +1,165 @@
+plugins {
+    id "maven-publish"
+    id "com.gradleup.shadow" version "9.2.2"
+}
+def targets = [
+    "1.21.9"  : "[21.9,)"
+]
+
+def versionTasks = []
+
+def loaderName = "neoforge"
+
+targets.each { mc, loaderRange ->
+
+    def safeMc = mc.replace('.', '_')
+
+    def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
+        from(sourceSets.main.resources.srcDirs)
+        into("$buildDir/resources_${safeMc}")
+
+        filteringCharset = "UTF-8"
+        filesMatching("META-INF/neoforge.mods.toml") {
+            expand(
+                "version": rootProject.version,
+                "forge_loader_version": loaderRange
+            )
+        }
+
+        exclude "fabric.mod.json"
+        exclude "**/*.refmap.json"
+        exclude "mods.toml"
+    }
+
+    def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+        group = "build"
+        archiveClassifier.set("shadow_${mc}")
+
+        configurations = [project.configurations.shadowCommon]
+        from sourceSets.main.output
+        from(processResourcesTask.map { it.destinationDir })
+
+        manifest.attributes(
+            "MixinConfigs": "cloud_tweaks.mixins.json"
+        )
+    }
+
+    def remapTask = tasks.register("remapJar_${safeMc}", net.fabricmc.loom.task.RemapJarTask) {
+        group = "build"
+        dependsOn(shadowTask)
+
+        input.set(shadowTask.flatMap { it.archiveFile })
+        archiveClassifier.set("")
+
+        archiveFileName.set(
+            "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
+        )
+
+        from(rootProject.file("LICENSE.txt"))
+
+        manifest.attributes(
+            "MixinConfigs": "cloud_tweaks.mixins.json"
+        )
+    }
+
+    versionTasks << remapTask
+}
+
+tasks.register("buildAll") {
+    group = "build"
+    description = "Builds JARs for all supported Minecraft versions."
+
+    dependsOn(versionTasks)
+}
+
+architectury {
+    platformSetupLoomIde()
+    neoForge()
+}
+
+group = project.maven_group
+version = project.mod_version
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentNeoForge.extendsFrom common
+}
+
+repositories {
+    maven { url "https://maven.minecraftforge.net/" }
+    maven { url "https://maven.architectury.dev/" }
+}
+
+dependencies {
+    common(project(path: ":common", configuration: "namedElements")) { transitive false }
+    shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive false }
+
+    minecraft "com.mojang:minecraft:${project.neoforge_minecraft_version}"
+    mappings loom.officialMojangMappings()
+
+    neoForge "net.neoforged:neoforge:${project.neoforge_version}"
+
+    modApi "me.shedaniel.cloth:cloth-config-neoforge:12.0.137"
+}
+
+processResources {
+    filteringCharset = "UTF-8"
+    
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(
+            "version": rootProject.version,
+            "forge_loader_version": project.neoforge_version
+        )
+    }
+    
+    exclude "**/*.refmap.json"
+}
+
+tasks.named('processResources') {
+    exclude "**/*.refmap.json"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release.set(21)
+}
+
+shadowJar {
+    exclude "fabric.mod.json"
+    exclude "**/*.refmap.json"
+
+    configurations = [project.configurations.shadowCommon]
+    archiveClassifier = "shadow"
+}
+
+tasks.named("build").configure {
+    dependsOn("buildAll")
+}
+
+remapJar {
+    input.set(shadowJar.archiveFile)
+    dependsOn(shadowJar)
+    archiveClassifier = "neoforge"
+
+    from rootProject.file("LICENSE.txt")
+}
+
+jar {
+    from("LICENSE") {
+        rename { "neoforge_${it}_${project.archivesName}" }
+    }
+    
+    exclude "**/*.refmap.json"
+
+    manifest.attributes(
+        "MixinConfigs": "cloud_tweaks.mixins.json"
+    )
+}
