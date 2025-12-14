@@ -6,7 +6,7 @@ import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.not_thefirst.story_mode_clouds.Initializer;
 
 public class ModRenderPipelines {
@@ -22,8 +22,8 @@ public class ModRenderPipelines {
 	private static final RenderPipeline.Snippet MATRICES_FOG_SNIPPET = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET, FOG_SNIPPET).buildSnippet();
 
     public static void registerCloudPipelines() {
-        ResourceLocation loc1 = ResourceLocation.fromNamespaceAndPath(Initializer.MOD_ID, "pipeline/pos_tex_c");
-        ResourceLocation lc1 = ResourceLocation.fromNamespaceAndPath(Initializer.MOD_ID, "rt_clouds");
+        Identifier loc1 = Identifier.fromNamespaceAndPath(Initializer.MOD_ID, "pipeline/pos_tex_c");
+        Identifier lc1 = Identifier.fromNamespaceAndPath(Initializer.MOD_ID, "rt_clouds");
         var builder = RenderPipeline.builder(MATRICES_FOG_SNIPPET)
             .withLocation(loc1)
             .withVertexShader(lc1)

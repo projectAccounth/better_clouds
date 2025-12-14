@@ -3,7 +3,7 @@ loaderVersion="[1,)"
 license="MIT"
 [[mods]]
 modId="cloud_tweaks"
-version="0.1.1"
+version="${version}"
 displayName="Cloud Tweaks"
 description="Customize your clouds!"
 authors="not_thefirst"
@@ -26,7 +26,7 @@ logoFile="assets/cloud_tweaks/icon.png"
 
 [[dependencies.cloud_tweaks]]
     modId="minecraft"
-    versionRange="[1.21.6, 1.21.10]"
+    versionRange="[1.21.11,)"
     type = "required"
     ordering="NONE"
     side="CLIENT"

@@ -18,6 +18,7 @@ public class CloudRendererMixin {
         CloudStatus status,
         float cloudHeight,
         Vec3 vec3,
+        long l,
         float partialTicks,
         CallbackInfo ci
     ) {

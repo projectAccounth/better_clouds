@@ -20,7 +20,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MappableRingBuffer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.Profiler;
@@ -33,6 +33,7 @@ import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
@@ -67,7 +68,7 @@ public class CustomCloudRenderer {
     private int prevSkyColor = 0;
     private final List<LayerState> layers = new ArrayList<>();
 
-    protected static final ResourceLocation TEXTURE_LOCATION = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/environment/clouds.png");
+    protected static final Identifier TEXTURE_LOCATION = Identifier.fromNamespaceAndPath("minecraft", "textures/environment/clouds.png");
 
     public CustomCloudRenderer() {
         super();
@@ -319,8 +320,7 @@ public class CustomCloudRenderer {
 					RenderSystem.getModelViewMatrix(),
 					new Vector4f(1.0F, 1.0F, 1.0F, 1.0F),
 					new Vector3f(-offX, offY, -offZ),
-					RenderSystem.getTextureMatrix(),
-					RenderSystem.getShaderLineWidth()
+					new Matrix4f()
 				);
         GpuTextureView colorTex = rt.getColorTextureView();
         GpuTextureView depthTex = rt.getDepthTextureView();
@@ -332,9 +332,11 @@ public class CustomCloudRenderer {
             colorTex = rt.getColorTextureView();
             depthTex = rt.getDepthTextureView();
         }
-        try (RenderPass pass = RenderSystem.getDevice()
+        RenderPass pass = RenderSystem.getDevice()
                 .createCommandEncoder()
-                .createRenderPass(() -> "Clouds", colorTex, OptionalInt.empty(), depthTex, OptionalDouble.empty())) {
+                .createRenderPass(() -> "Clouds", colorTex, OptionalInt.empty(), depthTex, OptionalDouble.empty());
+
+        try {
             RenderSystem.bindDefaultUniforms(pass);
 
             pass.setPipeline(pipeline);
@@ -344,6 +346,13 @@ public class CustomCloudRenderer {
             pass.setVertexBuffer(0, currentLayer.buffer);
             pass.setIndexBuffer(indexBuf, indices.type());
             pass.drawIndexed(0, 0, currentLayer.layerIndexCount, 1);
+        }
+        catch (Exception exception) {
+            exception.printStackTrace();
+        }
+
+        if (pass != null) {
+            pass.close();
         }
     }
 

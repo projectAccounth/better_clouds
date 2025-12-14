@@ -3,7 +3,7 @@ plugins {
     id "com.gradleup.shadow" version "9.2.2"
 }
 def targets = [
-    "1.21.9"  : "[21.9,)"
+    "1.21.11"  : "[21.9,)"
 ]
 
 def versionTasks = []
@@ -54,8 +54,6 @@ targets.each { mc, loaderRange ->
         archiveFileName.set(
             "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
         )
-
-        from(rootProject.file("LICENSE.txt"))
 
         manifest.attributes(
             "MixinConfigs": "cloud_tweaks.mixins.json"
@@ -148,8 +146,6 @@ remapJar {
     input.set(shadowJar.archiveFile)
     dependsOn(shadowJar)
     archiveClassifier = "neoforge"
-
-    from rootProject.file("LICENSE.txt")
 }
 
 jar {
