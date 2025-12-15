@@ -1,0 +1,148 @@
+plugins {
+    id "maven-publish"
+    id "com.gradleup.shadow" version "9.2.2"
+}
+
+def mc = rootProject.minecraft_version
+def safeMc = mc.replace('.', '_')
+def loaderName = "forge"
+
+def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
+    from(sourceSets.main.resources.srcDirs)
+    into("$buildDir/resources_${safeMc}")
+
+    filteringCharset = "UTF-8"
+    filesMatching("META-INF/mods.toml") {
+        expand(
+            "version": rootProject.version,
+            "forge_loader_version": project.forge_version
+        )
+    }
+
+    exclude "fabric.mod.json"
+}
+
+def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    group = "build"
+    archiveClassifier.set("shadow_${mc}")
+
+    configurations = [project.configurations.shadowCommon]
+    from sourceSets.main.output
+    from(processResourcesTask.map { it.destinationDir })
+
+    manifest.attributes(
+        "MixinConfigs": "cloud_tweaks.mixins.json"
+    )
+
+    exclude "fabric.mod.json"
+}
+
+def remapTask = tasks.register("remapJar_${safeMc}", net.fabricmc.loom.task.RemapJarTask) {
+    group = "build"
+    dependsOn(shadowTask)
+
+    input.set(shadowTask.flatMap { it.archiveFile })
+    archiveClassifier.set("")
+
+    archiveFileName.set(
+        "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
+    )
+
+    manifest.attributes(
+        "MixinConfigs": "cloud_tweaks.mixins.json"
+    )
+}
+
+tasks.register("buildAll") {
+    group = "build"
+    description = "Builds JAR for ${mc}."
+
+    dependsOn(remapTask)
+}
+
+architectury {
+    platformSetupLoomIde()
+    forge()
+}
+
+group = project.maven_group
+version = project.mod_version
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentForge.extendsFrom common
+}
+
+repositories {
+    maven { url "https://maven.minecraftforge.net/" }
+    maven { url "https://maven.architectury.dev/" }
+    maven { url "https://files.minecraftforge.net/maven/" }
+}
+
+dependencies {
+    common(project(path: ":common", configuration: "namedElements")) { transitive false }
+    shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive false }
+
+    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+    mappings loom.officialMojangMappings()
+
+    forge "net.minecraftforge:forge:${rootProject.minecraft_version}-${project.forge_version}"
+    
+    modApi "me.shedaniel.cloth:cloth-config-forge:15.0.140"
+}
+
+processResources {
+    filteringCharset = "UTF-8"
+    
+    filesMatching("META-INF/mods.toml") {
+        expand(
+            "version": rootProject.version,
+            "forge_loader_version": project.forge_version
+        )
+    }
+    
+    exclude "**/*-refmap.json"
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release.set(21)
+}
+
+shadowJar {
+    exclude "fabric.mod.json"
+    exclude "**/*-refmap.json"
+
+    configurations = [project.configurations.shadowCommon]
+    archiveClassifier = "shadow"
+}
+
+tasks.named("build").configure {
+    dependsOn("buildAll")
+}
+
+remapJar {
+    input.set(shadowJar.archiveFile)
+    dependsOn(shadowJar)
+    archiveClassifier = "forge"
+}
+
+jar {
+    from("LICENSE") {
+        rename { "forge_${it}_${project.archivesName}" }
+    }
+    
+    exclude "**/*-refmap.json"
+
+    manifest.attributes(
+        "MixinConfigs": "cloud_tweaks.mixins.json"
+    )
+}

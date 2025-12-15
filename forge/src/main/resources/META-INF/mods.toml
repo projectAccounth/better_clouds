@@ -1,0 +1,32 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="MIT"
+[[mods]]
+modId="cloud_tweaks"
+version="${version}"
+displayName="Cloud Tweaks"
+description="Customize your clouds!"
+authors="not_thefirst"
+credits="Tixork for burning down my house!"
+logoFile="assets/cloud_tweaks/icon.png"
+
+[[dependencies.cloud_tweaks]]
+    modId="forge"
+    mandatory=true
+    versionRange="[1,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.cloud_tweaks]]
+    modId="cloth_config"
+    versionRange="[1,)"
+    mandatory=false
+    ordering="AFTER"
+    side="CLIENT"
+
+[[dependencies.cloud_tweaks]]
+    modId="minecraft"
+    versionRange="[1.21, 1.21.1]"
+    mandatory=true
+    ordering="NONE"
+    side="CLIENT"
