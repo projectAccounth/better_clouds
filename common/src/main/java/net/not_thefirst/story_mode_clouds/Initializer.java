@@ -10,4 +10,8 @@ public class Initializer {
         CloudsConfiguration.load();
         ModRenderPipelines.registerCloudPipelines();
     }
+
+    public static String j() {
+        return "j";
+    }
 };
