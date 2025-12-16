@@ -43,6 +43,7 @@ jobs:
           path: |
             fabric/build/libs/*.jar
             neoforge/build/libs/*.jar
+            forge/build/libs/*.jar
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
