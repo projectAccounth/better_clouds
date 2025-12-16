@@ -49,7 +49,8 @@ import java.util.OptionalInt;
 public class CustomCloudRenderer {
     public static enum CloudMode {
         NORMAL,
-        POPULATED
+        POPULATED,
+        BEVELED
     }
 
     private static final int UBO_SIZE = new Std140SizeCalculator()
