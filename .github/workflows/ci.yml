@@ -4,9 +4,13 @@ on:
   push:
     paths-ignore:
       - ".github/workflows/**"
-    branches: [ "**" ]
-    tags: [ "v*" ]
+    branches:
+      - "**"
+    tags:
+      - "v*"
   pull_request:
+    branches:
+      - "**"
 
 jobs:
   build:
