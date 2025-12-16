@@ -13,6 +13,7 @@ public class MeshBuilderRegistry {
     
     public static MeshTypeBuilder PUFF;
     public static MeshTypeBuilder NORMAL;
+    public static MeshTypeBuilder BEVELED;
 
     public static MeshTypeBuilder register(String name, Supplier<MeshTypeBuilder> builderSupplier) {
         if (frozen)
@@ -38,7 +39,8 @@ public class MeshBuilderRegistry {
     }
 
     static {
-        PUFF   = register(CustomCloudRenderer.CloudMode.POPULATED.name(), PuffMeshBuilder::new);
-        NORMAL = register(CustomCloudRenderer.CloudMode.NORMAL.name()   , ClassicMeshBuilder::new);
+        PUFF    = register(CustomCloudRenderer.CloudMode.POPULATED.name(), PuffMeshBuilder::new);
+        NORMAL  = register(CustomCloudRenderer.CloudMode.NORMAL.name()   , ClassicMeshBuilder::new);
+        BEVELED = register(CustomCloudRenderer.CloudMode.BEVELED.name()  , BeveledMeshBuilder::new);
     }
 }
