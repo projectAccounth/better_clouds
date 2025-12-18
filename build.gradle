@@ -81,15 +81,23 @@ def registerLoaderTask(String loader) {
             def proj = project(":${loader}");
             def libsDir = file("${proj.buildDir}/libs");
 
-            libsDir.eachFile { file ->
-                if (file.name.endsWith("-${loader}.jar")
-                        && !file.name.contains("sources")
-                        && !file.name.contains("dev")) {
-                    copy {
-                        from file;
-                        into releaseOutputDir;
-                        rename { "${project.name}-${version}-${loader}.jar" };
-                    }
+            if (!libsDir.exists()) {
+                return;
+            }
+
+            def expectedPattern =
+                    ~/^${project.name}\+.+-${version}-${loader}\.jar$/;
+
+            fileTree(libsDir) {
+                include("*.jar");
+            }.matching {
+                include { details ->
+                    details.file.name ==~ expectedPattern;
+                }
+            }.files.each { jar ->
+                copy {
+                    from(jar);
+                    into(releaseOutputDir);
                 }
             }
         }
