@@ -13,6 +13,7 @@ import net.not_thefirst.story_mode_clouds.utils.Texture;
 import net.minecraft.client.CloudStatus;
 
 public class ClassicMeshBuilder implements MeshTypeBuilder {
+    
     public BufferBuilder Build(
         BufferBuilder bb, Texture.TextureData tex, 
         RelativeCameraPos pos, LayerState state,

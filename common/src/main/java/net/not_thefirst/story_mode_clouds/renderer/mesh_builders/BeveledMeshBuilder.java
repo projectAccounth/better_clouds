@@ -5,6 +5,10 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers;
+import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder;
+import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceDir;
+import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceMask;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
@@ -38,7 +42,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 int z = Math.floorMod(cz + dz, h);
                 long cell = cells[x + z * w];
                 if (cell != 0L) {
-                    buildCell(pos, bb, cx, cz, cell, relY, currentLayer, skyColor);
+                    buildCell(pos, bb, dx, dz, cell, relY, currentLayer, skyColor);
                 }
             }
         }
@@ -47,88 +51,70 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
     }
     
     private static void buildCell(RelativeCameraPos pos, BufferBuilder bb,
-                                   int cx, int cz, long cell, float relY, int currentLayer, int skyColor) {
-        float x0 = cx * MeshBuilder.CELL_SIZE_IN_BLOCKS;
-        float x1 = x0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
-        float y0 = 0.0F;
-        float y1 = MeshBuilder.HEIGHT_IN_BLOCKS;
-        float z0 = cz * MeshBuilder.CELL_SIZE_IN_BLOCKS;
-        float z1 = z0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
+                            int cx, int cz, long cell, float relY,
+                            int currentLayer, int skyColor) {
 
-        CloudsConfiguration.LayerConfiguration layerConfiguration = 
+        float cellSize = MeshBuilder.CELL_SIZE_IN_BLOCKS;
+
+        float x0 = cx * cellSize;
+        float x1 = x0 + cellSize;
+        float z0 = cz * cellSize;
+        float z1 = z0 + cellSize;
+
+        float y0 = 0.0f;
+        float y1 = MeshBuilder.HEIGHT_IN_BLOCKS;
+
+        CloudsConfiguration.LayerConfiguration layerConfiguration =
                 CloudsConfiguration.INSTANCE.getLayer(currentLayer);
 
-        float scaledY1 = y1 * (layerConfiguration.IS_ENABLED ? layerConfiguration.CLOUD_Y_SCALE : 1.0f);        
-        
-        if (pos != RelativeCameraPos.BELOW_CLOUDS) {
-            int color = ColorUtils.recolor(MeshBuilder.topColor, scaledY1, pos, relY, currentLayer, skyColor);
-            int colorR = ARGB.red(color);
-            int colorG = ARGB.green(color);
-            int colorB = ARGB.blue(color);
-            int colorA = ARGB.alpha(color);
+        float scaledY1 = y1 * (layerConfiguration.IS_ENABLED
+                ? layerConfiguration.CLOUD_Y_SCALE
+                : 1.0f);
 
-            bb.addVertex(x0, scaledY1, z1).setColor(colorR, colorG, colorB, colorA);
-            bb.addVertex(x1, scaledY1, z1).setColor(colorR, colorG, colorB, colorA);
-            bb.addVertex(x1, scaledY1, z0).setColor(colorR, colorG, colorB, colorA);
-            bb.addVertex(x0, scaledY1, z0).setColor(colorR, colorG, colorB, colorA);
-        }
-        // Bottom face
-        if (pos != RelativeCameraPos.ABOVE_CLOUDS) {
-            int color = ColorUtils.recolor(MeshBuilder.innerColor, y0, pos, relY, currentLayer, skyColor);
-            int colorR = ARGB.red(color);
-            int colorG = ARGB.green(color);
-            int colorB = ARGB.blue(color);
-            int colorA = ARGB.alpha(color); 
-            
-            bb.addVertex(x0, y0, z0).setColor(colorR, colorG, colorB, colorA);
-            bb.addVertex(x1, y0, z0).setColor(colorR, colorG, colorB, colorA);
-            bb.addVertex(x1, y0, z1).setColor(colorR, colorG, colorB, colorA);
-            bb.addVertex(x0, y0, z1).setColor(colorR, colorG, colorB, colorA);
-        }
-        // Sides
-        int colorA = ColorUtils.recolor(MeshBuilder.sideColor, scaledY1, pos, relY, currentLayer, skyColor);
-        int colorB = ColorUtils.recolor(MeshBuilder.sideColor, y0, pos, relY, currentLayer, skyColor);
+        boolean n = Texture.isNorthEmpty(cell);
+        boolean s = Texture.isSouthEmpty(cell);
+        boolean w = Texture.isWestEmpty(cell);
+        boolean e = Texture.isEastEmpty(cell);
 
-        float colorAR = ARGB.redFloat(colorA);
-        float colorAG = ARGB.greenFloat(colorA);
-        float colorAB = ARGB.blueFloat(colorA);
-        float colorAA = ARGB.alphaFloat(colorA);
+        FaceMask excluded = new FaceMask();
 
-        float colorBR = ARGB.redFloat(colorB);
-        float colorBG = ARGB.greenFloat(colorB);
-        float colorBB = ARGB.blueFloat(colorB);
-        float colorBA = ARGB.alphaFloat(colorB);
+        if (!w) excluded.addMask(FaceDir.NEG_X);
+        if (!e) excluded.addMask(FaceDir.POS_X);
+        if (!n) excluded.addMask(FaceDir.NEG_Z);
+        if (!s) excluded.addMask(FaceDir.POS_Z);
 
-        // S
-        if (Texture.isSouthEmpty(cell)) {
-            bb.addVertex(x0, y0, z1).setColor(colorBR, colorBG, colorBB, colorBA);
-            bb.addVertex(x1, y0, z1).setColor(colorBR, colorBG, colorBB, colorBA);
-            bb.addVertex(x1, scaledY1, z1).setColor(colorAR, colorAG, colorAB, colorAA);
-            bb.addVertex(x0, scaledY1, z1).setColor(colorAR, colorAG, colorAB, colorAA);
+        if (pos == RelativeCameraPos.BELOW_CLOUDS) {
+            // excluded.addMask(FaceDir.POS_Y);
         }
 
-        // W
-        if (Texture.isWestEmpty(cell)) {
-            bb.addVertex(x0, y0, z0).setColor(colorBR, colorBG, colorBB, colorBA);
-            bb.addVertex(x0, y0, z1).setColor(colorBR, colorBG, colorBB, colorBA);
-            bb.addVertex(x0, scaledY1, z1).setColor(colorAR, colorAG, colorAB, colorAA);
-            bb.addVertex(x0, scaledY1, z0).setColor(colorAR, colorAG, colorAB, colorAA);
+        if (pos == RelativeCameraPos.ABOVE_CLOUDS) {
+            // excluded.addMask(FaceDir.NEG_Y);
         }
 
-        // N
-        if (Texture.isNorthEmpty(cell)) {
-            bb.addVertex(x1, y0, z0).setColor(colorBR, colorBG, colorBB, colorBA);
-            bb.addVertex(x0, y0, z0).setColor(colorBR, colorBG, colorBB, colorBA);
-            bb.addVertex(x0, scaledY1, z0).setColor(colorAR, colorAG, colorAB, colorAA);
-            bb.addVertex(x1, scaledY1, z0).setColor(colorAR, colorAG, colorAB, colorAA);
-        }
+        int sideTopColor = ColorUtils.recolor(
+                MeshBuilder.sideColor, y0,
+                pos, relY, currentLayer, skyColor
+        );
 
-        // E
-        if (Texture.isEastEmpty(cell)) {
-            bb.addVertex(x1, y0, z1).setColor(colorBR, colorBG, colorBB, colorBA);
-            bb.addVertex(x1, y0, z0).setColor(colorBR, colorBG, colorBB, colorBA);
-            bb.addVertex(x1, scaledY1, z0).setColor(colorAR, colorAG, colorAB, colorAA);
-            bb.addVertex(x1, scaledY1, z1).setColor(colorAR, colorAG, colorAB, colorAA);
-        }
+        float r = ARGB.redFloat(sideTopColor);
+        float g = ARGB.greenFloat(sideTopColor);
+        float b = ARGB.blueFloat(sideTopColor);
+        float a = ARGB.alphaFloat(sideTopColor);
+
+        float bevelRadius = cellSize * 0.2f;
+        int edgeSegments = 8;
+        int cornerSegments = 8;
+
+        CubeBuilder.buildBeveledCube(
+                bb,
+                x0, x1,
+                y0, scaledY1,
+                z0, z1,
+                bevelRadius,
+                edgeSegments,
+                cornerSegments,
+                excluded,
+                r, g, b, a
+        );
     }
 }
