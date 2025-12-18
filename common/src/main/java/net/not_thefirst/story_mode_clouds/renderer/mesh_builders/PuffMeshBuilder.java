@@ -14,6 +14,7 @@ import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 
+// TODO: Implement a Z-fighting fixing solution for the cells there
 public class PuffMeshBuilder implements MeshTypeBuilder {
     private static final long PHI = 0x9E3779B97F4A7C15L;
     private static final int SPLITMIX_TABLE_SIZE = 1 << 10;
