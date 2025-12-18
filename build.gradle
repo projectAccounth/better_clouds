@@ -57,3 +57,53 @@ allprojects {
 tasks.withType(JavaExec).configureEach {
     onlyIf { !System.getenv().containsKey("CI"); }
 }
+
+ext.releaseOutputDir = file("${buildDir}/release-jars");
+
+tasks.register("cleanReleaseJars") {
+    doLast {
+        delete(releaseOutputDir);
+    }
+}
+
+tasks.register("collectReleaseJars") {
+    dependsOn("cleanReleaseJars");
+    doLast {
+        releaseOutputDir.mkdirs();
+    }
+}
+
+def registerLoaderTask(String loader) {
+    tasks.register("collect${loader.capitalize()}ReleaseJar") {
+        dependsOn("collectReleaseJars");
+
+        doLast {
+            def proj = project(":${loader}");
+            def libsDir = file("${proj.buildDir}/libs");
+
+            libsDir.eachFile { file ->
+                if (file.name.endsWith("-${loader}.jar")
+                        && !file.name.contains("sources")
+                        && !file.name.contains("dev")) {
+                    copy {
+                        from file;
+                        into releaseOutputDir;
+                        rename { "${project.name}-${version}-${loader}.jar" };
+                    }
+                }
+            }
+        }
+    }
+}
+
+registerLoaderTask("fabric");
+registerLoaderTask("forge");
+registerLoaderTask("neoforge");
+
+tasks.register("collectAllReleaseJars") {
+    dependsOn(
+        "collectFabricReleaseJar",
+        "collectForgeReleaseJar",
+        "collectNeoforgeReleaseJar"
+    );
+}
