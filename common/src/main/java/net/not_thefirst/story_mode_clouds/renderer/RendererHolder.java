@@ -7,7 +7,7 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 
 public class RendererHolder {
-    private static CustomCloudRenderer renderer = new CustomCloudRenderer();
+    private static CustomCloudRenderer renderer;
 
     public static CustomCloudRenderer get() {
         return RendererHolder.renderer;
