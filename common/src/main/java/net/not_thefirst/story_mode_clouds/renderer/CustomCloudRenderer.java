@@ -96,8 +96,8 @@ public class CustomCloudRenderer {
         for (int i = 0; i < layerCount; i++) {
             LayerState layer = layers.get(i);
             CloudsConfiguration.LayerConfiguration layerConfig = CloudsConfiguration.INSTANCE.getLayer(i);
-            layer.offsetX = layerConfig.LAYER_OFFSET_X;
-            layer.offsetZ = layerConfig.LAYER_OFFSET_Z;
+            layer.offsetX = layerConfig.APPEARANCE.LAYER_OFFSET_X;
+            layer.offsetZ = layerConfig.APPEARANCE.LAYER_OFFSET_Z;
         }
     }
 
@@ -195,8 +195,8 @@ public class CustomCloudRenderer {
 
             if (!layerConfiguration.LAYER_RENDERED) continue;
 
-            currentLayer.offsetX = layerConfiguration.LAYER_OFFSET_X;
-            currentLayer.offsetZ = layerConfiguration.LAYER_OFFSET_Z;
+            currentLayer.offsetX = layerConfiguration.APPEARANCE.LAYER_OFFSET_X;
+            currentLayer.offsetZ = layerConfiguration.APPEARANCE.LAYER_OFFSET_Z;
 
             Texture.TextureData tex = currentLayer.texture;
             if (tex == null) continue;
@@ -209,8 +209,8 @@ public class CustomCloudRenderer {
             dzLayer -= Mth.floor(dzLayer / wrapZ) * wrapZ;
 
             float cloudChunkHeight = MeshBuilder.HEIGHT_IN_BLOCKS * 
-                (layerConfiguration.IS_ENABLED ? layerConfiguration.CLOUD_Y_SCALE : 1.0F);
-            float layerY = (float)( CloudsConfiguration.INSTANCE.getLayer(layer).LAYER_HEIGHT - cam.y);
+                (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0F);
+            float layerY = (float)(layerConfiguration.LAYER_HEIGHT - cam.y);
             float relYTop = layerY + cloudChunkHeight;
 
             RelativeCameraPos layerPos =
@@ -225,18 +225,20 @@ public class CustomCloudRenderer {
             long now = System.currentTimeMillis();
 
             float relY = (float)(relYTop - cloudChunkHeight / 2.0f);
-            float transition = Math.max(0.0001f, layerConfiguration.TRANSITION_RANGE);
+            float transition = Math.max(0.0001f, layerConfiguration.FADE.TRANSITION_RANGE);
             float dir = Mth.clamp(relY / transition, -1.0f, 1.0f);
 
             boolean needs = currentLayer.needsRebuild
                     || cellX    != currentLayer.prevCellX
                     || cellZ    != currentLayer.prevCellZ
                     || layerPos != currentLayer.prevPos
-                    || status   != currentLayer.prevStatus
-                    || skyColor != prevSkyColor;
+                    || status   != currentLayer.prevStatus;
+            
+            // throttle this a little (~40ms per rebuild)
+            boolean needsColorUpdate = prevSkyColor != skyColor;
 
-            if (!needs && layerConfiguration.FADE_ENABLED) {
-                if (Math.abs(relY) <= layerConfiguration.TRANSITION_RANGE) {
+            if (!needs && layerConfiguration.FADE.FADE_ENABLED) {
+                if (Math.abs(relY) <= layerConfiguration.FADE.TRANSITION_RANGE) {
                     float old = currentLayer.prevFadeMix;
                     if ((Float.isNaN(old) || Math.abs(dir - old) > 0.02f) && (now - currentLayer.lastFadeRebuildMs > 40L)) {
                         needs = true;
@@ -247,6 +249,14 @@ public class CustomCloudRenderer {
                         needs = true;
                     }
                 }
+            }
+
+            // throttle color update
+            if (needsColorUpdate && 
+                (now - currentLayer.lastFadeRebuildMs > 40L) &&
+                !layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS) {
+                needs = true;
+                currentLayer.lastFadeRebuildMs = now;
             }
 
             if (needs) {
@@ -281,9 +291,15 @@ public class CustomCloudRenderer {
 
             if (currentLayer.layerIndexCount > 0) {
                 if (fancy) {
-                    drawLayer(ModRenderPipelines.POSITION_COLOR_DEPTH, offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ, layer, indices, currentLayer);
+                    drawLayer(
+                        ModRenderPipelines.POSITION_COLOR_DEPTH, 
+                        offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ, 
+                        layer, indices, currentLayer, skyColor);
                 }
-                drawLayer(ModRenderPipelines.CUSTOM_POSITION_COLOR, offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ, layer, indices, currentLayer);
+                drawLayer(
+                    ModRenderPipelines.CUSTOM_POSITION_COLOR, 
+                    offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ, 
+                    layer, indices, currentLayer, skyColor);
 
             }
         }
@@ -294,7 +310,13 @@ public class CustomCloudRenderer {
                 CloudsConfiguration.INSTANCE.getLayer(layer);
         
         int config = 0;
+
         if (layerConfiguration.FOG_ENABLED) config |= 1 << 0;
+        if (layerConfiguration.APPEARANCE.SHADING_ENABLED) config |= 1 << 1;
+        if (layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA) config |= 1 << 2;
+        if (layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS) config |= 1 << 3;
+        if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR) config |= 1 << 4;
+
         return config;
     }
 
@@ -302,11 +324,16 @@ public class CustomCloudRenderer {
         RenderPipeline pipeline,
         float offX, float offY, float offZ,
         int layer,
-        RenderSystem.AutoStorageIndexBuffer indices, LayerState currentLayer) {
+        RenderSystem.AutoStorageIndexBuffer indices, 
+        LayerState currentLayer,
+        int skyColor) {
 
         try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(currentLayer.ubo.currentBuffer(), false, true)) {
             Std140Builder.intoBuffer(mappedView.data())
-                .putVec4(-offX, offY, -offZ, 0.0f)
+                .putVec4(ARGB.red(skyColor), 
+                    ARGB.green(skyColor), 
+                    ARGB.blue(skyColor), 
+                    ARGB.alpha(skyColor))
                 .putInt(packConfig(layer))
                 .putInt(0)
                 .putInt(0)

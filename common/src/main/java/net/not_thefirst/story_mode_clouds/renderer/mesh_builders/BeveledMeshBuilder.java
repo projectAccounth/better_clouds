@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
-import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceMask;
@@ -68,7 +67,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 CloudsConfiguration.INSTANCE.getLayer(currentLayer);
 
         float scaledY1 = y1 * (layerConfiguration.IS_ENABLED
-                ? layerConfiguration.CLOUD_Y_SCALE
+                ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE
                 : 1.0f);
 
         boolean n = Texture.isNorthEmpty(cell);
@@ -101,9 +100,9 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         float b = ARGB.blueFloat(sideTopColor);
         float a = ARGB.alphaFloat(sideTopColor);
 
-        float bevelRadius = cellSize * 0.2f;
-        int edgeSegments = 8;
-        int cornerSegments = 8;
+        float bevelRadius = layerConfiguration.BEVEL.BEVEL_SIZE;
+        int edgeSegments = layerConfiguration.BEVEL.BEVEL_EDGE_SEGMENTS;
+        int cornerSegments = layerConfiguration.BEVEL.BEVEL_CORNER_SEGMENTS;
 
         CubeBuilder.buildBeveledCube(
                 bb,
@@ -114,7 +113,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 edgeSegments,
                 cornerSegments,
                 excluded,
-                r, g, b, a
+                1.0f, 1.0f, 1.0f, 0.8f
         );
     }
 }

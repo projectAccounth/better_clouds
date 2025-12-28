@@ -62,7 +62,7 @@ public final class GeometryUtils {
             float bz1 = az1 + edgeDZ;
 
             if (!flip) {
-                VertexBuilder.quad(bb,
+                VertexBuilder.quadPreshaded(bb,
                     ax0, ay0, az0,
                     ax1, ay1, az1,
                     bx1, by1, bz1,
@@ -70,7 +70,7 @@ public final class GeometryUtils {
                     r, g, b, a
                 );
             } else {
-                VertexBuilder.quad(bb,
+                VertexBuilder.quadPreshaded(bb,
                     bx0, by0, bz0,
                     bx1, by1, bz1,
                     ax1, ay1, az1,
@@ -122,7 +122,6 @@ public final class GeometryUtils {
 
         float r, float g, float b, float a
     ) {
-        // Triangular grid
         List<List<Vector3f>> grid = new ArrayList<>(segments + 1);
 
         for (int i = 0; i <= segments; i++) {
@@ -161,7 +160,7 @@ public final class GeometryUtils {
                     Vector3f v11 = grid.get(i + 1).get(j + 1);
 
                     if (!flip) {
-                        VertexBuilder.quad(
+                        VertexBuilder.quadPreshaded(
                             bb,
                             v00.x, v00.y, v00.z,
                             v10.x, v10.y, v10.z,
@@ -170,7 +169,7 @@ public final class GeometryUtils {
                             r, g, b, a
                         );
                     } else {
-                        VertexBuilder.quad(
+                        VertexBuilder.quadPreshaded(
                             bb,
                             v01.x, v01.y, v01.z,
                             v11.x, v11.y, v11.z,
@@ -182,7 +181,7 @@ public final class GeometryUtils {
                 } else {
                     // Final triangle
                     if (!flip) {
-                        VertexBuilder.triangle(
+                        VertexBuilder.trianglePreshaded(
                             bb,
                             v00.x, v00.y, v00.z,
                             v10.x, v10.y, v10.z,
@@ -190,7 +189,7 @@ public final class GeometryUtils {
                             r, g, b, a
                         );
                     } else {
-                        VertexBuilder.triangle(
+                        VertexBuilder.trianglePreshaded(
                             bb,
                             v01.x, v01.y, v01.z,
                             v10.x, v10.y, v10.z,

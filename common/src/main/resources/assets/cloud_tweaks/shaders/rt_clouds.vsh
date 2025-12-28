@@ -16,6 +16,11 @@ in vec3 Position;
 in vec4 Color;
 
 bool fogEnabled() { return (config & (1 << 0)) != 0; }
+bool shadingEnabled() { return (config & (1 << 1)) != 0; }
+bool usesCustomAlpha() { return (config & (1 << 2)) != 0; }
+bool customBrightness() { return (config & (1 << 3)) != 0; }
+bool usesCustomColor() { return (config & (1 << 4)) != 0; }
+
 
 out float vertexDistance;
 out vec4 vertexColor;

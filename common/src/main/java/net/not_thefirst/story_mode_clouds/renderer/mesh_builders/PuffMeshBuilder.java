@@ -13,6 +13,7 @@ import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder.PuffMode;
 import net.not_thefirst.story_mode_clouds.utils.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
+import net.not_thefirst.story_mode_clouds.utils.MiscUtils.CacheKey;
 
 // TODO: Implement a Z-fighting fixing solution for the cells there
 public class PuffMeshBuilder implements MeshTypeBuilder {
@@ -30,7 +31,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         }
     }
 
-    private static final Map<String, LayerCache> LayerCaches = new ConcurrentHashMap<>(4);
+    private static final Map<CacheKey, LayerCache> LayerCaches = new ConcurrentHashMap<>(4);
 
     private static long splitmix64(long x) {
         x += PHI;
@@ -53,13 +54,16 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         final float localZ;
         final float hr;
         final float vr;
-        final float baseY; // base Y before tiny per-p puff jitter; constrained so baseY + vr <= PUFF_MAX_VERTICAL
-        PuffDesc(float localX, float localZ, float hr, float vr, float baseY) {
+        final float baseY; // base Y before tiny per-p puff jitter;; constrained so baseY + vr <= PUFF_MAX_VERTICAL
+        final float yBias; // stable per-puff depth bias
+
+        PuffDesc(float localX, float localZ, float hr, float vr, float baseY, float yBias) {
             this.localX = localX;
             this.localZ = localZ;
             this.hr = hr;
             this.vr = vr;
             this.baseY = baseY;
+            this.yBias = yBias;
         }
     }
 
@@ -84,7 +88,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
     // Build or return existing LayerCache for given tex n layer
     private static LayerCache ensureCache(Texture.TextureData tex, int currentLayer) {
-        String key = Integer.toHexString(System.identityHashCode(tex)) + ":" + currentLayer;
+        CacheKey key = new CacheKey(System.identityHashCode(tex), currentLayer);
         LayerCache cache = LayerCaches.get(key);
         Object cellsRef = tex.cells; // use reference identity to detect if texture changes
         if (cache != null) {
@@ -101,7 +105,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         final float PUFF_HEIGHT_FACTOR = 0.45f;
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
             CloudsConfiguration.INSTANCE.getLayer(currentLayer);
-        final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (layerConfiguration.IS_ENABLED ? layerConfiguration.CLOUD_Y_SCALE : 1.0f);
+        final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0f);
 
         LayerCache pc = new LayerCache(tex.width, tex.height, cellsRef, PUFFS_PER_CELL, currentLayer);
 
@@ -135,7 +139,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     float rr2 = uint64ToFloat01(s2);
 
                     float hr = Mth.lerp(rr0, PUFF_MIN_SIZE, PUFF_MAX_SIZE);
-                    float vr = hr * PUFF_HEIGHT_FACTOR;
+                    float vr = hr * PUFF_HEIGHT_FACTOR;                    
 
                     float localX, localZ;
                     if (MeshBuilder.PUFF_MODE == PuffMode.COMPACT) {
@@ -172,7 +176,13 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     float baseY = uint64ToFloat01(splitmix64(s2)) * (PUFF_MAX_VERTICAL - vr);
                     baseY = Mth.clamp(baseY, 0.0f, PUFF_MAX_VERTICAL - vr);
 
-                    arr[p] = new PuffDesc(localX, localZ, hr, vr, baseY);
+                    long biasSeed = splitmix64(puffSeed ^ 0xA5A5A5A5A5A5A5A5L);
+                    float bias01 = uint64ToFloat01(biasSeed);
+
+                    // 64 discrete layers, total span approx .032 blocks
+                    float yBias = ((int)(bias01 * 64)) * 0.0005f;
+
+                    arr[p] = new PuffDesc(localX, localZ, hr, vr, baseY, yBias);
                 }
 
                 pc.puffByCell[idx] = arr;
@@ -200,7 +210,6 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         final float PUFF_MIN_SIZE = 1.8f;
         final float PUFF_MAX_SIZE = 5.2f;
         final float PUFF_HEIGHT_FACTOR = 0.45f;
-        final float Y_JITTER = 0.2f;
 
         long[] cells = tex.cells;
         int w = tex.width;
@@ -237,12 +246,12 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     float hr = pd.hr;
                     float vr = pd.vr;
 
-                    // what did I add the jitter for
-                    float py = pd.baseY + (p * Y_JITTER * 0.1f + p * 0.0001f);
+                    // ok fix z fihightng
+                    float py = pd.baseY + pd.yBias;
 
                     // clamp as original
                     CloudsConfiguration.LayerConfiguration lc = layerConfiguration;
-                    final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (lc.IS_ENABLED ? lc.CLOUD_Y_SCALE : 1.0f);
+                    final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (lc.IS_ENABLED ? lc.APPEARANCE.CLOUD_Y_SCALE : 1.0f);
                     py = Mth.clamp(py, 0.0f, PUFF_MAX_VERTICAL - vr);
 
                     int topColor = ColorUtils.recolor(MeshBuilder.topColor, py + vr, pos, relY, currentLayer, skyColor);

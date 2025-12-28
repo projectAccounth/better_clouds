@@ -7,7 +7,8 @@
   "mixins": [
   ],
   "client": [
-    "CloudRendererMixin"
+    "CloudRendererMixin",
+    "LightingAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

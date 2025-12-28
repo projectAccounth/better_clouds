@@ -9,7 +9,8 @@
   "client": [
     "LevelRendererMixin",
     "OptionsMixin",
-    "ClientMixin"
+    "ClientMixin",
+    "LightingAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

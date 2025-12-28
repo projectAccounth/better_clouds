@@ -1,17 +1,12 @@
 package net.not_thefirst.story_mode_clouds;
 
-import me.shedaniel.autoconfig.AutoConfig;
-import me.shedaniel.autoconfig.ConfigHolder;
-import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
-import net.minecraft.world.InteractionResult;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.compat.ForgeModChecker;
-import net.not_thefirst.story_mode_clouds.config.ClothConfigClass;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
 @Mod("cloud_tweaks")
@@ -25,21 +20,6 @@ public class StoryModeClouds {
     private static void initialize(FMLJavaModLoadingContext ctx) {
         Compat.init(new ForgeModChecker());
         Initializer.initialize();
-
-        if (Compat.hasClothConfig()) {
-            ConfigHolder<ClothConfigClass> holder = AutoConfig.register(ClothConfigClass.class, GsonConfigSerializer::new);
-            
-            holder.registerSaveListener((manager, data) -> {
-                CloudsConfiguration.INSTANCE.applyFromCloth(data);
-                CloudsConfiguration.save();
-                return InteractionResult.SUCCESS;
-            });
-
-            holder.registerLoadListener((manager, data) -> {
-                data.applyFromMain(CloudsConfiguration.INSTANCE);
-                return InteractionResult.SUCCESS;
-            });
-        }
 
         ctx.registerExtensionPoint(
             ConfigScreenHandler.ConfigScreenFactory.class,

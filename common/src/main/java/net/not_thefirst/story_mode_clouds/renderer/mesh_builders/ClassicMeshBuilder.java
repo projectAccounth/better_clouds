@@ -83,7 +83,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
                 CloudsConfiguration.INSTANCE.getLayer(currentLayer);
 
-        float scaledY1 = y1 * (layerConfiguration.IS_ENABLED ? layerConfiguration.CLOUD_Y_SCALE : 1.0f);        
+        float scaledY1 = y1 * (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0f);        
         
         // Top face
         if (pos != RelativeCameraPos.BELOW_CLOUDS) {

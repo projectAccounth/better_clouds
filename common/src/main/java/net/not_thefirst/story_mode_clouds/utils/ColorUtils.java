@@ -14,12 +14,12 @@ public class ColorUtils {
             return ARGB.multiply(color, skyColor);
         }
 
-        boolean shaded   = layerConfiguration.APPEARS_SHADED;
-        boolean useAlpha = layerConfiguration.USES_CUSTOM_ALPHA;
-        boolean useColor = layerConfiguration.USES_CUSTOM_COLOR;
+        boolean shaded   = layerConfiguration.APPEARANCE.SHADING_ENABLED;
+        boolean useAlpha = layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA;
+        boolean useColor = layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR;
 
-        float baseAlpha  = useAlpha ? layerConfiguration.BASE_ALPHA / 255.0f : ARGB.alphaFloat(color);
-        int customColor  = layerConfiguration.LAYER_COLOR;
+        float baseAlpha  = useAlpha ? layerConfiguration.APPEARANCE.BASE_ALPHA / 255.0f : ARGB.alphaFloat(color);
+        int customColor  = layerConfiguration.APPEARANCE.LAYER_COLOR;
 
         float r = ARGB.redFloat(color);
         float g = ARGB.greenFloat(color);
@@ -36,7 +36,7 @@ public class ColorUtils {
             b *= ARGB.blueFloat(customColor);
         }
 
-        if (!layerConfiguration.CUSTOM_BRIGHTNESS) {
+        if (!layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS) {
             float cloudR = ARGB.redFloat(skyColor);
             float cloudG = ARGB.greenFloat(skyColor);
             float cloudB = ARGB.blueFloat(skyColor);
@@ -58,13 +58,13 @@ public class ColorUtils {
             return ARGB.multiply(color, skyColor);
         }
 
-        boolean shaded   = layerConfiguration.APPEARS_SHADED;
-        boolean useAlpha = layerConfiguration.USES_CUSTOM_ALPHA;
-        boolean useColor = layerConfiguration.USES_CUSTOM_COLOR;
+        boolean shaded   = layerConfiguration.APPEARANCE.SHADING_ENABLED;
+        boolean useAlpha = layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA;
+        boolean useColor = layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR;
 
-        float baseAlpha  = useAlpha ? layerConfiguration.BASE_ALPHA / 255.0f : ARGB.alphaFloat(color);
-        float fadeAlpha  = layerConfiguration.FADE_ALPHA / 255.0f;
-        int customColor  = layerConfiguration.LAYER_COLOR;
+        float baseAlpha  = useAlpha ? layerConfiguration.APPEARANCE.BASE_ALPHA / 255.0f : ARGB.alphaFloat(color);
+        float fadeAlpha  = layerConfiguration.FADE.FADE_ALPHA / 255.0f;
+        int customColor  = layerConfiguration.APPEARANCE.LAYER_COLOR;
 
         float r = ARGB.redFloat(color);
         float g = ARGB.greenFloat(color);
@@ -82,7 +82,7 @@ public class ColorUtils {
             r = g = b = 1.0f;
         }
 
-        if (!layerConfiguration.CUSTOM_BRIGHTNESS) {
+        if (!layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS) {
             float cloudR = ARGB.redFloat(skyColor);
             float cloudG = ARGB.greenFloat(skyColor);
             float cloudB = ARGB.blueFloat(skyColor);
@@ -92,14 +92,14 @@ public class ColorUtils {
             b *= cloudB;
         }
 
-        if (!layerConfiguration.FADE_ENABLED) {
+        if (!layerConfiguration.FADE.FADE_ENABLED) {
             return ARGB.colorFromFloat(baseAlpha, r, g, b);
         }
 
-        float cloudHeight = 4 * layerConfiguration.CLOUD_Y_SCALE;
+        float cloudHeight = 4 * layerConfiguration.APPEARANCE.CLOUD_Y_SCALE;
         float normalizedY = Mth.clamp(vertexY / cloudHeight, 0.0f, 1.0f);
 
-        float transitionRange = layerConfiguration.TRANSITION_RANGE;
+        float transitionRange = layerConfiguration.FADE.TRANSITION_RANGE;
         float dir = Mth.clamp(relY / transitionRange, -1.0f, 1.0f);
 
         float fadeBelow = Mth.lerp(normalizedY, 1.0f, fadeAlpha);

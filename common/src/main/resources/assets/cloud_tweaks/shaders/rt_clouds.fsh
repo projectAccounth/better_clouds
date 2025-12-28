@@ -19,6 +19,6 @@ out vec4 fragColor;
 
 void main() {
     vec4 color = vertexColor;
-    color.a *= 1.0 - linear_fog_value(vertexDistance, 0.0, FogCloudsEnd);
+    color.a *= 1.0 - vertexDistance / 400; // linear_fog_value(vertexDistance, 0.0, FogCloudsEnd);
     fragColor = color;
 }

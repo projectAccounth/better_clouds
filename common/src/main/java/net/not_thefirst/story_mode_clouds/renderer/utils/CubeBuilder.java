@@ -122,6 +122,95 @@ public class CubeBuilder {
         );
     }
 
+    public static void emitInternalCornerQuads(
+        BufferBuilder bb,
+        float minX, float maxX,
+        float minY, float maxY,
+        float minZ, float maxZ,
+        float radius,
+        FaceMask excludedFaces,
+        float r, float g, float b, float a
+    ) {
+        final float r2 = radius * 2.0f;
+
+        final boolean exNX = hasFace(excludedFaces, FaceDir.NEG_X);
+        final boolean exPX = hasFace(excludedFaces, FaceDir.POS_X);
+        final boolean exNZ = hasFace(excludedFaces, FaceDir.NEG_Z);
+        final boolean exPZ = hasFace(excludedFaces, FaceDir.POS_Z);
+
+        if (exNX && exNZ) {
+            VertexBuilder.quadPreshaded(bb,
+                minX, minY, minZ,
+                minX, minY, minZ + r2,
+                minX, maxY, minZ + r2,
+                minX, maxY, minZ,
+                r, g, b, a
+            );
+
+            VertexBuilder.quadPreshaded(bb,
+                minX, minY, minZ,
+                minX, maxY, minZ,
+                minX + r2, maxY, minZ,
+                minX + r2, minY, minZ,
+                r, g, b, a
+            );
+        }
+
+        if (exPX && exNZ) {
+            VertexBuilder.quadPreshaded(bb,
+                maxX, minY, minZ,
+                maxX, maxY, minZ,
+                maxX, maxY, minZ + r2,
+                maxX, minY, minZ + r2,
+                r, g, b, a
+            );
+
+            VertexBuilder.quadPreshaded(bb,
+                maxX - r2, minY, minZ,
+                maxX - r2, maxY, minZ,
+                maxX, maxY, minZ,
+                maxX, minY, minZ,
+                r, g, b, a
+            );
+        }
+
+        if (exNX && exPZ) {
+            VertexBuilder.quadPreshaded(bb,
+                minX, minY, maxZ - r2,
+                minX, minY, maxZ,
+                minX, maxY, maxZ,
+                minX, maxY, maxZ - r2,
+                r, g, b, a
+            );
+
+            VertexBuilder.quadPreshaded(bb,
+                minX, minY, maxZ,
+                minX + r2, minY, maxZ,
+                minX + r2, maxY, maxZ,
+                minX, maxY, maxZ,
+                r, g, b, a
+            );
+        }
+
+        if (exPX && exPZ) {
+            VertexBuilder.quadPreshaded(bb,
+                maxX, minY, maxZ,
+                maxX, minY, maxZ - r2,
+                maxX, maxY, maxZ - r2,
+                maxX, maxY, maxZ,
+                r, g, b, a
+            );
+
+            VertexBuilder.quadPreshaded(bb,
+                maxX - r2, minY, maxZ,
+                maxX, minY, maxZ,
+                maxX, maxY, maxZ,
+                maxX - r2, maxY, maxZ,
+                r, g, b, a
+            );
+        }
+    }
+
     public static void emitTopAndBottomEdges(
         BufferBuilder bb,
         float minX, float maxX,
@@ -234,7 +323,7 @@ public class CubeBuilder {
         float iz1 = hasFace(excludedFaces, FaceDir.POS_Z) ? maxZ : maxZ - radius;
 
         if (!hasFace(excludedFaces, FaceDir.POS_Y)) {
-            VertexBuilder.quad(bb,
+            VertexBuilder.quadPreshaded(bb,
                 ix0, maxY, iz1,
                 ix1, maxY, iz1,
                 ix1, maxY, iz0,
@@ -244,7 +333,7 @@ public class CubeBuilder {
         }
 
         if (!hasFace(excludedFaces, FaceDir.NEG_Y)) {
-            VertexBuilder.quad(bb,
+            VertexBuilder.quadPreshaded(bb,
                 ix1, minY, iz0,
                 ix1, minY, iz1,
                 ix0, minY, iz1,
@@ -254,7 +343,7 @@ public class CubeBuilder {
         }
 
         if (!hasFace(excludedFaces, FaceDir.NEG_X)) {
-            VertexBuilder.quad(bb,
+            VertexBuilder.quadPreshaded(bb,
                 minX, iy0, iz1,
                 minX, iy1, iz1,
                 minX, iy1, iz0,
@@ -264,7 +353,7 @@ public class CubeBuilder {
         }
 
         if (!hasFace(excludedFaces, FaceDir.POS_X)) {
-            VertexBuilder.quad(bb,
+            VertexBuilder.quadPreshaded(bb,
                 maxX, iy0, iz0,
                 maxX, iy1, iz0,
                 maxX, iy1, iz1,
@@ -274,7 +363,7 @@ public class CubeBuilder {
         }
 
         if (!hasFace(excludedFaces, FaceDir.NEG_Z)) {
-            VertexBuilder.quad(bb,
+            VertexBuilder.quadPreshaded(bb,
                 ix0, iy0, minZ,
                 ix0, iy1, minZ,
                 ix1, iy1, minZ,
@@ -284,7 +373,7 @@ public class CubeBuilder {
         }
 
         if (!hasFace(excludedFaces, FaceDir.POS_Z)) {
-            VertexBuilder.quad(bb,
+            VertexBuilder.quadPreshaded(bb,
                 ix1, iy0, maxZ,
                 ix1, iy1, maxZ,
                 ix0, iy1, maxZ,
@@ -452,6 +541,15 @@ public class CubeBuilder {
                 r, g, b, a
             );
         }
+
+        emitInternalCornerQuads(
+            bb, 
+            minX, maxX, 
+            minY, maxY, 
+            minZ, maxZ, 
+            radius, excludedFaces, 
+            r, g, b, a
+        );
 
         emitInsetFaces(
             bb,
