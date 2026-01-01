@@ -30,5 +30,5 @@ void main() {
     gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);
 
     vertexDistance = fogEnabled() ? fog_spherical_distance(pos) : 0.0;
-    vertexColor = Color * ColorModulator;
+    vertexColor = Color * ColorModulator * vec4(CloudColor.rgb, 1.0f);
 }
