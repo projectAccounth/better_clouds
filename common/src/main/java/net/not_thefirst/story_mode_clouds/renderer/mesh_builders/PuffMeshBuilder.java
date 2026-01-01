@@ -11,9 +11,7 @@ import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerStat
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder.PuffMode;
 import net.not_thefirst.story_mode_clouds.renderer.utils.WrappedCoordinates;
-import net.not_thefirst.story_mode_clouds.renderer.utils.ColorBatch;
 import net.not_thefirst.story_mode_clouds.renderer.utils.VertexBuilder;
-import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 import net.not_thefirst.story_mode_clouds.utils.MiscUtils.CacheKey;
 
@@ -221,7 +219,6 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         final float cellSize = MeshBuilder.CELL_SIZE_IN_BLOCKS;
         
         WrappedCoordinates wrapped = new WrappedCoordinates(cx, cz, RANGE, w, h);
-        ColorBatch colorBatch = new ColorBatch(4);
 
         for (int dz = -RANGE; dz <= RANGE; dz++) {
             for (int dx = -RANGE; dx <= RANGE; dx++) {
@@ -255,20 +252,9 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (lc.IS_ENABLED ? lc.APPEARANCE.CLOUD_Y_SCALE : 1.0f);
                     py = Mth.clamp(py, 0.0f, PUFF_MAX_VERTICAL - vr);
 
-                    int topColor = ColorUtils.recolor(MeshBuilder.topColor, py + vr, pos, relY, currentLayer, skyColor);
-                    int bottomColor = ColorUtils.recolor(MeshBuilder.innerColor, py, pos, relY, currentLayer, skyColor);
-                    int sideColorTop = ColorUtils.recolor(MeshBuilder.sideColor, py + vr, pos, relY, currentLayer, skyColor);
-                    int sideColorBottom = ColorUtils.recolor(MeshBuilder.sideColor, py, pos, relY, currentLayer, skyColor);
-                    
-                    colorBatch.reset();
-                    colorBatch.add(topColor);
-                    colorBatch.add(bottomColor);
-                    colorBatch.add(sideColorTop);
-                    colorBatch.add(sideColorBottom);
-
                     switch (MeshBuilder.SHAPE) {
                         case CROSS:
-                            drawCross(bb, px, py, pz, hr, vr, colorBatch);
+                            drawCross(bb, px, py, pz, hr, vr, currentLayer, pos, relY, skyColor);
                             break;
                         case CUBE:
                         default:
@@ -351,21 +337,25 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         BufferBuilder bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        ColorBatch colorBatch) {
+        int layer, RelativeCameraPos pos, float relY, int skyColor) {
 
         float y0 = cy;
         float y1 = cy + vr;
 
-        // X-axis quad (colors 1=bottom, 0=top)
-        bb.addVertex(cx - hr, y0, cz).setColor(colorBatch.getR(1), colorBatch.getG(1), colorBatch.getB(1), colorBatch.getA(1));
-        bb.addVertex(cx + hr, y0, cz).setColor(colorBatch.getR(1), colorBatch.getG(1), colorBatch.getB(1), colorBatch.getA(1));
-        bb.addVertex(cx + hr, y1, cz).setColor(colorBatch.getR(0), colorBatch.getG(0), colorBatch.getB(0), colorBatch.getA(0));
-        bb.addVertex(cx - hr, y1, cz).setColor(colorBatch.getR(0), colorBatch.getG(0), colorBatch.getB(0), colorBatch.getA(0));
+        VertexBuilder.quad(bb, 
+            cx - hr, y0, cz,
+            cx + hr, y0, cz,
+            cx + hr, y1, cz,
+            cx - hr, y1, cz,
+            layer, pos, relY, skyColor
+        );
 
-        // Z-axis quad
-        bb.addVertex(cx, y0, cz - hr).setColor(colorBatch.getR(1), colorBatch.getG(1), colorBatch.getB(1), colorBatch.getA(1));
-        bb.addVertex(cx, y0, cz + hr).setColor(colorBatch.getR(1), colorBatch.getG(1), colorBatch.getB(1), colorBatch.getA(1));
-        bb.addVertex(cx, y1, cz + hr).setColor(colorBatch.getR(0), colorBatch.getG(0), colorBatch.getB(0), colorBatch.getA(0));
-        bb.addVertex(cx, y1, cz - hr).setColor(colorBatch.getR(0), colorBatch.getG(0), colorBatch.getB(0), colorBatch.getA(0));
+        VertexBuilder.quad(bb, 
+            cx, y0, cz - hr,
+            cx, y0, cz + hr,
+            cx, y1, cz + hr,
+            cx, y1, cz - hr,
+            layer, pos, relY, skyColor
+        );
     }
 }

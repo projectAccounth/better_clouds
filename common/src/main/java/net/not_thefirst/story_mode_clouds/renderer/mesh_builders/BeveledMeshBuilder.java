@@ -76,10 +76,10 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
 
         FaceMask excluded = new FaceMask();
 
-        if (!w) excluded.addMask(FaceDir.NEG_X);
-        if (!e) excluded.addMask(FaceDir.POS_X);
-        if (!n) excluded.addMask(FaceDir.NEG_Z);
-        if (!s) excluded.addMask(FaceDir.POS_Z);
+        if (!w) excluded.add(FaceDir.NEG_X);
+        if (!e) excluded.add(FaceDir.POS_X);
+        if (!n) excluded.add(FaceDir.NEG_Z);
+        if (!s) excluded.add(FaceDir.POS_Z);
 
         if (pos == RelativeCameraPos.BELOW_CLOUDS) {
             // excluded.addMask(FaceDir.POS_Y);
