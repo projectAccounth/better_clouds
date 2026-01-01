@@ -7,15 +7,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import me.shedaniel.autoconfig.annotation.ConfigEntry;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 
 public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -24,6 +24,18 @@ public class CloudsConfiguration {
     public boolean CLOUDS_RENDERED = true;
 
     public static CloudsConfiguration INSTANCE = new CloudsConfiguration();
+
+    public static class LightingParameters {
+        public float AMBIENT_LIGHTING_STRENGTH  = 0.7f;
+        public float MAX_LIGHTING_SHADING       = 0.8f;
+
+        public List<DiffuseLight> lights = new ArrayList<>();
+
+        public LightingParameters() {
+        }
+    }
+
+    public LightingParameters LIGHTING = new LightingParameters();
 
     private LayerHolder LAYERS = new LayerHolder();
 
@@ -40,6 +52,8 @@ public class CloudsConfiguration {
         return LAYERS == null ? 0 : LAYERS.layers.size();
     }
 
+    public static LayerConfiguration template = new LayerConfiguration();
+
     public static class LayerConfiguration {
         public LayerConfiguration(int idx) {
             LAYER_IDX = idx; 
@@ -53,21 +67,23 @@ public class CloudsConfiguration {
             public float BEVEL_SIZE            = 0.1f;
             public int   BEVEL_EDGE_SEGMENTS   = 8;
             public int   BEVEL_CORNER_SEGMENTS = 8;
-        };
 
-        public static class LightingParameters {
-            public float AMBIENT_OCCLUSION_FACTOR = 0.5f;
-            public float DIFFUSE_LIGHTING_FACTOR  = 0.5f;
-            public float RIM_LIGHTING_FACTOR      = 0.5f;
+            void copy(BevelParameters other) {
+                this.BEVEL_SIZE = other.BEVEL_SIZE;
+                this.BEVEL_EDGE_SEGMENTS = other.BEVEL_EDGE_SEGMENTS;
+                this.BEVEL_CORNER_SEGMENTS = other.BEVEL_CORNER_SEGMENTS;
+            }
         };
 
         public static class PerformanceParameters {
-            public int MAX_CELLS_RENDERED_PER_FRAME = 16;
             public int MESH_REBUILD_BUDGET_MS       = 2;
+
+            void copy(PerformanceParameters other) {
+                this.MESH_REBUILD_BUDGET_MS = other.MESH_REBUILD_BUDGET_MS;
+            }
         };
 
         public static class AppearanceParameters {
-            // copy over
             public boolean SHADING_ENABLED    = false; // Whether clouds should appear shaded (darker) when the sun is behind them
             public boolean USES_CUSTOM_ALPHA  = true;  // Whether clouds should use custom alpha
             public boolean CUSTOM_BRIGHTNESS  = true;  // Whether clouds should be rendered with custom brightness' brightness (what the hell)
@@ -80,22 +96,38 @@ public class CloudsConfiguration {
             
             public int     LAYER_OFFSET_X        = 0;
             public int     LAYER_OFFSET_Z        = 0;
+
+            void copy(AppearanceParameters other) {
+                this.SHADING_ENABLED = other.SHADING_ENABLED;
+                this.USES_CUSTOM_ALPHA = other.USES_CUSTOM_ALPHA;
+                this.CUSTOM_BRIGHTNESS = other.CUSTOM_BRIGHTNESS;
+                this.USES_CUSTOM_COLOR = other.USES_CUSTOM_COLOR;
+                this.BASE_ALPHA = other.BASE_ALPHA;
+                this.BRIGHTNESS = other.BRIGHTNESS;
+                this.LAYER_COLOR = other.LAYER_COLOR;
+                this.CLOUD_Y_SCALE = other.CLOUD_Y_SCALE;
+                this.LAYER_OFFSET_X = other.LAYER_OFFSET_X;
+                this.LAYER_OFFSET_Z = other.LAYER_OFFSET_Z;
+            }
         }
 
         public static class FadeParameters {
-            // copying the below over
             public boolean FADE_ENABLED     = true;
             public int     FADE_ALPHA       = (int) (0.2f * 255); // The minimum fade alpha (fade at the top)
             public float   TRANSITION_RANGE = 10.0f;
+
+            void copy(FadeParameters other) {
+                this.FADE_ENABLED = other.FADE_ENABLED;
+                this.FADE_ALPHA = other.FADE_ALPHA;
+                this.TRANSITION_RANGE = other.TRANSITION_RANGE;
+            }
         }
 
         public BevelParameters       BEVEL       = new BevelParameters();
-        public LightingParameters    LIGHTING    = new LightingParameters();
         public PerformanceParameters PERFORMANCE = new PerformanceParameters();
         public AppearanceParameters  APPEARANCE  = new AppearanceParameters();
         public FadeParameters        FADE        = new FadeParameters();
 
-        // maybe_unused
         private int LAYER_IDX;
 
         public String  NAME                  = "Minecraft";
@@ -105,10 +137,22 @@ public class CloudsConfiguration {
         
         public int     LAYER_HEIGHT          = 128;
 
-        @ConfigEntry.Gui.EnumHandler(option=ConfigEntry.Gui.EnumHandler.EnumDisplayOption.BUTTON)
-        public CustomCloudRenderer.CloudMode MODE = CustomCloudRenderer.CloudMode.NORMAL;
+        public String MODE = "NORMAL";
 
         public int GetLayerIndex() { return LAYER_IDX; }
+
+        void copy(LayerConfiguration other) {
+            this.NAME = other.NAME;
+            this.FOG_ENABLED = other.FOG_ENABLED;
+            this.IS_ENABLED = other.IS_ENABLED;
+            this.LAYER_RENDERED = other.LAYER_RENDERED;
+            this.LAYER_HEIGHT = other.LAYER_HEIGHT;
+            this.MODE = other.MODE;
+            this.BEVEL.copy(other.BEVEL);
+            this.PERFORMANCE.copy(other.PERFORMANCE);
+            this.APPEARANCE.copy(other.APPEARANCE);
+            this.FADE.copy(other.FADE);
+        }
     };
 
     public static class LayerHolder {

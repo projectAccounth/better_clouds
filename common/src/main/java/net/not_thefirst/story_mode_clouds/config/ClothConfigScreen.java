@@ -1,5 +1,6 @@
 package net.not_thefirst.story_mode_clouds.config;
 
+import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
@@ -7,16 +8,14 @@ import me.shedaniel.clothconfig2.gui.entries.MultiElementListEntry;
 import me.shedaniel.clothconfig2.gui.entries.NestedListListEntry;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
+import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Explicit Cloth Config screen builder with proper layer list management using NestedListListEntry.
- */
 public class ClothConfigScreen {
 
     static final int MIN_BEVEL_SEGMENTS = 1;
@@ -56,7 +55,41 @@ public class ClothConfigScreen {
             .setDefaultValue(true)
             .setSaveConsumer(value -> config.CLOUDS_RENDERED = value)
             .build());
-        
+            
+        ConfigCategory lightingCategory = builder.getOrCreateCategory(Component.literal("Lighting"));
+        lightingCategory.addEntry(entryBuilder.startFloatField(
+                Component.literal("Ambient Strength"),
+                config.LIGHTING.AMBIENT_LIGHTING_STRENGTH)
+            .setDefaultValue(0.5f)
+            .setMin(MIN_BRIGHTNESS)
+            .setMax(MAX_BRIGHTNESS)
+            .setSaveConsumer(value -> config.LIGHTING.AMBIENT_LIGHTING_STRENGTH = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, value)))
+            .build());
+        lightingCategory.addEntry(entryBuilder.startFloatField(
+                Component.literal("Max Shading"),
+                config.LIGHTING.MAX_LIGHTING_SHADING)
+            .setDefaultValue(0.5f)
+            .setMin(MIN_BRIGHTNESS)
+            .setMax(MAX_BRIGHTNESS)
+            .setSaveConsumer(value -> config.LIGHTING.MAX_LIGHTING_SHADING = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, value)))
+            .build());
+
+        lightingCategory.addEntry(new NestedListListEntry<>(
+            Component.literal("Light sources"),
+            config.LIGHTING.lights,
+            false,
+            null,
+            newValue -> {
+                config.LIGHTING.lights.clear();
+                config.LIGHTING.lights.addAll(newValue);
+            },
+            () -> new ArrayList<>(config.LIGHTING.lights),
+            entryBuilder.getResetButtonKey(),
+            true,
+            false,
+            (light, parentEntry) -> buildLightEntry(entryBuilder, light)
+        ));
+
         ConfigCategory layersCategory = builder.getOrCreateCategory(Component.literal("Layers"));
         
         layersCategory.addEntry(new NestedListListEntry<>(
@@ -78,18 +111,81 @@ public class ClothConfigScreen {
             (layer, parentEntry) -> buildLayerEntries(entryBuilder, layer)
         ));
         
+        ConfigCategory templateCategory = builder.getOrCreateCategory(Component.literal("Layer Template"));
+        templateCategory.addEntry(buildLayerEntries(entryBuilder, CloudsConfiguration.template));
+        
         return builder.build();
     }
-    
+
+    private static ParameterGroup buildLightList(
+        ConfigEntryBuilder entryBuilder,
+        DiffuseLight light
+    ) {
+        
+        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
+        
+        entries.add(entryBuilder.startFloatField(
+                Component.literal("Direction X"),
+                light.direction.x)
+            .setDefaultValue(0.0f)
+            .setMin(-1.0f)
+            .setMax(1.0f)
+            .setSaveConsumer(value -> light.direction.x = value)
+            .build());
+        entries.add(entryBuilder.startFloatField(
+                Component.literal("Direction Y"),
+                light.direction.y)
+            .setDefaultValue(1.0f)
+            .setMin(-1.0f)
+            .setMax(1.0f)
+            .setSaveConsumer(value -> light.direction.y = value)
+            .build());
+        entries.add(entryBuilder.startFloatField(
+                Component.literal("Direction Z"),
+                light.direction.z)
+            .setDefaultValue(0.0f)
+            .setMin(-1.0f)
+            .setMax(1.0f)
+            .setSaveConsumer(value -> light.direction.z = value)
+            .build());
+        entries.add(entryBuilder.startFloatField(
+                Component.literal("Intensity"),
+                light.intensity)
+            .setDefaultValue(1.0f)
+            .setMin(0.0f)
+            .setMax(10.0f)
+            .setSaveConsumer(value -> light.intensity = value)
+            .build());
+        
+        return new ParameterGroup("Light", entries);
+    }
+
+    private static MultiElementListEntry<DiffuseLight> buildLightEntry(
+        ConfigEntryBuilder entryBuilder,
+        DiffuseLight light
+    ) {
+        if (light == null) {
+            light = new DiffuseLight();
+        }
+
+        return new MultiElementListEntry<>(
+            Component.literal("Light"),
+            light,
+            buildLightList(entryBuilder, light).entries,
+            true
+        );
+    }
+
     private static MultiElementListEntry<CloudsConfiguration.LayerConfiguration> buildLayerEntries(
         ConfigEntryBuilder entryBuilder,
         CloudsConfiguration.LayerConfiguration layer) {
         
         if (layer == null) {
             layer = new CloudsConfiguration.LayerConfiguration();
+            layer.copy(CloudsConfiguration.template);
         }
         
-        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
+        List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
         
         List<ParameterGroup> parameterGroups = new ArrayList<>();
         parameterGroups.add(buildBasicSettingsGroup(entryBuilder, layer));
@@ -98,7 +194,6 @@ public class ClothConfigScreen {
         parameterGroups.add(buildFadeGroup(entryBuilder, layer));
         parameterGroups.add(buildFogGroup(entryBuilder, layer));
         parameterGroups.add(buildBevelGroup(entryBuilder, layer));
-        parameterGroups.add(buildLightingGroup(entryBuilder, layer));
         parameterGroups.add(buildPerformanceGroup(entryBuilder, layer));
         
         entries.add(new NestedListListEntry<>(
@@ -109,8 +204,8 @@ public class ClothConfigScreen {
             newValue -> {},
             () -> new ArrayList<>(parameterGroups),
             entryBuilder.getResetButtonKey(),
-            false,  // allowAdd = false
-            false,  // allowDelete = false
+            false,
+            false,
             (group, parent) -> new MultiElementListEntry<>(
                 Component.literal(group.name),
                 group,
@@ -128,7 +223,7 @@ public class ClothConfigScreen {
     }
     
     private static ParameterGroup buildBasicSettingsGroup(ConfigEntryBuilder entryBuilder, CloudsConfiguration.LayerConfiguration layer) {
-        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
+        List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
         entries.add(entryBuilder.startStrField(
                 Component.literal("Name"),
                 layer.NAME)
@@ -153,18 +248,23 @@ public class ClothConfigScreen {
             .setDefaultValue(128)
             .setSaveConsumer(value -> layer.LAYER_HEIGHT = value)
             .build());
-        entries.add(entryBuilder.startEnumSelector(
+        entries.add(entryBuilder
+            .startStringDropdownMenu(
                 Component.literal("Cloud Mode"),
-                CustomCloudRenderer.CloudMode.class,
-                layer.MODE)
-            .setDefaultValue(CustomCloudRenderer.CloudMode.NORMAL)
+                layer.MODE
+            )
+            .setDefaultValue("NORMAL")
+            .setSelections(
+                MeshBuilderRegistry.getInstance().keys()
+            )
             .setSaveConsumer(value -> layer.MODE = value)
             .build());
+
         return new ParameterGroup("Basic Settings", entries);
     }
     
     private static ParameterGroup buildAppearanceGroup(ConfigEntryBuilder entryBuilder, CloudsConfiguration.LayerConfiguration layer) {
-        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
+        List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
         entries.add(entryBuilder.startBooleanToggle(
                 Component.literal("Shading Enabled"),
                 layer.APPEARANCE.SHADING_ENABLED)
@@ -240,7 +340,7 @@ public class ClothConfigScreen {
     }
     
     private static ParameterGroup buildFadeGroup(ConfigEntryBuilder entryBuilder, CloudsConfiguration.LayerConfiguration layer) {
-        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
+        List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
         entries.add(entryBuilder.startBooleanToggle(
                 Component.literal("Fade Enabled"),
                 layer.FADE.FADE_ENABLED)
@@ -266,7 +366,7 @@ public class ClothConfigScreen {
     }
     
     private static ParameterGroup buildFogGroup(ConfigEntryBuilder entryBuilder, CloudsConfiguration.LayerConfiguration layer) {
-        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
+        List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
         entries.add(entryBuilder.startBooleanToggle(
                 Component.literal("Fog Enabled"),
                 layer.FOG_ENABLED)
@@ -277,7 +377,7 @@ public class ClothConfigScreen {
     }
     
     private static ParameterGroup buildBevelGroup(ConfigEntryBuilder entryBuilder, CloudsConfiguration.LayerConfiguration layer) {
-        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
+        List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
         entries.add(entryBuilder.startFloatField(
                 Component.literal("Bevel Size"),
                 layer.BEVEL.BEVEL_SIZE)
@@ -305,45 +405,8 @@ public class ClothConfigScreen {
         return new ParameterGroup("Bevel", entries);
     }
     
-    private static ParameterGroup buildLightingGroup(ConfigEntryBuilder entryBuilder, CloudsConfiguration.LayerConfiguration layer) {
-        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
-        entries.add(entryBuilder.startFloatField(
-                Component.literal("Ambient Occlusion"),
-                layer.LIGHTING.AMBIENT_OCCLUSION_FACTOR)
-            .setDefaultValue(0.5f)
-            .setMin(MIN_BRIGHTNESS)
-            .setMax(MAX_BRIGHTNESS)
-            .setSaveConsumer(value -> layer.LIGHTING.AMBIENT_OCCLUSION_FACTOR = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, value)))
-            .build());
-        entries.add(entryBuilder.startFloatField(
-                Component.literal("Diffuse Lighting"),
-                layer.LIGHTING.DIFFUSE_LIGHTING_FACTOR)
-            .setDefaultValue(0.5f)
-            .setMin(MIN_BRIGHTNESS)
-            .setMax(MAX_BRIGHTNESS)
-            .setSaveConsumer(value -> layer.LIGHTING.DIFFUSE_LIGHTING_FACTOR = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, value)))
-            .build());
-        entries.add(entryBuilder.startFloatField(
-                Component.literal("Rim Lighting"),
-                layer.LIGHTING.RIM_LIGHTING_FACTOR)
-            .setDefaultValue(0.5f)
-            .setMin(MIN_BRIGHTNESS)
-            .setMax(MAX_BRIGHTNESS)
-            .setSaveConsumer(value -> layer.LIGHTING.RIM_LIGHTING_FACTOR = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, value)))
-            .build());
-        return new ParameterGroup("Lighting", entries);
-    }
-    
     private static ParameterGroup buildPerformanceGroup(ConfigEntryBuilder entryBuilder, CloudsConfiguration.LayerConfiguration layer) {
-        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
-        entries.add(entryBuilder.startIntField(
-                Component.literal("Max Cells per Frame"),
-                layer.PERFORMANCE.MAX_CELLS_RENDERED_PER_FRAME)
-            .setDefaultValue(16)
-            .setMin(MIN_CELLS_PER_FRAME)
-            .setMax(MAX_CELLS_PER_FRAME)
-            .setSaveConsumer(value -> layer.PERFORMANCE.MAX_CELLS_RENDERED_PER_FRAME = Math.max(MIN_CELLS_PER_FRAME, Math.min(MAX_CELLS_PER_FRAME, value)))
-            .build());
+        List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
         entries.add(entryBuilder.startIntField(
                 Component.literal("Mesh Rebuild Budget (ms)"),
                 layer.PERFORMANCE.MESH_REBUILD_BUDGET_MS)
@@ -367,9 +430,9 @@ public class ClothConfigScreen {
      */
     private static class ParameterGroup {
         final String name;
-        final List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries;
+        final List<AbstractConfigListEntry<?>> entries;
         
-        ParameterGroup(String name, List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries) {
+        ParameterGroup(String name, List<AbstractConfigListEntry<?>> entries) {
             this.name = name;
             this.entries = Collections.unmodifiableList(entries);
         }
