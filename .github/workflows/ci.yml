@@ -38,7 +38,7 @@ jobs:
         run: ./gradlew build
 
       - name: Collect release JARs
-        run: ./gradlew collectReleaseJars
+        run: ./gradlew collectAllReleaseJars
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
