@@ -10,7 +10,9 @@ import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder.PuffMode;
-import net.not_thefirst.story_mode_clouds.utils.ARGB;
+import net.not_thefirst.story_mode_clouds.renderer.utils.WrappedCoordinates;
+import net.not_thefirst.story_mode_clouds.renderer.utils.ColorBatch;
+import net.not_thefirst.story_mode_clouds.renderer.utils.VertexBuilder;
 import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 import net.not_thefirst.story_mode_clouds.utils.MiscUtils.CacheKey;
@@ -217,13 +219,15 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
         LayerCache pc = ensureCache(tex, currentLayer);
         final float cellSize = MeshBuilder.CELL_SIZE_IN_BLOCKS;
+        
+        WrappedCoordinates wrapped = new WrappedCoordinates(cx, cz, RANGE, w, h);
+        ColorBatch colorBatch = new ColorBatch(4);
 
         for (int dz = -RANGE; dz <= RANGE; dz++) {
             for (int dx = -RANGE; dx <= RANGE; dx++) {
 
-                int tx = Math.floorMod(cx + dx, w);
-                int tz = Math.floorMod(cz + dz, h);
-                long cell = cells[tx + tz * w];
+                int cellIdx = wrapped.getCellIndex(dx, dz, RANGE);
+                long cell = cells[cellIdx];
                 if (cell == 0L) continue;
 
                 float baseX = dx * cellSize;
@@ -232,7 +236,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                 int alpha = (int) ((cell >> 36) & 0xFF);
                 if (alpha <= 3) continue;
 
-                PuffDesc[] puffs = pc.puffByCell[tx + tz * w];
+                PuffDesc[] puffs = pc.puffByCell[cellIdx];
                 if (puffs == null) continue;
 
                 for (int p = 0; p < PUFFS_PER_CELL; p++) {
@@ -245,11 +249,8 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
                     float hr = pd.hr;
                     float vr = pd.vr;
-
-                    // ok fix z fihightng
                     float py = pd.baseY + pd.yBias;
 
-                    // clamp as original
                     CloudsConfiguration.LayerConfiguration lc = layerConfiguration;
                     final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (lc.IS_ENABLED ? lc.APPEARANCE.CLOUD_Y_SCALE : 1.0f);
                     py = Mth.clamp(py, 0.0f, PUFF_MAX_VERTICAL - vr);
@@ -258,35 +259,20 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     int bottomColor = ColorUtils.recolor(MeshBuilder.innerColor, py, pos, relY, currentLayer, skyColor);
                     int sideColorTop = ColorUtils.recolor(MeshBuilder.sideColor, py + vr, pos, relY, currentLayer, skyColor);
                     int sideColorBottom = ColorUtils.recolor(MeshBuilder.sideColor, py, pos, relY, currentLayer, skyColor);
+                    
+                    colorBatch.reset();
+                    colorBatch.add(topColor);
+                    colorBatch.add(bottomColor);
+                    colorBatch.add(sideColorTop);
+                    colorBatch.add(sideColorBottom);
 
-                    float topR = ARGB.redFloat(topColor);
-                    float topG = ARGB.greenFloat(topColor);
-                    float topB = ARGB.blueFloat(topColor);
-                    float topA = ARGB.alphaFloat(topColor);
-
-                    float bottomR = ARGB.redFloat(bottomColor);
-                    float bottomG = ARGB.greenFloat(bottomColor);
-                    float bottomB = ARGB.blueFloat(bottomColor);
-                    float bottomA = ARGB.alphaFloat(bottomColor);
-
-                    float sideTopR = ARGB.redFloat(sideColorTop);
-                    float sideTopG = ARGB.greenFloat(sideColorTop);
-                    float sideTopB = ARGB.blueFloat(sideColorTop);
-                    float sideTopA = ARGB.alphaFloat(sideColorTop);
-
-                    float sideBottomR = ARGB.redFloat(sideColorBottom);
-                    float sideBottomG = ARGB.greenFloat(sideColorBottom);
-                    float sideBottomB = ARGB.blueFloat(sideColorBottom);
-                    float sideBottomA = ARGB.alphaFloat(sideColorBottom);
-
-                    // Draw the puff based on the shape
                     switch (MeshBuilder.SHAPE) {
                         case CROSS:
-                            drawCross(bb, px, py, pz, hr, vr, topR, topG, topB, topA, bottomR, bottomG, bottomB, bottomA);
+                            drawCross(bb, px, py, pz, hr, vr, colorBatch);
                             break;
                         case CUBE:
                         default:
-                            drawCube(bb, px, py, pz, hr, vr, topR, topG, topB, topA, bottomR, bottomG, bottomB, bottomA, sideTopR, sideTopG, sideTopB, sideTopA, sideBottomR, sideBottomG, sideBottomB, sideBottomA);
+                            drawCube(bb, px, py, pz, hr, vr, currentLayer, pos, relY, skyColor);
                             break;
                     }
                 }
@@ -300,68 +286,86 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         BufferBuilder bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        float topR, float topG, float topB, float topA,
-        float bottomR, float bottomG, float bottomB, float bottomA,
-        float sideTopR, float sideTopG, float sideTopB, float sideTopA,
-        float sideBottomR, float sideBottomG, float sideBottomB, float sideBottomA) {
+        int layer, RelativeCameraPos pos, float relY, int skyColor) {
 
         float x0 = cx - hr, x1 = cx + hr;
         float y0 = cy,      y1 = cy + vr;
         float z0 = cz - hr, z1 = cz + hr;
 
-        // Top face
-        bb.addVertex(x0, y1, z1).setColor(topR, topG, topB, topA);
-        bb.addVertex(x1, y1, z1).setColor(topR, topG, topB, topA);
-        bb.addVertex(x1, y1, z0).setColor(topR, topG, topB, topA);
-        bb.addVertex(x0, y1, z0).setColor(topR, topG, topB, topA);
+        VertexBuilder.quad(
+                bb,
+                x0, y1, z1,
+                x1, y1, z1,
+                x1, y1, z0,
+                x0, y1, z0,
+                layer, pos, relY, skyColor
+        );
 
-        // Bottom face
-        bb.addVertex(x0, y0, z0).setColor(bottomR, bottomG, bottomB, bottomA);
-        bb.addVertex(x1, y0, z0).setColor(bottomR, bottomG, bottomB, bottomA);
-        bb.addVertex(x1, y0, z1).setColor(bottomR, bottomG, bottomB, bottomA);
-        bb.addVertex(x0, y0, z1).setColor(bottomR, bottomG, bottomB, bottomA);
+        VertexBuilder.quad(
+                bb,
+                x0, y0, z0,
+                x1, y0, z0,
+                x1, y0, z1,
+                x0, y0, z1,
+                layer, pos, relY, skyColor
+        );
 
-        bb.addVertex(x0, y0, z1).setColor(sideBottomR, sideBottomG, sideBottomB, sideBottomA);
-        bb.addVertex(x1, y0, z1).setColor(sideBottomR, sideBottomG, sideBottomB, sideBottomA);
-        bb.addVertex(x1, y1, z1).setColor(sideTopR, sideTopG, sideTopB, sideTopA);
-        bb.addVertex(x0, y1, z1).setColor(sideTopR, sideTopG, sideTopB, sideTopA);
+        VertexBuilder.quad(
+                bb,
+                x0, y0, z1,
+                x1, y0, z1,
+                x1, y1, z1,
+                x0, y1, z1,
+                layer, pos, relY, skyColor
+        );
 
-        bb.addVertex(x1, y0, z0).setColor(sideBottomR, sideBottomG, sideBottomB, sideBottomA);
-        bb.addVertex(x0, y0, z0).setColor(sideBottomR, sideBottomG, sideBottomB, sideBottomA);
-        bb.addVertex(x0, y1, z0).setColor(sideTopR, sideTopG, sideTopB, sideTopA);
-        bb.addVertex(x1, y1, z0).setColor(sideTopR, sideTopG, sideTopB, sideTopA);
+        VertexBuilder.quad(
+                bb,
+                x1, y0, z0,
+                x0, y0, z0,
+                x0, y1, z0,
+                x1, y1, z0,
+                layer, pos, relY, skyColor
+        );
 
-        bb.addVertex(x0, y0, z0).setColor(sideBottomR, sideBottomG, sideBottomB, sideBottomA);
-        bb.addVertex(x0, y0, z1).setColor(sideBottomR, sideBottomG, sideBottomB, sideBottomA);
-        bb.addVertex(x0, y1, z1).setColor(sideTopR, sideTopG, sideTopB, sideTopA);
-        bb.addVertex(x0, y1, z0).setColor(sideTopR, sideTopG, sideTopB, sideTopA);
+        VertexBuilder.quad(
+                bb,
+                x0, y0, z0,
+                x0, y0, z1,
+                x0, y1, z1,
+                x0, y1, z0,
+                layer, pos, relY, skyColor
+        );
 
-        bb.addVertex(x1, y0, z1).setColor(sideBottomR, sideBottomG, sideBottomB, sideBottomA);
-        bb.addVertex(x1, y0, z0).setColor(sideBottomR, sideBottomG, sideBottomB, sideBottomA);
-        bb.addVertex(x1, y1, z0).setColor(sideTopR, sideTopG, sideTopB, sideTopA);
-        bb.addVertex(x1, y1, z1).setColor(sideTopR, sideTopG, sideTopB, sideTopA);
+        VertexBuilder.quad(
+                bb,
+                x1, y0, z1,
+                x1, y0, z0,
+                x1, y1, z0,
+                x1, y1, z1,
+                layer, pos, relY, skyColor
+        );
     }
 
     private static void drawCross(
         BufferBuilder bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        float topR, float topG, float topB, float topA,
-        float bottomR, float bottomG, float bottomB, float bottomA) {
+        ColorBatch colorBatch) {
 
         float y0 = cy;
         float y1 = cy + vr;
 
-        // float diag = hr * 0.7071f;
+        // X-axis quad (colors 1=bottom, 0=top)
+        bb.addVertex(cx - hr, y0, cz).setColor(colorBatch.getR(1), colorBatch.getG(1), colorBatch.getB(1), colorBatch.getA(1));
+        bb.addVertex(cx + hr, y0, cz).setColor(colorBatch.getR(1), colorBatch.getG(1), colorBatch.getB(1), colorBatch.getA(1));
+        bb.addVertex(cx + hr, y1, cz).setColor(colorBatch.getR(0), colorBatch.getG(0), colorBatch.getB(0), colorBatch.getA(0));
+        bb.addVertex(cx - hr, y1, cz).setColor(colorBatch.getR(0), colorBatch.getG(0), colorBatch.getB(0), colorBatch.getA(0));
 
-        bb.addVertex(cx - hr, y0, cz).setColor(bottomR, bottomG, bottomB, bottomA);
-        bb.addVertex(cx + hr, y0, cz).setColor(bottomR, bottomG, bottomB, bottomA);
-        bb.addVertex(cx + hr, y1, cz).setColor(topR, topG, topB, topA);
-        bb.addVertex(cx - hr, y1, cz).setColor(topR, topG, topB, topA);
-
-        bb.addVertex(cx, y0, cz - hr).setColor(bottomR, bottomG, bottomB, bottomA);
-        bb.addVertex(cx, y0, cz + hr).setColor(bottomR, bottomG, bottomB, bottomA);
-        bb.addVertex(cx, y1, cz + hr).setColor(topR, topG, topB, topA);
-        bb.addVertex(cx, y1, cz - hr).setColor(topR, topG, topB, topA);
+        // Z-axis quad
+        bb.addVertex(cx, y0, cz - hr).setColor(colorBatch.getR(1), colorBatch.getG(1), colorBatch.getB(1), colorBatch.getA(1));
+        bb.addVertex(cx, y0, cz + hr).setColor(colorBatch.getR(1), colorBatch.getG(1), colorBatch.getB(1), colorBatch.getA(1));
+        bb.addVertex(cx, y1, cz + hr).setColor(colorBatch.getR(0), colorBatch.getG(0), colorBatch.getB(0), colorBatch.getA(0));
+        bb.addVertex(cx, y1, cz - hr).setColor(colorBatch.getR(0), colorBatch.getG(0), colorBatch.getB(0), colorBatch.getA(0));
     }
 }

@@ -2,6 +2,7 @@ package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
 
+import net.minecraft.client.Minecraft;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
@@ -9,8 +10,6 @@ import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceMask;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
-import net.not_thefirst.story_mode_clouds.utils.ARGB;
-import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 import net.not_thefirst.story_mode_clouds.utils.Texture.TextureData;
 
@@ -41,7 +40,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 int z = Math.floorMod(cz + dz, h);
                 long cell = cells[x + z * w];
                 if (cell != 0L) {
-                    buildCell(pos, bb, dx, dz, cell, relY, currentLayer, skyColor);
+                    buildCell(pos, bb, dx, dz, cell, relY, currentLayer, skyColor, x + z * w, state);
                 }
             }
         }
@@ -51,7 +50,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
     
     private static void buildCell(RelativeCameraPos pos, BufferBuilder bb,
                             int cx, int cz, long cell, float relY,
-                            int currentLayer, int skyColor) {
+                            int currentLayer, int skyColor, int cellIdx, LayerState state) {
 
         float cellSize = MeshBuilder.CELL_SIZE_IN_BLOCKS;
 
@@ -90,19 +89,12 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
             // excluded.addMask(FaceDir.NEG_Y);
         }
 
-        int sideTopColor = ColorUtils.recolor(
-                MeshBuilder.sideColor, y0,
-                pos, relY, currentLayer, skyColor
-        );
-
-        float r = ARGB.redFloat(sideTopColor);
-        float g = ARGB.greenFloat(sideTopColor);
-        float b = ARGB.blueFloat(sideTopColor);
-        float a = ARGB.alphaFloat(sideTopColor);
-
         float bevelRadius = layerConfiguration.BEVEL.BEVEL_SIZE;
         int edgeSegments = layerConfiguration.BEVEL.BEVEL_EDGE_SEGMENTS;
         int cornerSegments = layerConfiguration.BEVEL.BEVEL_CORNER_SEGMENTS;
+
+        var client = Minecraft.getInstance(); 
+        var cam = client.getCameraEntity().getPosition(1.0f);
 
         CubeBuilder.buildBeveledCube(
                 bb,
@@ -113,7 +105,9 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 edgeSegments,
                 cornerSegments,
                 excluded,
-                1.0f, 1.0f, 1.0f, 0.8f
+                currentLayer,
+                (float) cam.x, (float) cam.y, (float) cam.z,
+                state, pos, relY, cellIdx, skyColor
         );
     }
 }

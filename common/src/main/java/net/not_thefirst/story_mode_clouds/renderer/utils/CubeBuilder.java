@@ -2,8 +2,12 @@ package net.not_thefirst.story_mode_clouds.renderer.utils;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
 
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
+import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers.EdgeDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers.Sign;
+import net.not_thefirst.story_mode_clouds.utils.Texture;
 
 public class CubeBuilder {
     public enum FaceDir {
@@ -101,7 +105,8 @@ public class CubeBuilder {
         Sign sx, Sign sy, Sign sz,
         float radius,
         int segments,
-        float r, float g, float b, float a
+        int layer,
+        RelativeCameraPos pos, float relY, int skyColor
     ) {
         float fx = signToFloat(sx);
         float fy = signToFloat(sy);
@@ -118,97 +123,8 @@ public class CubeBuilder {
             radius,
             segments,
             flip,
-            r, g, b, a
+            layer, pos, relY, skyColor
         );
-    }
-
-    public static void emitInternalCornerQuads(
-        BufferBuilder bb,
-        float minX, float maxX,
-        float minY, float maxY,
-        float minZ, float maxZ,
-        float radius,
-        FaceMask excludedFaces,
-        float r, float g, float b, float a
-    ) {
-        final float r2 = radius * 2.0f;
-
-        final boolean exNX = hasFace(excludedFaces, FaceDir.NEG_X);
-        final boolean exPX = hasFace(excludedFaces, FaceDir.POS_X);
-        final boolean exNZ = hasFace(excludedFaces, FaceDir.NEG_Z);
-        final boolean exPZ = hasFace(excludedFaces, FaceDir.POS_Z);
-
-        if (exNX && exNZ) {
-            VertexBuilder.quadPreshaded(bb,
-                minX, minY, minZ,
-                minX, minY, minZ + r2,
-                minX, maxY, minZ + r2,
-                minX, maxY, minZ,
-                r, g, b, a
-            );
-
-            VertexBuilder.quadPreshaded(bb,
-                minX, minY, minZ,
-                minX, maxY, minZ,
-                minX + r2, maxY, minZ,
-                minX + r2, minY, minZ,
-                r, g, b, a
-            );
-        }
-
-        if (exPX && exNZ) {
-            VertexBuilder.quadPreshaded(bb,
-                maxX, minY, minZ,
-                maxX, maxY, minZ,
-                maxX, maxY, minZ + r2,
-                maxX, minY, minZ + r2,
-                r, g, b, a
-            );
-
-            VertexBuilder.quadPreshaded(bb,
-                maxX - r2, minY, minZ,
-                maxX - r2, maxY, minZ,
-                maxX, maxY, minZ,
-                maxX, minY, minZ,
-                r, g, b, a
-            );
-        }
-
-        if (exNX && exPZ) {
-            VertexBuilder.quadPreshaded(bb,
-                minX, minY, maxZ - r2,
-                minX, minY, maxZ,
-                minX, maxY, maxZ,
-                minX, maxY, maxZ - r2,
-                r, g, b, a
-            );
-
-            VertexBuilder.quadPreshaded(bb,
-                minX, minY, maxZ,
-                minX + r2, minY, maxZ,
-                minX + r2, maxY, maxZ,
-                minX, maxY, maxZ,
-                r, g, b, a
-            );
-        }
-
-        if (exPX && exPZ) {
-            VertexBuilder.quadPreshaded(bb,
-                maxX, minY, maxZ,
-                maxX, minY, maxZ - r2,
-                maxX, maxY, maxZ - r2,
-                maxX, maxY, maxZ,
-                r, g, b, a
-            );
-
-            VertexBuilder.quadPreshaded(bb,
-                maxX - r2, minY, maxZ,
-                maxX, minY, maxZ,
-                maxX, maxY, maxZ,
-                maxX - r2, maxY, maxZ,
-                r, g, b, a
-            );
-        }
     }
 
     public static void emitTopAndBottomEdges(
@@ -218,7 +134,8 @@ public class CubeBuilder {
         float yTop, float yBot,
         float radius,
         int segments,
-        float r, float g, float b, float a
+        int layer,
+        RelativeCameraPos pos, float relY, int skyColor
     ) {
         for (EdgeDir dir : EdgeDir.values()) {
             BevelWrappers.topEdge(
@@ -228,7 +145,7 @@ public class CubeBuilder {
                 yTop,
                 radius,
                 segments,
-                r, g, b, a
+                layer, pos, relY, skyColor
             );
 
             BevelWrappers.bottomEdge(
@@ -238,7 +155,8 @@ public class CubeBuilder {
                 yBot,
                 radius,
                 segments,
-                r, g, b, a
+                layer, 
+                pos, relY, skyColor
             );
         }
     }
@@ -272,37 +190,130 @@ public class CubeBuilder {
         }
     }
 
-    public static void emitVerticalEdges(
+    private static final class CornerCap {
+        final FaceDir fx;
+        final FaceDir fz;
+        final EdgeDir dir;
+        final boolean top;
+        final boolean flip;
+
+        CornerCap(FaceDir fx, FaceDir fz, EdgeDir dir, boolean top, boolean flip) {
+            this.fx = fx;
+            this.fz = fz;
+            this.dir = dir;
+            this.top = top;
+            this.flip = flip;
+        }
+    }
+
+    private static final CornerCap[] CORNER_CAPS = {
+        // NEG_X.NEG_Z
+        new CornerCap(FaceDir.NEG_X, FaceDir.NEG_Z, EdgeDir.WEST,  true,  false),
+        new CornerCap(FaceDir.NEG_X, FaceDir.NEG_Z, EdgeDir.NORTH, true,  true),
+        new CornerCap(FaceDir.NEG_X, FaceDir.NEG_Z, EdgeDir.WEST,  false, true),
+        new CornerCap(FaceDir.NEG_X, FaceDir.NEG_Z, EdgeDir.NORTH, false, false),
+
+        // POS_X.NEG_Z
+        new CornerCap(FaceDir.POS_X, FaceDir.NEG_Z, EdgeDir.EAST,  true,  true),
+        new CornerCap(FaceDir.POS_X, FaceDir.NEG_Z, EdgeDir.NORTH, true,  true),
+        new CornerCap(FaceDir.POS_X, FaceDir.NEG_Z, EdgeDir.EAST,  false, false),
+        new CornerCap(FaceDir.POS_X, FaceDir.NEG_Z, EdgeDir.NORTH, false, false),
+
+        // NEG_X.POS_Z
+        new CornerCap(FaceDir.NEG_X, FaceDir.POS_Z, EdgeDir.WEST,  true,  false),
+        new CornerCap(FaceDir.NEG_X, FaceDir.POS_Z, EdgeDir.SOUTH, true,  false),
+        new CornerCap(FaceDir.NEG_X, FaceDir.POS_Z, EdgeDir.WEST,  false, true),
+        new CornerCap(FaceDir.NEG_X, FaceDir.POS_Z, EdgeDir.SOUTH, false, true),
+
+        // POS_X.POS_Z
+        new CornerCap(FaceDir.POS_X, FaceDir.POS_Z, EdgeDir.EAST,  true,  true),
+        new CornerCap(FaceDir.POS_X, FaceDir.POS_Z, EdgeDir.SOUTH, true,  false),
+        new CornerCap(FaceDir.POS_X, FaceDir.POS_Z, EdgeDir.EAST,  false, false),
+        new CornerCap(FaceDir.POS_X, FaceDir.POS_Z, EdgeDir.SOUTH, false, true),
+    };
+
+    private static float capX0(Sign sx, float minX, float maxX, float r) {
+        return (sx == Sign.NEG) ? minX : maxX - r;
+    }
+
+    private static float capX1(Sign sx, float minX, float maxX, float r) {
+        return (sx == Sign.NEG) ? minX + r : maxX;
+    }
+
+    private static float capZ0(Sign sz, float minZ, float maxZ, float r) {
+        return (sz == Sign.NEG) ? minZ : maxZ - r;
+    }
+
+    private static float capZ1(Sign sz, float minZ, float maxZ, float r) {
+        return (sz == Sign.NEG) ? minZ + r : maxZ;
+    }
+
+    private static float backOffX(EdgeDir dir, float x, float r) {
+        return (dir == EdgeDir.WEST) ? x + r :
+            (dir == EdgeDir.EAST) ? x - r : x;
+    }
+
+    private static float backOffZ(EdgeDir dir, float z, float r) {
+        return (dir == EdgeDir.NORTH) ? z + r :
+            (dir == EdgeDir.SOUTH) ? z - r : z;
+    }
+
+    private static void emitHorizontalCornerCaps(
         BufferBuilder bb,
         float minX, float maxX,
         float minZ, float maxZ,
-        float y0, float y1,
+        float yTop, float yBot,
         float radius,
         int segments,
-        float r, float g, float b, float a
+        FaceMask excluded,
+        int layer,
+        RelativeCameraPos pos, float relY, int skyColor
     ) {
-        final VEdge[] edges = {
-            new VEdge(Sign.POS, Sign.POS, maxX - radius, maxZ - radius),
-            new VEdge(Sign.NEG, Sign.NEG, minX + radius, minZ + radius),
-            new VEdge(Sign.NEG, Sign.POS, minX + radius, maxZ - radius),
-            new VEdge(Sign.POS, Sign.NEG, maxX - radius, minZ + radius)
-        };
+        for (CornerCap cap : CORNER_CAPS) {
+            if (!hasFace(excluded, cap.fx) || !hasFace(excluded, cap.fz)) {
+                continue;
+            }
 
-        for (VEdge e : edges) {
-            BevelWrappers.verticalEdge(
+            Sign sx = (cap.fx == FaceDir.POS_X) ? Sign.POS : Sign.NEG;
+            Sign sz = (cap.fz == FaceDir.POS_Z) ? Sign.POS : Sign.NEG;
+
+            float x0 = capX0(sx, minX, maxX, radius);
+            float x1 = capX1(sx, minX, maxX, radius);
+            float z0 = capZ0(sz, minZ, maxZ, radius);
+            float z1 = capZ1(sz, minZ, maxZ, radius);
+
+            float y  = cap.top ? yTop : yBot;
+            float ny = cap.top ? 1.0f : -1.0f;
+
+            float ex0, ez0, ex1, ez1;
+
+            if (cap.dir == EdgeDir.NORTH || cap.dir == EdgeDir.SOUTH) {
+                ex0 = x0; ex1 = x1;
+                ez0 = (cap.dir == EdgeDir.NORTH) ? z0 : z1;
+                ez0 = backOffZ(cap.dir, ez0, radius);
+                ez1 = ez0;
+            } else {
+                ex0 = (cap.dir == EdgeDir.WEST) ? x0 : x1;
+                ex0 = backOffX(cap.dir, ex0, radius);
+                ex1 = ex0;
+                ez0 = z0; ez1 = z1;
+            }
+
+
+            GeometryUtils.buildCylindricalStrip(
                 bb,
-                e.sx,
-                e.sz,
-                e.x,
-                e.z,
-                y0,
-                y1,
+                ex0, y, ez0,
+                ex1, y, ez1,
+                0, ny, 0,
+                (float)BevelWrappers.dx(cap.dir), 0, (float)BevelWrappers.dz(cap.dir),
                 radius,
                 segments,
-                r, g, b, a
+                cap.flip,
+                layer, pos, relY, skyColor
             );
         }
     }
+
 
     public static void emitInsetFaces(
         BufferBuilder bb,
@@ -311,7 +322,8 @@ public class CubeBuilder {
         float minZ, float maxZ,
         float radius,
         FaceMask excludedFaces,
-        float r, float g, float b, float a
+        int layer,
+        RelativeCameraPos pos, float relY, int skyColor
     ) {
         float ix0 = hasFace(excludedFaces, FaceDir.NEG_X) ? minX : minX + radius;
         float ix1 = hasFace(excludedFaces, FaceDir.POS_X) ? maxX : maxX - radius;
@@ -323,62 +335,68 @@ public class CubeBuilder {
         float iz1 = hasFace(excludedFaces, FaceDir.POS_Z) ? maxZ : maxZ - radius;
 
         if (!hasFace(excludedFaces, FaceDir.POS_Y)) {
-            VertexBuilder.quadPreshaded(bb,
+            VertexBuilder.quad(bb,
                 ix0, maxY, iz1,
                 ix1, maxY, iz1,
                 ix1, maxY, iz0,
                 ix0, maxY, iz0,
-                r, g, b, a
+                layer,
+                pos, relY, skyColor
             );
         }
 
         if (!hasFace(excludedFaces, FaceDir.NEG_Y)) {
-            VertexBuilder.quadPreshaded(bb,
+            VertexBuilder.quad(bb,
                 ix1, minY, iz0,
                 ix1, minY, iz1,
                 ix0, minY, iz1,
                 ix0, minY, iz0,
-                r, g, b, a
+                layer,
+                pos, relY, skyColor
             );
         }
 
         if (!hasFace(excludedFaces, FaceDir.NEG_X)) {
-            VertexBuilder.quadPreshaded(bb,
+            VertexBuilder.quad(bb,
                 minX, iy0, iz1,
                 minX, iy1, iz1,
                 minX, iy1, iz0,
                 minX, iy0, iz0,
-                r, g, b, a
+                layer,
+                pos, relY, skyColor
             );
         }
 
         if (!hasFace(excludedFaces, FaceDir.POS_X)) {
-            VertexBuilder.quadPreshaded(bb,
+            VertexBuilder.quad(bb,
                 maxX, iy0, iz0,
                 maxX, iy1, iz0,
                 maxX, iy1, iz1,
                 maxX, iy0, iz1,
-                r, g, b, a
+                layer,
+                pos, relY, skyColor
             );
         }
 
         if (!hasFace(excludedFaces, FaceDir.NEG_Z)) {
-            VertexBuilder.quadPreshaded(bb,
+            VertexBuilder.quad(bb,
                 ix0, iy0, minZ,
                 ix0, iy1, minZ,
                 ix1, iy1, minZ,
                 ix1, iy0, minZ,
-                r, g, b, a
+                layer,
+                pos, relY, skyColor
             );
         }
 
         if (!hasFace(excludedFaces, FaceDir.POS_Z)) {
-            VertexBuilder.quadPreshaded(bb,
+            VertexBuilder.quad(bb,
                 ix1, iy0, maxZ,
                 ix1, iy1, maxZ,
                 ix0, iy1, maxZ,
                 ix0, iy0, maxZ,
-                r, g, b, a
+                layer,
+                pos, relY, skyColor
             );
         }
     }
@@ -435,8 +453,15 @@ public class CubeBuilder {
         int edgeSegments,
         int cornerSegments,
         FaceMask excludedFaces,
-        float r, float g, float b, float a
+        int layer,
+        float camX, float camY, float camZ,
+        CustomCloudRenderer.LayerState state,
+        RelativeCameraPos pos, float relY, int cellIdx, int skyColor
     ) {
+
+        CloudsConfiguration.LayerConfiguration layerConfiguration = 
+            CloudsConfiguration.INSTANCE.getLayer(layer);
+
         float yTop = hasFace(excludedFaces, FaceDir.POS_Y)
             ? maxY
             : maxY - radius;
@@ -472,7 +497,8 @@ public class CubeBuilder {
                     yTop,
                     radius,
                     edgeSegments,
-                    r, g, b, a
+                    layer, 
+                    pos, relY, skyColor
                 );
             }
 
@@ -484,7 +510,8 @@ public class CubeBuilder {
                     yBot,
                     radius,
                     edgeSegments,
-                    r, g, b, a
+                    layer,
+                    pos, relY, skyColor
                 );
             }
         }
@@ -511,7 +538,8 @@ public class CubeBuilder {
                 yTop,
                 radius,
                 edgeSegments,
-                r, g, b, a
+                layer, 
+                pos, relY, skyColor
             );
         }
 
@@ -538,18 +566,33 @@ public class CubeBuilder {
                 c.sx, c.sy, c.sz,
                 radius,
                 cornerSegments,
-                r, g, b, a
+                layer, 
+                pos, relY, skyColor
             );
         }
 
-        emitInternalCornerQuads(
-            bb, 
-            minX, maxX, 
-            minY, maxY, 
-            minZ, maxZ, 
-            radius, excludedFaces, 
-            r, g, b, a
-        );
+        long cell = state.texture.cells[cellIdx];
+
+        int northClear = Texture.clearOnNorth(cell) ? 1 : 0;
+        int southClear = Texture.clearOnSouth(cell) ? 1 : 0;
+        int westClear  = Texture.clearOnWest(cell)  ? 1 : 0;
+        int eastClear  = Texture.clearOnEast(cell)  ? 1 : 0;
+
+        // emit if has less than 8 neighbors (exposed corner/edge)
+        // AND is not the intersection of a T/L junction or a cross.
+        if (state.texture.neighbors[cellIdx] < 8) {
+            emitHorizontalCornerCaps(
+                bb, 
+                minX, maxX, 
+                minZ, maxZ, 
+                yTop, yBot, 
+                radius, 
+                cornerSegments, 
+                excludedFaces, 
+                layer,  
+                pos, relY, skyColor
+            );
+        }
 
         emitInsetFaces(
             bb,
@@ -558,7 +601,8 @@ public class CubeBuilder {
             minZ, maxZ,
             radius,
             excludedFaces,
-            r, g, b, a
+            layer, 
+            pos, relY, skyColor
         );
     }
 }

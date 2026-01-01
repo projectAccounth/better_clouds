@@ -2,6 +2,8 @@ package net.not_thefirst.story_mode_clouds.renderer.utils;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
 
+import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+
 public final class BevelWrappers {
 
     public enum EdgeDir {
@@ -30,10 +32,10 @@ public final class BevelWrappers {
         }
     };
 
-    private static int dx(EdgeDir d) {
+    public static int dx(EdgeDir d) {
         return (d == EdgeDir.WEST) ? -1 : (d == EdgeDir.EAST) ? 1 : 0;
     }
-    private static int dz(EdgeDir d) {
+    public static int dz(EdgeDir d) {
         return (d == EdgeDir.NORTH) ? -1 : (d == EdgeDir.SOUTH) ? 1 : 0;
     }
 
@@ -45,7 +47,8 @@ public final class BevelWrappers {
         float y,
         float radius,
         int segments,
-        float r, float g, float b, float a
+        int layer,
+        RelativeCameraPos pos, float relY, int skyColor
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -72,7 +75,7 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.SOUTH || dir == EdgeDir.WEST),
-            r, g, b, a
+            layer, pos, relY, skyColor
         );
     };
 
@@ -84,7 +87,8 @@ public final class BevelWrappers {
         float y,
         float radius,
         int segments,
-        float r, float g, float b, float a
+        int layer,
+        RelativeCameraPos pos, float relY, int skyColor
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -111,7 +115,7 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.EAST || dir == EdgeDir.NORTH),
-            r, g, b, a
+            layer, pos, relY, skyColor
         );
     }
 
@@ -129,12 +133,12 @@ public final class BevelWrappers {
         float radius,
         int segments,
 
-        float r, float g, float b, float a
+        int layer,
+        RelativeCameraPos pos, float relY, int skyColor
     ) {
-        float sx = (float)dirX.value;
-        float sz = (float)dirZ.value;
+        float sx = (float) dirX.value;
+        float sz = (float) dirZ.value;
 
-        // Edge extrusion (vertical)
         float ex0 = x;
         float ey0 = y1;
         float ez0 = z;
@@ -162,8 +166,7 @@ public final class BevelWrappers {
             radius,
             segments,
             flip,
-            r, g, b, a
+            layer, pos, relY, skyColor
         );
     }
-
 }

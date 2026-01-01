@@ -1,108 +1,31 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils;
 
-import org.joml.Vector3f;
-
+import java.util.List;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 
-import net.not_thefirst.story_mode_clouds.mixin.LightingAccessor;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+import net.not_thefirst.story_mode_clouds.utils.ARGB;
+import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
 
 public class VertexBuilder {
-    private static final float AMBIENT_LIGHT = 0.6f;
-    private static final float DIFFUSE_LIGHT_STRENGTH = 0.7f;
-    private static final float MAX_SHADED = 0.8f;
+    private static CloudsConfiguration CONFIG = CloudsConfiguration.INSTANCE;
     
-    // Advanced shading constants
-    private static final float RIM_POWER = 4.0f;
-    private static final float RIM_STRENGTH = 0.3f;
-    private static final float HEMISPHERICAL_STRENGTH = 0.5f;
-
-    public static void triangle(BufferBuilder bb, float x0, float y0, float z0,
-        float x1, float y1, float z1, float x2, float y2, float z2,
-        float r, float g, float b, float a) {
-        quad(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, r, g, b, a);
-    }
-
-    public static void triangleColored(BufferBuilder bb, float x0, float y0, float z0,
-        float x1, float y1, float z1, float x2, float y2, float z2,
-        int c0, int c1, int c2) {
-        quadColored(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
-    }
-
-    public static void trianglePreshaded(BufferBuilder bb, float x0, float y0, float z0,
-        float x1, float y1, float z1, float x2, float y2, float z2,
-        float r, float g, float b, float a) {
-        quadPreshaded(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, r, g, b, a);
-    }
-
-    public static void triangleColoredPreshaded(BufferBuilder bb, float x0, float y0, float z0,
-        float x1, float y1, float z1, float x2, float y2, float z2,
-        int c0, int c1, int c2) {
-        quadColoredPreshaded(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
-    }
-
-    public static void triangleNormal(BufferBuilder bb, float x0, float y0, float z0,
-        float x1, float y1, float z1, float x2, float y2, float z2,
-        int c0, int c1, int c2) {
-        quadNormal(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
-    }
-
-    private static int multiplyColor(int color, float shade) {
-        int a = (color >> 24) & 0xFF;
-        int r = (int)((color >> 16 & 0xFF) * shade);
-        int g = (int)((color >> 8 & 0xFF) * shade);
-        int b = (int)((color & 0xFF) * shade);
-        return (a << 24) | (r << 16) | (g << 8) | b;
-    }
-
-    /**
-     * Blends two colors with a factor (0-1).
-     */
-    private static int blendColors(int color1, int color2, float factor) {
-        factor = Math.max(0, Math.min(1, factor));
-        int a1 = (color1 >> 24) & 0xFF;
-        int r1 = (color1 >> 16) & 0xFF;
-        int g1 = (color1 >> 8) & 0xFF;
-        int b1 = color1 & 0xFF;
-
-        int a2 = (color2 >> 24) & 0xFF;
-        int r2 = (color2 >> 16) & 0xFF;
-        int g2 = (color2 >> 8) & 0xFF;
-        int b2 = color2 & 0xFF;
-
-        int a = (int)(a1 * (1 - factor) + a2 * factor);
-        int r = (int)(r1 * (1 - factor) + r2 * factor);
-        int g = (int)(g1 * (1 - factor) + g2 * factor);
-        int b = (int)(b1 * (1 - factor) + b2 * factor);
-
-        return (a << 24) | (r << 16) | (g << 8) | b;
-    }
-
-    /**
-     * Applies hemispherical + rim lighting to a vertex shade.
-     * Hemispherical lighting blends sky and ground colors based on normal.
-     * Rim lighting adds a silhouette glow.
-     */
-    private static float applyAdvancedShading(float nx, float ny, float nz,
-                                             float vx, float vy, float vz,
-                                             float baseShade) {
-        // Hemispherical influence: upward-facing = more sky, downward = more ground
-        float hemisphereInfluence = (ny + 1.0f) * 0.5f; // Map -1..1 to 0..1
-        float hemisphereShade = 0.7f + HEMISPHERICAL_STRENGTH * hemisphereInfluence;
-
-        // Rim lighting: silhouette effect
-        float viewDot = Math.abs(vx * nx + vy * ny + vz * nz);
-        float rim = (float)Math.pow(Math.max(0, 1.0f - viewDot), RIM_POWER) * RIM_STRENGTH;
-
-        return baseShade * hemisphereShade + rim;
-    }
-
     public static void quad(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, float r, float g, float b, float a) {
+        
         bb.addVertex(x0, y0, z0).setColor(r, g, b, a);
         bb.addVertex(x1, y1, z1).setColor(r, g, b, a);
         bb.addVertex(x2, y2, z2).setColor(r, g, b, a);
         bb.addVertex(x3, y3, z3).setColor(r, g, b, a);
+    }
+
+    public static void triangle(BufferBuilder bb, float x0, float y0, float z0,
+        float x1, float y1, float z1, float x2, float y2, float z2,
+        float r, float g, float b, float a) {
+
+        quad(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, r, g, b, a);
     }
 
     public static void quadColored(BufferBuilder bb, float x0, float y0, float z0,
@@ -114,191 +37,218 @@ public class VertexBuilder {
         bb.addVertex(x3, y3, z3).setColor(c3);
     }
 
+    public static void triangleColored(BufferBuilder bb, float x0, float y0, float z0,
+        float x1, float y1, float z1, float x2, float y2, float z2,
+        int c0, int c1, int c2) {
+        quadColored(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
+    }
+
     public static void quadPreshaded(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
-        float x3, float y3, float z3, float r, float g, float b, float a) {
-        Vector3f light0 = LightingAccessor.getLight0Direction();
-        Vector3f light1 = LightingAccessor.getLight1Direction();
+        float x3, float y3, float z3, float r, float g, float b, float a, 
+        List<DiffuseLight> diffuseLights) {
         float[][] normals = computeNormals(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-        float[][] positions = {{x0, y0, z0}, {x1, y1, z1}, {x2, y2, z2}, {x3, y3, z3}};
 
         for (int i = 0; i < 4; i++) {
-            float nx = normals[i][0], ny = normals[i][1], nz = normals[i][2];
-            float l0 = Math.max(0, nx * light0.x() + ny * light0.y() + nz * light0.z());
-            float l1 = Math.max(0, nx * light1.x() + ny * light1.y() + nz * light1.z());
-            float shade = Math.min(MAX_SHADED, AMBIENT_LIGHT + DIFFUSE_LIGHT_STRENGTH * Math.max(l0, l1));
-            bb.addVertex(positions[i][0], positions[i][1], positions[i][2])
-                .setColor(r * shade, g * shade, b * shade, a);
+            float shade = calculateDiffuseShade(normals[i], diffuseLights);
+            float[] pos = getVertexPosition(i, x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
+            bb.addVertex(pos[0], pos[1], pos[2]).setColor(r * shade, g * shade, b * shade, a);
         }
+    }
+
+    public static void trianglePreshaded(BufferBuilder bb, float x0, float y0, float z0,
+        float x1, float y1, float z1, float x2, float y2, float z2,
+        float r, float g, float b, float a,
+        List<DiffuseLight> diffuseLights) {
+        quadPreshaded(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, r, g, b, a, diffuseLights);
     }
 
     public static void quadColoredPreshaded(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
-        float x3, float y3, float z3, int c0, int c1, int c2, int c3) {
-        Vector3f light0 = LightingAccessor.getLight0Direction();
-        Vector3f light1 = LightingAccessor.getLight1Direction();
+        float x3, float y3, float z3, int c0, int c1, int c2, int c3,
+        List<DiffuseLight> diffuseLights) {
         float[][] normals = computeNormals(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-        float[][] positions = {{x0, y0, z0}, {x1, y1, z1}, {x2, y2, z2}, {x3, y3, z3}};
         int[] colors = {c0, c1, c2, c3};
 
         for (int i = 0; i < 4; i++) {
-            float nx = normals[i][0], ny = normals[i][1], nz = normals[i][2];
-            float l0 = Math.max(0, nx * light0.x() + ny * light0.y() + nz * light0.z());
-            float l1 = Math.max(0, nx * light1.x() + ny * light1.y() + nz * light1.z());
-            float shade = Math.min(MAX_SHADED, AMBIENT_LIGHT + DIFFUSE_LIGHT_STRENGTH * Math.max(l0, l1));
-            bb.addVertex(positions[i][0], positions[i][1], positions[i][2])
-                .setColor(multiplyColor(colors[i], shade));
+            float shade = calculateDiffuseShade(normals[i], diffuseLights);
+            float[] pos = getVertexPosition(i, x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
+            bb.addVertex(pos[0], pos[1], pos[2]).setColor(multiplyColor(colors[i], shade));
         }
+    }
+
+    public static void triangleColoredPreshaded(BufferBuilder bb, float x0, float y0, float z0,
+        float x1, float y1, float z1, float x2, float y2, float z2,
+        int c0, int c1, int c2,
+        List<DiffuseLight> diffuseLights) {
+        quadColoredPreshaded(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2, diffuseLights);
     }
 
     public static void quadNormal(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int c0, int c1, int c2, int c3) {
         float[][] normals = computeNormals(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-        float[][] positions = {{x0, y0, z0}, {x1, y1, z1}, {x2, y2, z2}, {x3, y3, z3}};
-        int[] colors = {c0, c1, c2, c3};
 
         for (int i = 0; i < 4; i++) {
-            bb.addVertex(positions[i][0], positions[i][1], positions[i][2])
+            float[] pos = getVertexPosition(i, x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
+            int color = getVertexColor(i, c0, c1, c2, c3);
+            bb.addVertex(pos[0], pos[1], pos[2])
                 .setNormal(normals[i][0], normals[i][1], normals[i][2])
-                .setColor(colors[i]);
+                .setColor(color);
         }
     }
 
-    /**
-     * Helper: computes and normalizes vertex normals from quad positions.
-     */
+    public static void triangleNormal(BufferBuilder bb, float x0, float y0, float z0,
+        float x1, float y1, float z1, float x2, float y2, float z2,
+        int c0, int c1, int c2) {
+        quadNormal(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
+    }
+
+    private static float calculateDiffuseShade(float[] normal, List<DiffuseLight> diffuseLights) {
+        float totalLighting = 0f;
+        
+        for (DiffuseLight light : diffuseLights) {
+            float dot = normal[0] * light.direction.x +
+                        normal[1] * light.direction.y +
+                        normal[2] * light.direction.z;
+            totalLighting += Math.max(dot, 0f) * light.intensity;
+        }
+
+        final float AMBIENT_LIGHT = CONFIG.LIGHTING.AMBIENT_LIGHTING_STRENGTH;
+        final float MAX_SHADED = CONFIG.LIGHTING.MAX_LIGHTING_SHADING;
+        
+        return Math.min(MAX_SHADED, AMBIENT_LIGHT + totalLighting);
+    }
+
+    private static int multiplyColor(int color, float shade) {
+        int a = (color >> 24) & 0xFF;
+        int r = (int)((color >> 16 & 0xFF) * shade);
+        int g = (int)((color >> 8 & 0xFF) * shade);
+        int b = (int)((color & 0xFF) * shade);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static float[] getVertexPosition(int index, float x0, float y0, float z0,
+        float x1, float y1, float z1, float x2, float y2, float z2,
+        float x3, float y3, float z3) {
+        return switch (index) {
+            case 0 -> new float[]{x0, y0, z0};
+            case 1 -> new float[]{x1, y1, z1};
+            case 2 -> new float[]{x2, y2, z2};
+            case 3 -> new float[]{x3, y3, z3};
+            default -> new float[]{0, 0, 0};
+        };
+    }
+
+    private static int getVertexColor(int index, int c0, int c1, int c2, int c3) {
+        return switch (index) {
+            case 0 -> c0;
+            case 1 -> c1;
+            case 2 -> c2;
+            case 3 -> c3;
+            default -> 0;
+        };
+    }
+
     private static float[][] computeNormals(
         float x0, float y0, float z0,
         float x1, float y1, float z1,
         float x2, float y2, float z2,
         float x3, float y3, float z3
     ) {
-        float e0ax = x1 - x0, e0ay = y1 - y0, e0az = z1 - z0;
-        float e0bx = x3 - x0, e0by = y3 - y0, e0bz = z3 - z0;
-
-        float e1ax = x2 - x1, e1ay = y2 - y1, e1az = z2 - z1;
-        float e1bx = x0 - x1, e1by = y0 - y1, e1bz = z0 - z1;
-
-        float e2ax = x3 - x2, e2ay = y3 - y2, e2az = z3 - z2;
-        float e2bx = x1 - x2, e2by = y1 - y2, e2bz = z1 - z2;
-
-        float e3ax = x0 - x3, e3ay = y0 - y3, e3az = z0 - z3;
-        float e3bx = x2 - x3, e3by = y2 - y3, e3bz = z2 - z3;
-
+        float[][] edges = computeEdges(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
         float[][] normals = new float[4][3];
-        
-        // Cross products and normalization
-        float[] n = new float[3];
+
         for (int i = 0; i < 4; i++) {
-            float eax, eay, eaz, ebx, eby, ebz;
-            if (i == 0) { eax = e0ax; eay = e0ay; eaz = e0az; ebx = e0bx; eby = e0by; ebz = e0bz; }
-            else if (i == 1) { eax = e1ax; eay = e1ay; eaz = e1az; ebx = e1bx; eby = e1by; ebz = e1bz; }
-            else if (i == 2) { eax = e2ax; eay = e2ay; eaz = e2az; ebx = e2bx; eby = e2by; ebz = e2bz; }
-            else { eax = e3ax; eay = e3ay; eaz = e3az; ebx = e3bx; eby = e3by; ebz = e3bz; }
-            
-            n[0] = eay * ebz - eaz * eby;
-            n[1] = eaz * ebx - eax * ebz;
-            n[2] = eax * eby - eay * ebx;
-            
-            float invLen = (float)(1.0 / Math.sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]));
-            if (Float.isFinite(invLen)) {
-                normals[i][0] = n[0] * invLen;
-                normals[i][1] = n[1] * invLen;
-                normals[i][2] = n[2] * invLen;
-            }
+            float[] n = crossProduct(edges[i * 2], edges[i * 2 + 1]);
+            normalize(n);
+            normals[i] = n;
         }
         return normals;
     }
 
-    /**
-     * Helper: computes and normalizes view vectors from camera.
-     */
-    private static float[][] computeViewVectors(
+    private static float[][] computeEdges(
         float x0, float y0, float z0,
         float x1, float y1, float z1,
         float x2, float y2, float z2,
-        float x3, float y3, float z3,
-        float camX, float camY, float camZ
+        float x3, float y3, float z3
     ) {
-        float[][] views = new float[4][3];
-        float[][] vecs = {
-            {camX - x0, camY - y0, camZ - z0},
-            {camX - x1, camY - y1, camZ - z1},
-            {camX - x2, camY - y2, camZ - z2},
-            {camX - x3, camY - y3, camZ - z3}
+        return new float[][] {
+            {x1 - x0, y1 - y0, z1 - z0}, {x3 - x0, y3 - y0, z3 - z0},
+            {x2 - x1, y2 - y1, z2 - z1}, {x0 - x1, y0 - y1, z0 - z1},
+            {x3 - x2, y3 - y2, z3 - z2}, {x1 - x2, y1 - y2, z1 - z2},
+            {x0 - x3, y0 - y3, z0 - z3}, {x2 - x3, y2 - y3, z2 - z3}
         };
-        for (int i = 0; i < 4; i++) {
-            float vlen = (float)Math.sqrt(vecs[i][0]*vecs[i][0] + vecs[i][1]*vecs[i][1] + vecs[i][2]*vecs[i][2]);
-            if (vlen > 0) {
-                views[i][0] = vecs[i][0] / vlen;
-                views[i][1] = vecs[i][1] / vlen;
-                views[i][2] = vecs[i][2] / vlen;
-            }
-        }
-        return views;
     }
 
-    /**
-     * Advanced shading variant with hemispherical + rim lighting. Float RGB variant.
-     */
-    public static void quadPreshadedAdvanced(BufferBuilder bb, float x0, float y0, float z0,
+    private static float[] crossProduct(float[] a, float[] b) {
+        return new float[]{
+            a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0]
+        };
+    }
+
+    private static void normalize(float[] v) {
+        float len = (float) Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+        if (Float.isFinite(len) && len > 0) {
+            v[0] /= len;
+            v[1] /= len;
+            v[2] /= len;
+        }
+    }
+
+    public static void quad(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
-        float x3, float y3, float z3, float r, float g, float b, float a,
-        float camX, float camY, float camZ) {
-        Vector3f diffuseLight0 = LightingAccessor.getLight0Direction();
-        Vector3f diffuseLight1 = LightingAccessor.getLight1Direction();
+        float x3, float y3, float z3, int layer, RelativeCameraPos pos, float relY, int skyColor) {
 
-        float[][] normals = computeNormals(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-        float[][] views = computeViewVectors(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3, camX, camY, camZ);
+        CloudsConfiguration.LayerConfiguration layerConfiguration =
+            CloudsConfiguration.INSTANCE.getLayer(layer);
 
-        float[][] positions = {{x0, y0, z0}, {x1, y1, z1}, {x2, y2, z2}, {x3, y3, z3}};
-        for (int i = 0; i < 4; i++) {
-            float nx = normals[i][0], ny = normals[i][1], nz = normals[i][2];
-            float vx = views[i][0], vy = views[i][1], vz = views[i][2];
-            
-            float light0 = Math.max(0, nx * diffuseLight0.x() + ny * diffuseLight0.y() + nz * diffuseLight0.z());
-            float light1 = Math.max(0, nx * diffuseLight1.x() + ny * diffuseLight1.y() + nz * diffuseLight1.z());
-            float baseShade = Math.min(MAX_SHADED, AMBIENT_LIGHT + DIFFUSE_LIGHT_STRENGTH * Math.max(light0, light1));
-            float shade = applyAdvancedShading(nx, ny, nz, vx, vy, vz, baseShade);
-            
-            bb.addVertex(positions[i][0], positions[i][1], positions[i][2])
-                .setColor(r * shade, g * shade, b * shade, a);
+        float r = 1.0f;
+        float g = 1.0f;
+        float b = 1.0f;
+        float a = layerConfiguration.APPEARANCE.BASE_ALPHA / 255.0f;
+
+        if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR) {
+            r = ARGB.redFloat(layerConfiguration.APPEARANCE.LAYER_COLOR);
+            g = ARGB.greenFloat(layerConfiguration.APPEARANCE.LAYER_COLOR);
+            b = ARGB.blueFloat(layerConfiguration.APPEARANCE.LAYER_COLOR);
+        }
+
+        int color = ARGB.colorFromFloat(a, r, g, b);
+
+        if (layerConfiguration.APPEARANCE.SHADING_ENABLED) {
+            quadPreshaded(
+                bb,
+                x0, y0, z0,
+                x1, y1, z1,
+                x2, y2, z2,
+                x3, y3, z3,
+                r, g, b, a,
+                CONFIG.LIGHTING.lights
+            );
+        } else {
+            int color0 = ColorUtils.recolor(color, y0, pos, relY, layer, skyColor);
+            int color1 = ColorUtils.recolor(color, y1, pos, relY, layer, skyColor);
+            int color2 = ColorUtils.recolor(color, y2, pos, relY, layer, skyColor);
+            int color3 = ColorUtils.recolor(color, y3, pos, relY, layer, skyColor);
+
+            quadColored(
+                bb,
+                x0, y0, z0,
+                x1, y1, z1,
+                x2, y2, z2,
+                x3, y3, z3,
+                color0, color1, color2, color3
+            );
         }
     }
 
-    /**
-     * Advanced shading variant with hemispherical + rim lighting. Integer color variant.
-     */
-    public static void quadColoredPreshadedAdvanced(
-        BufferBuilder bb,
-        float x0, float y0, float z0,
-        float x1, float y1, float z1,
-        float x2, float y2, float z2,
-        float x3, float y3, float z3,
-        int color0, int color1, int color2, int color3,
-        float camX, float camY, float camZ
-    ) {
-        Vector3f diffuseLight0 = LightingAccessor.getLight0Direction();
-        Vector3f diffuseLight1 = LightingAccessor.getLight1Direction();
+    public static void triangle(BufferBuilder bb, float x0, float y0, float z0,
+        float x1, float y1, float z1, float x2, float y2, float z2,
+        int layer, RelativeCameraPos pos, float relY, int skyColor) {
 
-        float[][] normals = computeNormals(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-        float[][] views = computeViewVectors(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3, camX, camY, camZ);
-
-        float[][] positions = {{x0, y0, z0}, {x1, y1, z1}, {x2, y2, z2}, {x3, y3, z3}};
-        int[] colors = {color0, color1, color2, color3};
-        
-        for (int i = 0; i < 4; i++) {
-            float nx = normals[i][0], ny = normals[i][1], nz = normals[i][2];
-            float vx = views[i][0], vy = views[i][1], vz = views[i][2];
-            
-            float light0 = Math.max(0, nx * diffuseLight0.x() + ny * diffuseLight0.y() + nz * diffuseLight0.z());
-            float light1 = Math.max(0, nx * diffuseLight1.x() + ny * diffuseLight1.y() + nz * diffuseLight1.z());
-            float baseShade = Math.min(MAX_SHADED, AMBIENT_LIGHT + DIFFUSE_LIGHT_STRENGTH * Math.max(light0, light1));
-            float shade = applyAdvancedShading(nx, ny, nz, vx, vy, vz, baseShade);
-            
-            bb.addVertex(positions[i][0], positions[i][1], positions[i][2])
-                .setColor(multiplyColor(colors[i], shade));
-        }
+        quad(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, layer, pos, relY, skyColor);
     }
 }
