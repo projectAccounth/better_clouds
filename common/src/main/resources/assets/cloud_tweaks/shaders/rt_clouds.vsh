@@ -7,8 +7,8 @@
 layout(std140) uniform Model {
     vec4 CloudColor;
     int config; 
-    int pad0;
-    int pad1;
+    int cloudFogStart;
+    int cloudFogEnd;
     int pad2;
 };
 
@@ -20,7 +20,6 @@ bool shadingEnabled() { return (config & (1 << 1)) != 0; }
 bool usesCustomAlpha() { return (config & (1 << 2)) != 0; }
 bool customBrightness() { return (config & (1 << 3)) != 0; }
 bool usesCustomColor() { return (config & (1 << 4)) != 0; }
-
 
 out float vertexDistance;
 out vec4 vertexColor;
