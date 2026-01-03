@@ -10,7 +10,7 @@ import net.minecraft.resources.Identifier;
 import net.not_thefirst.story_mode_clouds.Initializer;
 
 public class ModRenderPipelines {
-    public static RenderPipeline CLOUDS_CUSTOM_PIPELINE;
+    public static RenderPipeline POSITION_COLOR_NO_DEPTH;
     public static RenderPipeline CUSTOM_POSITION_COLOR;
     public static RenderPipeline POSITION_COLOR_DEPTH;
 
@@ -32,6 +32,8 @@ public class ModRenderPipelines {
             .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS)
             .withCull(true)
             .withUniform("Model", UniformType.UNIFORM_BUFFER);
+        
+        POSITION_COLOR_NO_DEPTH = builder.withColorWrite(true).withDepthWrite(false).build();
         CUSTOM_POSITION_COLOR = builder.withColorWrite(true).withDepthWrite(true).build();
         POSITION_COLOR_DEPTH = builder.withColorWrite(false).withDepthWrite(true).build();
     }

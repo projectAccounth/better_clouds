@@ -1,6 +1,6 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
-import net.not_thefirst.story_mode_clouds.utils.ARGB;
+import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 
 public class MeshBuilder {
     public static final float CELL_SIZE_IN_BLOCKS = 12.0F;
