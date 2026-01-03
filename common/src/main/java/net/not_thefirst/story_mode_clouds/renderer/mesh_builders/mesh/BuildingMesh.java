@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import com.mojang.blaze3d.vertex.VertexFormat;
 
-import net.not_thefirst.story_mode_clouds.utils.ARGB;
+import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 
 public final class BuildingMesh {
 

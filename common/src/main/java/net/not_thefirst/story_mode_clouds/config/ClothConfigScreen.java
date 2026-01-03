@@ -8,9 +8,12 @@ import me.shedaniel.clothconfig2.gui.entries.MultiElementListEntry;
 import me.shedaniel.clothconfig2.gui.entries.NestedListListEntry;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.SkyColorKeypoint;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
+import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
+import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -73,6 +76,13 @@ public class ClothConfigScreen {
             .setMax(MAX_BRIGHTNESS)
             .setSaveConsumer(value -> config.LIGHTING.MAX_LIGHTING_SHADING = Math.max(MIN_BRIGHTNESS, Math.min(MAX_BRIGHTNESS, value)))
             .build());
+        lightingCategory.addEntry(entryBuilder.startEnumSelector(
+            Component.literal("Cloud Provider"), 
+            CloudsConfiguration.CloudColorProviderMode.class, 
+            CloudsConfiguration.INSTANCE.COLOR_MODE
+        )
+        .setSaveConsumer(value -> CloudsConfiguration.INSTANCE.COLOR_MODE = value).
+        build());
 
         lightingCategory.addEntry(new NestedListListEntry<>(
             Component.literal("Light sources"),
@@ -88,6 +98,40 @@ public class ClothConfigScreen {
             true,
             false,
             (light, parentEntry) -> buildLightEntry(entryBuilder, light)
+        ));
+
+        lightingCategory.addEntry(new NestedListListEntry<>(
+            Component.literal("Sky Color"),
+            config.CLOUD_COLOR,
+            false,
+            null,
+            newValue -> {
+                config.CLOUD_COLOR.clear();
+                config.CLOUD_COLOR.addAll(newValue);
+                config.CLOUD_COLOR.sort((a, b) -> Integer.compare(a.time, b.time));
+                NumberSequence internalSequence = CloudColorProvider.getCurrentSequence();
+                internalSequence.clearKeypoints();
+
+                for (SkyColorKeypoint kp : newValue) {
+                    int c = kp.color;
+
+                    double r = ((c >> 16) & 0xFF) / 255.0;
+                    double g = ((c >> 8) & 0xFF) / 255.0;
+                    double b = (c & 0xFF) / 255.0;
+
+                    internalSequence.addKeypoint(
+                        kp.time,
+                        r,
+                        g,
+                        b
+                    );
+                }
+            },
+            () -> new ArrayList<>(config.CLOUD_COLOR),
+            entryBuilder.getResetButtonKey(),
+            true,
+            true,
+            (color, parentEntry) -> buildCloudColorEntries(entryBuilder, color)
         ));
 
         ConfigCategory layersCategory = builder.getOrCreateCategory(Component.literal("Layers"));
@@ -117,12 +161,58 @@ public class ClothConfigScreen {
         return builder.build();
     }
 
+    private static AbstractConfigListEntry<CloudsConfiguration.SkyColorKeypoint> buildCloudColorEntries(
+        ConfigEntryBuilder entryBuilder,
+        SkyColorKeypoint keyPoint
+    ) {
+        if (keyPoint == null) {
+            keyPoint = new SkyColorKeypoint();
+        }
+
+        return new MultiElementListEntry<>(
+            Component.literal("Light"),
+            keyPoint,
+            buildCloudColorEntry(entryBuilder, keyPoint).entries,
+            true
+        );
+    }
+
+    private static ParameterGroup buildCloudColorEntry(
+        ConfigEntryBuilder entryBuilder, 
+        SkyColorKeypoint keyPoint) {
+        List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
+        
+        entries.add(entryBuilder.startIntField(
+                Component.literal("Time of Day (0-24000)"),
+                keyPoint.time)
+            .setDefaultValue(6000)
+            .setMin(0)
+            .setMax(24000)
+            .setSaveConsumer(value -> {
+                keyPoint.time = value;
+            })
+            .build(
+        ));
+
+        entries.add(entryBuilder.startColorField(
+                Component.literal("Cloud Color"),
+                keyPoint.color)
+            .setDefaultValue(0xffffff)
+            .setSaveConsumer(value -> {
+                keyPoint.color = value;
+            })
+            .build(
+        ));
+
+        return new ParameterGroup("Cloud Colors", entries);
+    }
+
     private static ParameterGroup buildLightList(
         ConfigEntryBuilder entryBuilder,
         DiffuseLight light
     ) {
         
-        List<me.shedaniel.clothconfig2.api.AbstractConfigListEntry<?>> entries = new ArrayList<>();
+        List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
         
         entries.add(entryBuilder.startFloatField(
                 Component.literal("Direction X"),
@@ -304,6 +394,25 @@ public class ClothConfigScreen {
             .setDefaultValue(0)
             .setSaveConsumer(value -> layer.APPEARANCE.LAYER_OFFSET_Z = value)
             .build());
+
+        entries.add(entryBuilder.startFloatField(
+                Component.literal("Speed X"),
+                layer.APPEARANCE.LAYER_SPEED_X)
+            .setDefaultValue(0.03f)
+            .setMin(-100.0f)
+            .setMax(100.0f)
+            .setTooltip(Component.literal("Set it to a small value, be careful not to fry your CPU!"))
+            .setSaveConsumer(value -> layer.APPEARANCE.LAYER_SPEED_X = value)
+            .build());
+        entries.add(entryBuilder.startFloatField(
+                Component.literal("Speed Z"),
+                layer.APPEARANCE.LAYER_SPEED_Z)
+            .setDefaultValue(0.03f)
+            .setMin(-100.0f)
+            .setMax(100.0f)
+            .setTooltip(Component.literal("Set it to a small value, be careful not to fry your CPU!"))
+            .setSaveConsumer(value -> layer.APPEARANCE.LAYER_SPEED_Z = value)
+            .build());
         return new ParameterGroup("Appearance", entries);
     }
     
@@ -372,6 +481,24 @@ public class ClothConfigScreen {
                 layer.FOG_ENABLED)
             .setDefaultValue(true)
             .setSaveConsumer(value -> layer.FOG_ENABLED = value)
+            .build());
+
+        entries.add(entryBuilder.startFloatField(
+                Component.literal("Fog Start"),
+                layer.FOG.FOG_START_DISTANCE)
+            .setDefaultValue(70.0f)
+            .setMin(0.0f)
+            .setMax(16777216)
+            .setSaveConsumer(value -> layer.FOG.FOG_START_DISTANCE = Math.max(0.0f, Math.min(16777216, value)))
+            .build());
+
+        entries.add(entryBuilder.startFloatField(
+                Component.literal("Fog End"),
+                layer.FOG.FOG_END_DISTANCE)
+            .setDefaultValue(400.0f)
+            .setMin(0.0f)
+            .setMax(16777216)
+            .setSaveConsumer(value -> layer.FOG.FOG_END_DISTANCE = Math.max(0.0f, Math.min(16777216, value)))
             .build());
         return new ParameterGroup("Fog", entries);
     }

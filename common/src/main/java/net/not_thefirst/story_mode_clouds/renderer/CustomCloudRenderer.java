@@ -29,12 +29,12 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshTypeBuilder;
-import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.mesh.CompiledMesh;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
-import net.not_thefirst.story_mode_clouds.utils.ARGB;
-import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
+import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
+import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
+import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
 
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -64,7 +64,6 @@ public class CustomCloudRenderer {
 
     @Nullable
     public Optional<Texture.TextureData> currentTexture = Optional.empty();
-    private List<CompiledMesh> meshCache = new ArrayList<>();
     private final List<LayerState> layers = new ArrayList<>();
 
     protected static final Identifier TEXTURE_LOCATION = Identifier.fromNamespaceAndPath("minecraft", "textures/environment/clouds.png");
@@ -200,7 +199,7 @@ public class CustomCloudRenderer {
     }
     
     public void render(int skyColor, CloudStatus status, float cloudHeight, Vec3 cam, float tickDelta) {
-        double baseDx = cam.x + tickDelta * 0.03F;
+        double baseDx = cam.x;
         double baseDz = cam.z + 3.96F;
 
         int activeLayers = CloudsConfiguration.INSTANCE.getLayerCount();
@@ -220,7 +219,9 @@ public class CustomCloudRenderer {
             return Float.compare(Math.abs(yb), Math.abs(ya));
         });
 
-        boolean fancy = status == CloudStatus.FANCY;
+        skyColor = CloudColorProvider.getCloudColor();
+        Minecraft client = Minecraft.getInstance();
+        float time = (client.level.getGameTime() + tickDelta) / 20.0F;
 
         for (int layer : order) {
             LayerState currentLayer = this.layers.get(layer);
@@ -243,8 +244,13 @@ public class CustomCloudRenderer {
 
             double wrapX = tex.width * MeshBuilder.CELL_SIZE_IN_BLOCKS;
             double wrapZ = tex.height * MeshBuilder.CELL_SIZE_IN_BLOCKS;
-            double dxLayer = baseDx + currentLayer.offsetX;
-            double dzLayer = baseDz + currentLayer.offsetZ;
+
+            double timeOffsetX = time * layerConfiguration.APPEARANCE.LAYER_SPEED_X;
+            double timeOffsetZ = time * layerConfiguration.APPEARANCE.LAYER_SPEED_Z;
+
+            double dxLayer = baseDx + currentLayer.offsetX + timeOffsetX;
+            double dzLayer = baseDz + currentLayer.offsetZ + timeOffsetZ;
+
             dxLayer -= Mth.floor(dxLayer / wrapX) * wrapX;
             dzLayer -= Mth.floor(dzLayer / wrapZ) * wrapZ;
 
@@ -322,96 +328,14 @@ public class CustomCloudRenderer {
                 continue;
             }
 
-            if (fancy) {
-                drawLayer(
-                    ModRenderPipelines.POSITION_COLOR_DEPTH, 
-                    offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ, 
-                    layer, currentLayer, skyColor);
-            }
+            drawLayer(
+                ModRenderPipelines.POSITION_COLOR_DEPTH, 
+                offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ, 
+                layer, currentLayer, skyColor);
             drawLayer(
                 ModRenderPipelines.CUSTOM_POSITION_COLOR, 
                 offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ, 
                 layer, currentLayer, skyColor);
-        }
-    }
-
-    private int packConfig(int layer) {
-        CloudsConfiguration.LayerConfiguration layerConfiguration = 
-                CloudsConfiguration.INSTANCE.getLayer(layer);
-        
-        int config = 0;
-
-        if (layerConfiguration.FOG_ENABLED) config |= 1 << 0;
-        if (layerConfiguration.APPEARANCE.SHADING_ENABLED) config |= 1 << 1;
-        if (layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA) config |= 1 << 2;
-        if (layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS) config |= 1 << 3;
-        if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR) config |= 1 << 4;
-
-        return config;
-    }
-
-    private void drawLayer(
-        RenderPipeline pipeline,
-        float offX, float offY, float offZ,
-        int layer,
-        LayerState currentLayer,
-        int skyColor) {
-
-        int shaderCloudColor = ColorUtils.getCloudShaderColor(layer, skyColor);
-
-        try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(currentLayer.ubo.currentBuffer(), false, true)) {
-            Std140Builder.intoBuffer(mappedView.data())
-                .putVec4(ARGB.redFloat(shaderCloudColor), 
-                    ARGB.greenFloat(shaderCloudColor), 
-                    ARGB.blueFloat(shaderCloudColor), 
-                    ARGB.alphaFloat(shaderCloudColor))
-                .putInt(packConfig(layer))
-                .putInt(0)
-                .putInt(0)
-                .putInt(0);
-        }
-
-        GpuBuffer indexBuf = indices.getBuffer(currentLayer.layerIndexCount);
-        RenderTarget rt = Minecraft.getInstance().getMainRenderTarget();
-        RenderTarget ct = Minecraft.getInstance().levelRenderer.getCloudsTarget();
-        GpuBufferSlice gpuBufferSlice = RenderSystem.getDynamicUniforms()
-				.writeTransform(
-					RenderSystem.getModelViewMatrix(),
-					new Vector4f(1.0F, 1.0F, 1.0F, 1.0F),
-					new Vector3f(-offX, offY, -offZ),
-					new Matrix4f()
-				);
-        GpuTextureView colorTex = rt.getColorTextureView();
-        GpuTextureView depthTex = rt.getDepthTextureView();
-
-        if (ct != null) {
-            colorTex = ct.getColorTextureView();
-            depthTex = ct.getDepthTextureView();
-        } else {
-            colorTex = rt.getColorTextureView();
-            depthTex = rt.getDepthTextureView();
-        }
-        RenderPass pass = RenderSystem.getDevice()
-                .createCommandEncoder()
-                .createRenderPass(() -> "Clouds", colorTex, OptionalInt.empty(), depthTex, OptionalDouble.empty());
-
-        try {
-            RenderSystem.bindDefaultUniforms(pass);
-
-            pass.setPipeline(pipeline);
-            pass.setUniform("Model", currentLayer.ubo.currentBuffer());
-            pass.setUniform("DynamicTransforms", gpuBufferSlice);
-
-            pass.setVertexBuffer(0, currentLayer.buffer);
-            pass.setIndexBuffer(indexBuf, indices.type());
-            pass.drawIndexed(0, 0, currentLayer.layerIndexCount, 1);
-        }
-        catch (Exception exception) {
-            exception.printStackTrace();
-        }
-
-        if (pass != null) {
-            pass.close();
         }
     }
 
@@ -437,6 +361,21 @@ public class CustomCloudRenderer {
 
         builder.Build(bb, tex, pos, state, cx, cz, relYCenter, currentLayer, skyColor, offX, offZ);
         return bb.buildOrThrow();
+    }
+
+    private int packConfig(int layer) {
+        CloudsConfiguration.LayerConfiguration layerConfiguration = 
+                CloudsConfiguration.INSTANCE.getLayer(layer);
+        
+        int config = 0;
+
+        if (layerConfiguration.FOG_ENABLED) config |= 1 << 0;
+        if (layerConfiguration.APPEARANCE.SHADING_ENABLED) config |= 1 << 1;
+        if (layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA) config |= 1 << 2;
+        if (layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS) config |= 1 << 3;
+        if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR) config |= 1 << 4;
+
+        return config;
     }
 
     public void markForRebuild(int layer) {
@@ -489,5 +428,72 @@ public class CustomCloudRenderer {
     @Environment(EnvType.CLIENT)
     public enum RelativeCameraPos {
         ABOVE_CLOUDS, INSIDE_CLOUDS, BELOW_CLOUDS
+    }
+
+    private void drawLayer(
+        RenderPipeline pipeline,
+        float offX, float offY, float offZ,
+        int layer,
+        LayerState currentLayer,
+        int skyColor) {
+
+        int shaderCloudColor = ColorUtils.getCloudShaderColor(layer, skyColor);
+        CloudsConfiguration.LayerConfiguration layerConfiguration = 
+            CloudsConfiguration.INSTANCE.getLayer(layer);
+
+        try (GpuBuffer.MappedView mappedView = RenderSystem.getDevice().createCommandEncoder().mapBuffer(currentLayer.ubo.currentBuffer(), false, true)) {
+            Std140Builder.intoBuffer(mappedView.data())
+                .putVec4(ARGB.redFloat(shaderCloudColor), 
+                    ARGB.greenFloat(shaderCloudColor), 
+                    ARGB.blueFloat(shaderCloudColor), 
+                    ARGB.alphaFloat(shaderCloudColor))
+                .putInt(packConfig(layer))
+                .putInt((int) layerConfiguration.FOG.FOG_START_DISTANCE)
+                .putInt((int) layerConfiguration.FOG.FOG_END_DISTANCE)
+                .putInt(0); // pad
+        }
+
+        GpuBuffer indexBuf = indices.getBuffer(currentLayer.layerIndexCount);
+        RenderTarget rt = Minecraft.getInstance().getMainRenderTarget();
+        RenderTarget ct = Minecraft.getInstance().levelRenderer.getCloudsTarget();
+        GpuBufferSlice gpuBufferSlice = RenderSystem.getDynamicUniforms()
+				.writeTransform(
+					RenderSystem.getModelViewMatrix(),
+					new Vector4f(1.0F, 1.0F, 1.0F, 1.0F),
+					new Vector3f(-offX, offY, -offZ),
+					new Matrix4f()
+				);
+        GpuTextureView colorTex = rt.getColorTextureView();
+        GpuTextureView depthTex = rt.getDepthTextureView();
+
+        if (ct != null) {
+            colorTex = ct.getColorTextureView();
+            depthTex = ct.getDepthTextureView();
+        } else {
+            colorTex = rt.getColorTextureView();
+            depthTex = rt.getDepthTextureView();
+        }
+        RenderPass pass = RenderSystem.getDevice()
+                .createCommandEncoder()
+                .createRenderPass(() -> "Clouds", colorTex, OptionalInt.empty(), depthTex, OptionalDouble.empty());
+
+        try {
+            RenderSystem.bindDefaultUniforms(pass);
+
+            pass.setPipeline(pipeline);
+            pass.setUniform("Model", currentLayer.ubo.currentBuffer());
+            pass.setUniform("DynamicTransforms", gpuBufferSlice);
+
+            pass.setVertexBuffer(0, currentLayer.buffer);
+            pass.setIndexBuffer(indexBuf, indices.type());
+            pass.drawIndexed(0, 0, currentLayer.layerIndexCount, 1);
+        }
+        catch (Exception exception) {
+            exception.printStackTrace();
+        }
+
+        if (pass != null) {
+            pass.close();
+        }
     }
 }

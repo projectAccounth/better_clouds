@@ -10,8 +10,6 @@ import net.not_thefirst.story_mode_clouds.renderer.utils.WrappedCoordinates;
 import net.not_thefirst.story_mode_clouds.renderer.utils.VertexBuilder;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 
-import net.minecraft.client.CloudStatus;
-
 public class ClassicMeshBuilder implements MeshTypeBuilder {
     
     public BufferBuilder Build(
@@ -33,39 +31,12 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
                 int cellIdx = wrapped.getCellIndex(dx, dz, range);
                 long cell = cells[cellIdx];
                 if (cell != 0L) {
-                    if (state.currentStatus == CloudStatus.FANCY) {
-                        buildExtrudedCell(pos, bb, dx, dz, cell, relY, currentLayer, skyColor);
-                    } else {
-                        buildFlatCell(bb, dx, dz, currentLayer, relY, skyColor);
-                    }
+                    buildExtrudedCell(pos, bb, dx, dz, cell, relY, currentLayer, skyColor);
                 }
             }
         }
 
         return bb;
-    }
-
-    private static void buildFlatCell(BufferBuilder bb, int cx, int cz, int currentLayer, float y, int skyColor) {
-        float x0 = cx * MeshBuilder.CELL_SIZE_IN_BLOCKS;
-        float x1 = x0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
-        float z0 = cz * MeshBuilder.CELL_SIZE_IN_BLOCKS;
-        float z1 = z0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
-
-        VertexBuilder.quad(bb, 
-            x0, 0, z1,
-            x1, 0, z1,
-            x1, 0, z0,
-            x0, 0, z0,
-            currentLayer, RelativeCameraPos.ABOVE_CLOUDS, y, skyColor
-        );
-
-        VertexBuilder.quad(bb, 
-            x0, 0, z0,
-            x1, 0, z0,
-            x1, 0, z1,
-            x0, 0, z1,
-            currentLayer, RelativeCameraPos.BELOW_CLOUDS, y, skyColor
-        );
     }
 
     private static void buildExtrudedCell(RelativeCameraPos pos, BufferBuilder bb,

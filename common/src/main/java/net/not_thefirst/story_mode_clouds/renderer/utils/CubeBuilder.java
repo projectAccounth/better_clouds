@@ -2,12 +2,10 @@ package net.not_thefirst.story_mode_clouds.renderer.utils;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
 
-import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers.EdgeDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers.Sign;
-import net.not_thefirst.story_mode_clouds.utils.Texture;
 
 public class CubeBuilder {
     public enum FaceDir {
@@ -291,15 +289,19 @@ public class CubeBuilder {
             float y  = cap.top ? yTop : yBot;
             float ny = cap.top ? 1.0f : -1.0f;
 
-            boolean zAligned = (cap.dir == EdgeDir.NORTH || cap.dir == EdgeDir.SOUTH);
+            float ex0, ez0, ex1, ez1;
 
-            float ex0 = zAligned ? x0 : ((cap.dir == EdgeDir.WEST) ? x0 : x1);
-            float ex1 = zAligned ? x1 : ex0;
-            float ez0 = zAligned ? ((cap.dir == EdgeDir.NORTH) ? z0 : z1) : z0;
-            float ez1 = zAligned ? ez0 : z1;
-
-            ex0 = backOffX(cap.dir, ex0, radius);
-            ez0 = backOffZ(cap.dir, ez0, radius);
+            if (cap.dir == EdgeDir.NORTH || cap.dir == EdgeDir.SOUTH) {
+                ex0 = x0; ex1 = x1;
+                ez0 = (cap.dir == EdgeDir.NORTH) ? z0 : z1;
+                ez0 = backOffZ(cap.dir, ez0, radius);
+                ez1 = ez0;
+            } else {
+                ex0 = (cap.dir == EdgeDir.WEST) ? x0 : x1;
+                ex0 = backOffX(cap.dir, ex0, radius);
+                ex1 = ex0;
+                ez0 = z0; ez1 = z1;
+            }
 
             GeometryUtils.buildCylindricalStrip(
                 bb,
@@ -537,7 +539,8 @@ public class CubeBuilder {
         int layer,
         float camX, float camY, float camZ,
         CustomCloudRenderer.LayerState state,
-        RelativeCameraPos pos, float relY, int cellIdx, int skyColor
+        RelativeCameraPos pos, float relY, int idxX, int idxY, 
+        int skyColor
     ) {
 
         float yTop = hasFace(excludedFaces, FaceDir.POS_Y)
@@ -612,7 +615,7 @@ public class CubeBuilder {
             layer, pos, relY, skyColor
         );
 
-        if (state.texture.neighbors[cellIdx] < 8) {
+        if (state.texture.neighbors[idxX + idxY * state.texture.width] < 8) {
             emitHorizontalCornerCaps(
                 bb, 
                 minX, maxX, 

@@ -40,7 +40,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 int z = Math.floorMod(cz + dz, h);
                 long cell = cells[x + z * w];
                 if (cell != 0L) {
-                    buildCell(pos, bb, dx, dz, cell, relY, currentLayer, skyColor, x + z * w, state);
+                    buildCell(pos, bb, dx, dz, cell, relY, currentLayer, skyColor, x, z, state);
                 }
             }
         }
@@ -50,7 +50,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
     
     private static void buildCell(RelativeCameraPos pos, BufferBuilder bb,
                             int cx, int cz, long cell, float relY,
-                            int currentLayer, int skyColor, int cellIdx, LayerState state) {
+                            int currentLayer, int skyColor, int cellIdxX, int cellIdxZ, LayerState state) {
 
         float cellSize = MeshBuilder.CELL_SIZE_IN_BLOCKS;
 
@@ -107,7 +107,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 excluded,
                 currentLayer,
                 (float) cam.x, (float) cam.y, (float) cam.z,
-                state, pos, relY, cellIdx, skyColor
+                state, pos, relY, cellIdxX, cellIdxZ, skyColor
         );
     }
 }

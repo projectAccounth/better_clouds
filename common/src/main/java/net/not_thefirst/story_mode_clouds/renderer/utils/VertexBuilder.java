@@ -5,8 +5,8 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
-import net.not_thefirst.story_mode_clouds.utils.ARGB;
-import net.not_thefirst.story_mode_clouds.utils.ColorUtils;
+import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
+import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
 
 public class VertexBuilder {
     private static CloudsConfiguration CONFIG = CloudsConfiguration.INSTANCE;

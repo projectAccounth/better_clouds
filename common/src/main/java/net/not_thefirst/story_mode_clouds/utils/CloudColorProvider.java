@@ -3,7 +3,9 @@ package net.not_thefirst.story_mode_clouds.utils;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
+import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 
 public class CloudColorProvider {
     public static int DAY_DURATION = 24000;
@@ -43,5 +45,11 @@ public class CloudColorProvider {
             (float)customColor[1],
             (float)customColor[2]
         );
+    }
+
+    public static int getCloudColor() {
+        return CloudsConfiguration.INSTANCE.COLOR_MODE 
+            == CloudsConfiguration.CloudColorProviderMode.VANILLA
+            ? getVanillaSkyColor() : getCustomCloudColor();
     }
 }

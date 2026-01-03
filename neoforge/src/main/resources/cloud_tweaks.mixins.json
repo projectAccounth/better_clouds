@@ -8,7 +8,7 @@
   ],
   "client": [
     "CloudRendererMixin",
-    "LightingAccessor"
+    "ClientWorldMixin"
   ],
   "injectors": {
     "defaultRequire": 1

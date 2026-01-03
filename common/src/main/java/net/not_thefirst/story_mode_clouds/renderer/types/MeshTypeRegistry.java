@@ -1,12 +1,13 @@
 package net.not_thefirst.story_mode_clouds.renderer.types;
 
-import net.not_thefirst.story_mode_clouds.utils.NamedRegistry;
+import net.not_thefirst.story_mode_clouds.utils.memory.NamedRegistry;
 
 public class MeshTypeRegistry extends NamedRegistry<MeshType> {
     public static MeshType NORMAL;
     public static MeshType BEVELED;
     public static MeshType PUFF;
     public static MeshType PUFF_NO_DEPTH;
+    public static MeshType NORMAL_FAST;
 
     private static MeshTypeRegistry INSTANCE = new MeshTypeRegistry();
     public static MeshTypeRegistry getInstance() {
@@ -14,6 +15,7 @@ public class MeshTypeRegistry extends NamedRegistry<MeshType> {
     }
 
     static {
+        NORMAL_FAST   = INSTANCE.register("NORMAL_FAST"  , () -> new MeshType("NORMAL_FAST"  , true ));
         NORMAL        = INSTANCE.register("NORMAL"       , () -> new MeshType("NORMAL"       , true ));
         BEVELED       = INSTANCE.register("BEVELED"      , () -> new MeshType("BEVELED"      , true ));
         PUFF          = INSTANCE.register("POPULATED"    , () -> new MeshType("PUFF"         , true ));

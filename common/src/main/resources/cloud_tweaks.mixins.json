@@ -10,7 +10,7 @@
     "LevelRendererMixin",
     "OptionsMixin",
     "ClientMixin",
-    "LightingAccessor"
+    "ClientWorldMixin"
   ],
   "injectors": {
     "defaultRequire": 1

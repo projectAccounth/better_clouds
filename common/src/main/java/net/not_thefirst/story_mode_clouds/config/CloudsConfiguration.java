@@ -5,9 +5,11 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Supplier;
+
+import org.joml.Vector3f;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -16,6 +18,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
+import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
+import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
 
 public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -29,16 +33,84 @@ public class CloudsConfiguration {
         public float AMBIENT_LIGHTING_STRENGTH  = 0.7f;
         public float MAX_LIGHTING_SHADING       = 0.8f;
 
-        public List<DiffuseLight> lights = new ArrayList<>();
+        public List<DiffuseLight> lights = new ArrayList<>(List.of(
+            new DiffuseLight(new Vector3f(0.5f, 0.8f, 1.0f), 0.6f),
+            new DiffuseLight(new Vector3f(-0.3f, 0.3f, 0.6f), 0.5f)
+        ));
 
         public LightingParameters() {
         }
     }
 
+    public static class SkyColorKeypoint {
+        public int time;   // 0–24000
+        public int color;  // RGB
+
+        public SkyColorKeypoint(int time, int color) {
+            this.time = time;
+            this.color = color;
+        }
+
+        public SkyColorKeypoint() {
+            this(6000, 0xffffff);
+        }
+    }
+
+    public enum CloudColorProviderMode {
+        VANILLA,
+        CUSTOM
+    }
+
+    // chatgpt generated color
+    public static final List<SkyColorKeypoint> DEFAULT_COLORS = List.of(
+        // Sunrise (6:00 AM)
+        new SkyColorKeypoint(0, 0xFFD8A8),        // soft peach
+
+        // Morning (9:00 AM)
+        new SkyColorKeypoint(3000, 0xFFFFFF),     // bright white
+
+        // Noon (12:00 PM)
+        new SkyColorKeypoint(6000, 0xFFFFFF),     // neutral white
+
+        // Afternoon (3:00 PM)
+        new SkyColorKeypoint(9000, 0xF4F6F8),     // slightly cool white
+
+        // Sunset (6:00 PM)
+        new SkyColorKeypoint(12000, 0xFF9E5E),    // warm orange glow
+
+        // Late sunset (7:00 PM)
+        new SkyColorKeypoint(13000, 0xFFB37A),    // orange-pink highlight
+
+        // Dusk (8:00 PM)
+        new SkyColorKeypoint(14000, 0x7A86A8),    // muted bluish gray
+
+        // Night (12:00 AM)
+        new SkyColorKeypoint(18000, 0x2A2F45),    // dark desaturated blue
+
+        // Pre-dawn (4:00 AM)
+        new SkyColorKeypoint(22000, 0x4A567A),    // faint blue-gray
+
+        // Loop back to sunrise
+        new SkyColorKeypoint(23999, 0xFFD8A8)
+    );
+
+    public List<SkyColorKeypoint> CLOUD_COLOR = new ArrayList<>(List.of(
+        new SkyColorKeypoint(0, 0xFFD8A8),
+        new SkyColorKeypoint(3000, 0xFFFFFF),
+        new SkyColorKeypoint(6000, 0xFFFFFF),
+        new SkyColorKeypoint(9000, 0xF4F6F8),
+        new SkyColorKeypoint(12000, 0xFF9E5E),
+        new SkyColorKeypoint(13000, 0xFFB37A),
+        new SkyColorKeypoint(14000, 0x7A86A8),
+        new SkyColorKeypoint(18000, 0x2A2F45),
+        new SkyColorKeypoint(22000, 0x4A567A),
+        new SkyColorKeypoint(23999, 0xFFD8A8)
+    ));
+  
+    public CloudColorProviderMode COLOR_MODE = CloudColorProviderMode.VANILLA;
+
     public LightingParameters LIGHTING = new LightingParameters();
-
     private LayerHolder LAYERS = new LayerHolder();
-
     public LayerHolder getHolder() { return LAYERS; }
 
     public LayerConfiguration getLayer(int idx) {
@@ -53,7 +125,6 @@ public class CloudsConfiguration {
     }
 
     public static LayerConfiguration template = new LayerConfiguration();
-
     public static class LayerConfiguration {
         public LayerConfiguration(int idx) {
             LAYER_IDX = idx; 
@@ -83,6 +154,16 @@ public class CloudsConfiguration {
             }
         };
 
+        public static class FogParameters {
+            public float FOG_START_DISTANCE = 50.0f;
+            public float FOG_END_DISTANCE   = 200.0f;
+
+            void copy(FogParameters other) {
+                this.FOG_START_DISTANCE = other.FOG_START_DISTANCE;
+                this.FOG_END_DISTANCE = other.FOG_END_DISTANCE;
+            }
+        };
+
         public static class AppearanceParameters {
             public boolean SHADING_ENABLED    = false; // Whether clouds should appear shaded (darker) when the sun is behind them
             public boolean USES_CUSTOM_ALPHA  = true;  // Whether clouds should use custom alpha
@@ -97,6 +178,9 @@ public class CloudsConfiguration {
             public int     LAYER_OFFSET_X        = 0;
             public int     LAYER_OFFSET_Z        = 0;
 
+            public float   LAYER_SPEED_X         = 0.03f;
+            public float   LAYER_SPEED_Z         = 0.03f;
+
             void copy(AppearanceParameters other) {
                 this.SHADING_ENABLED = other.SHADING_ENABLED;
                 this.USES_CUSTOM_ALPHA = other.USES_CUSTOM_ALPHA;
@@ -108,6 +192,8 @@ public class CloudsConfiguration {
                 this.CLOUD_Y_SCALE = other.CLOUD_Y_SCALE;
                 this.LAYER_OFFSET_X = other.LAYER_OFFSET_X;
                 this.LAYER_OFFSET_Z = other.LAYER_OFFSET_Z;
+                this.LAYER_SPEED_X = other.LAYER_SPEED_X;
+                this.LAYER_SPEED_Z = other.LAYER_SPEED_Z;
             }
         }
 
@@ -127,6 +213,7 @@ public class CloudsConfiguration {
         public PerformanceParameters PERFORMANCE = new PerformanceParameters();
         public AppearanceParameters  APPEARANCE  = new AppearanceParameters();
         public FadeParameters        FADE        = new FadeParameters();
+        public FogParameters         FOG         = new FogParameters();
 
         private int LAYER_IDX;
 
@@ -152,6 +239,7 @@ public class CloudsConfiguration {
             this.PERFORMANCE.copy(other.PERFORMANCE);
             this.APPEARANCE.copy(other.APPEARANCE);
             this.FADE.copy(other.FADE);
+            this.FOG.copy(other.FOG);
         }
     };
 
@@ -203,6 +291,50 @@ public class CloudsConfiguration {
             INSTANCE = GSON.fromJson(reader, CloudsConfiguration.class);
         } catch (IOException e) {
             e.printStackTrace();
+            return;
+        }
+
+        if (INSTANCE == null) {
+            INSTANCE = new CloudsConfiguration();
+        }
+
+        if (INSTANCE.CLOUD_COLOR == null || INSTANCE.CLOUD_COLOR.isEmpty()) {
+            INSTANCE.CLOUD_COLOR = new ArrayList<>(DEFAULT_COLORS);
+        }
+
+        INSTANCE.CLOUD_COLOR.sort(Comparator.comparingInt(kp -> kp.time));
+
+        NumberSequence sequence = CloudColorProvider.getCurrentSequence();
+        sequence.clearKeypoints();
+
+        for (SkyColorKeypoint kp : INSTANCE.CLOUD_COLOR) {
+            int c = kp.color;
+
+            double r = ((c >> 16) & 0xFF) / 255.0;
+            double g = ((c >> 8) & 0xFF) / 255.0;
+            double b = (c & 0xFF) / 255.0;
+
+            sequence.addKeypoint(
+                kp.time,
+                r,
+                g,
+                b
+            );
+        }
+
+        // cyclic continuity (23999 == 0)
+        SkyColorKeypoint first = INSTANCE.CLOUD_COLOR.get(0);
+        SkyColorKeypoint last = INSTANCE.CLOUD_COLOR.get(INSTANCE.CLOUD_COLOR.size() - 1);
+
+        if (last.time != 23999) {
+            int c = first.color;
+
+            sequence.addKeypoint(
+                23999,
+                ((c >> 16) & 0xFF) / 255.0,
+                ((c >> 8) & 0xFF) / 255.0,
+                (c & 0xFF) / 255.0
+            );
         }
     }
 
