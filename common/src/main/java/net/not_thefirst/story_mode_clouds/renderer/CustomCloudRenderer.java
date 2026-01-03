@@ -29,6 +29,7 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshTypeBuilder;
+import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.mesh.CompiledMesh;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
@@ -231,8 +232,15 @@ public class CustomCloudRenderer {
 
             if (!layerConfiguration.LAYER_RENDERED) continue;
 
-            MeshType type = MeshTypeRegistry
-                .getInstance().getObject(layerConfiguration.MODE);
+            MeshType type = null;
+            try {
+                type = MeshTypeRegistry
+                    .getInstance().getObject(layerConfiguration.MODE);
+            }
+            catch (Throwable exception) {
+                exception.printStackTrace();
+                continue;
+            }
 
             if (type == null) continue;
 
@@ -265,8 +273,27 @@ public class CustomCloudRenderer {
 
             int cellX = Mth.floor(dxLayer / MeshBuilder.CELL_SIZE_IN_BLOCKS);
             int cellZ = Mth.floor(dzLayer / MeshBuilder.CELL_SIZE_IN_BLOCKS);
-            float offX = (float)(dxLayer - cellX * MeshBuilder.CELL_SIZE_IN_BLOCKS);
-            float offZ = (float)(dzLayer - cellZ * MeshBuilder.CELL_SIZE_IN_BLOCKS);
+
+            if (currentLayer.prevCellX == Integer.MIN_VALUE) {
+                currentLayer.baseCellX = cellX;
+                currentLayer.baseCellZ = cellZ;
+                currentLayer.needsRebuild = true;
+            }
+
+            int range = 32;
+            int slack = range / 2;
+
+            int dxCell = cellX - currentLayer.baseCellX;
+            int dzCell = cellZ - currentLayer.baseCellZ;
+
+            if (Math.abs(dxCell) > slack || Math.abs(dzCell) > slack) {
+                currentLayer.baseCellX = cellX;
+                currentLayer.baseCellZ = cellZ;
+                currentLayer.needsRebuild = true;
+            }
+                        
+            float offX = (float)(dxLayer - currentLayer.baseCellX * MeshBuilder.CELL_SIZE_IN_BLOCKS);
+            float offZ = (float)(dzLayer - currentLayer.baseCellZ * MeshBuilder.CELL_SIZE_IN_BLOCKS);
 
             long now = System.currentTimeMillis();
 
@@ -274,10 +301,9 @@ public class CustomCloudRenderer {
             float transition = Math.max(0.0001f, layerConfiguration.FADE.TRANSITION_RANGE);
             float dir = Mth.clamp(relY / transition, -1.0f, 1.0f);
 
-            boolean cameraChanged = cellX != currentLayer.prevCellX
-                    || cellZ != currentLayer.prevCellZ
-                    || layerPos != currentLayer.prevPos
-                    || status != currentLayer.prevStatus;
+            boolean cameraChanged =
+                layerPos != currentLayer.prevPos
+                || status != currentLayer.prevStatus;
 
             boolean fadeChanged = layerConfiguration.FADE.FADE_ENABLED &&
                     Math.abs(relY) <= layerConfiguration.FADE.TRANSITION_RANGE &&
@@ -297,7 +323,15 @@ public class CustomCloudRenderer {
                 currentLayer.currentStatus = status;
                 currentLayer.prevFadeMix   = dir;
 
-                try (MeshData mesh = buildMeshForLayer(tex, Tesselator.getInstance(), cellX, cellZ, status, layerPos, relY, layer, skyColor, offX, offZ)) {
+                try (MeshData mesh = buildMeshForLayer(
+                    tex, Tesselator.getInstance(), 
+                    currentLayer.baseCellX,
+                    currentLayer.baseCellZ,
+                    status, 
+                    layerPos, relY, layer, 
+                    skyColor, 
+                    0.0F, 0.0F)) {
+
                     if (mesh == null) {
                         currentLayer.layerIndexCount = 0;
                     } else {
@@ -352,10 +386,12 @@ public class CustomCloudRenderer {
         RenderPipeline pipe = ModRenderPipelines.CUSTOM_POSITION_COLOR;
 
         BufferBuilder bb = tess.begin(pipe.getVertexFormatMode(), pipe.getVertexFormat());
-        MeshTypeBuilder builder = 
-            MeshBuilderRegistry.getInstance().getObject(layerConfiguration.MODE);
-
-        if (builder == null) {
+        MeshTypeBuilder builder = null;
+        try {
+            builder = MeshBuilderRegistry.getInstance().getObject(layerConfiguration.MODE);
+        }
+        catch (Throwable exception) {
+            exception.printStackTrace();
             return null;
         }
 
@@ -399,22 +435,33 @@ public class CustomCloudRenderer {
     public static class LayerState {
         public int index;
         public float offsetX, offsetZ;
+
+        public CompiledMesh cachedMesh;
+
+        public int baseCellX;
+        public int baseCellZ;
+
         public Texture.TextureData texture;
         public GpuBuffer buffer;
+
         public int indexCount;
         public boolean needsRebuild;
-        public int prevCellX, prevCellZ;
+
+        public int 
+            prevCellX = Integer.MIN_VALUE, 
+            prevCellZ = Integer.MIN_VALUE;
         public RelativeCameraPos prevPos;
+
         public CloudStatus prevStatus;
         public CloudStatus currentStatus;
+
         public float prevFadeMix;
         public boolean bufferEmpty;
         public int layerIndexCount;
+
         public final MappableRingBuffer ubo = new MappableRingBuffer(() -> "Cloud Layer UBO", 130, UBO_SIZE);
         
-        public final RebuildThrottler fadeThrottler = new RebuildThrottler(40);
-        public final RebuildThrottler colorThrottler = new RebuildThrottler(40);
-        public final RebuildThrottler cameraThrottler = new RebuildThrottler(0);
+        public final RebuildThrottler fadeThrottler = new RebuildThrottler(100);
 
         public LayerState(int index) {
             this.index = index;

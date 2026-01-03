@@ -17,6 +17,8 @@ import com.google.gson.GsonBuilder;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
+import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
@@ -124,7 +126,7 @@ public class CloudsConfiguration {
         return LAYERS == null ? 0 : LAYERS.layers.size();
     }
 
-    public static LayerConfiguration template = new LayerConfiguration();
+    public LayerConfiguration template = new LayerConfiguration();
     public static class LayerConfiguration {
         public LayerConfiguration(int idx) {
             LAYER_IDX = idx; 

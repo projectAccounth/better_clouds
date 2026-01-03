@@ -1,5 +1,6 @@
 package net.not_thefirst.story_mode_clouds.config;
 
+import me.shedaniel.clothconfig2.ClothConfigDemo;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -17,7 +18,9 @@ import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ClothConfigScreen {
 
@@ -156,7 +159,7 @@ public class ClothConfigScreen {
         ));
         
         ConfigCategory templateCategory = builder.getOrCreateCategory(Component.literal("Layer Template"));
-        templateCategory.addEntry(buildLayerEntries(entryBuilder, CloudsConfiguration.template));
+        templateCategory.addEntry(buildLayerEntries(entryBuilder, CloudsConfiguration.INSTANCE.template));
         
         return builder.build();
     }
@@ -272,7 +275,7 @@ public class ClothConfigScreen {
         
         if (layer == null) {
             layer = new CloudsConfiguration.LayerConfiguration();
-            layer.copy(CloudsConfiguration.template);
+            layer.copy(CloudsConfiguration.INSTANCE.template);
         }
         
         List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
@@ -345,7 +348,10 @@ public class ClothConfigScreen {
             )
             .setDefaultValue("NORMAL")
             .setSelections(
-                MeshBuilderRegistry.getInstance().keys()
+                MeshBuilderRegistry.getInstance()
+                    .keys()
+                    .stream()
+                    .collect(Collectors.toCollection(LinkedHashSet::new))
             )
             .setSaveConsumer(value -> layer.MODE = value)
             .build());
@@ -471,6 +477,7 @@ public class ClothConfigScreen {
             .setMax(MAX_TRANSITION_RANGE)
             .setSaveConsumer(value -> layer.FADE.TRANSITION_RANGE = Math.max(MIN_TRANSITION_RANGE, Math.min(MAX_TRANSITION_RANGE, value)))
             .build());
+
         return new ParameterGroup("Fade", entries);
     }
     

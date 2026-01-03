@@ -41,6 +41,10 @@ public abstract class NamedRegistry<T> {
         return registry.keySet();
     }
 
+    public Map<String, T> registry() {
+        return new HashMap<>(this.registry);
+    }
+
     public T getObject(String name) {
         T builder = registry.get(name);
         if (builder == null)
