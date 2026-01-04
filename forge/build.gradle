@@ -8,6 +8,12 @@ def safeMc = mc.replace('.', '_')
 def loaderName = "forge"
 
 def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
+    doFirst {
+        delete "$buildDir/resources_${safeMc}"
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    
     from(sourceSets.main.resources.srcDirs)
     into("$buildDir/resources_${safeMc}")
 
@@ -20,6 +26,7 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
     }
 
     exclude "fabric.mod.json"
+    exclude "cloud_tweaks.accesswidener"
 }
 
 def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
@@ -95,11 +102,20 @@ dependencies {
     mappings loom.officialMojangMappings()
 
     forge "net.minecraftforge:forge:${rootProject.minecraft_version}-${project.forge_version}"
-    
-    modApi "me.shedaniel.cloth:cloth-config-forge:15.0.140"
+
+    modApi "me.shedaniel.cloth:cloth-config-forge:11.1.136"
 }
 
 processResources {
+    doFirst {
+        delete "$buildDir/resources"
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    from(sourceSets.main.resources.srcDirs)
+    into("$buildDir/resources")
+
     filteringCharset = "UTF-8"
     
     filesMatching("META-INF/mods.toml") {
@@ -119,6 +135,7 @@ tasks.withType(JavaCompile).configureEach {
 
 shadowJar {
     exclude "fabric.mod.json"
+    exclude "cloud_tweaks.accesswidener"
     exclude "**/*-refmap.json"
 
     configurations = [project.configurations.shadowCommon]
@@ -141,6 +158,7 @@ jar {
     }
     
     exclude "**/*-refmap.json"
+    exclude "cloud_tweaks.accesswidener"
 
     manifest.attributes(
         "MixinConfigs": "cloud_tweaks.mixins.json"

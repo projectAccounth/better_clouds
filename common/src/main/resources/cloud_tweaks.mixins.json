@@ -9,7 +9,9 @@
   "client": [
     "LevelRendererMixin",
     "OptionsMixin",
-    "ClientMixin"
+    "ClientMixin",
+    "ClientWorldMixin",
+    "GameRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

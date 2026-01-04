@@ -8,6 +8,10 @@ def safeMc = mc.replace('.', '_')
 def loaderName = "neoforge"
 
 def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
+    doFirst {
+        delete "$buildDir/resources_${safeMc}"
+    }
+    
     from(sourceSets.main.resources.srcDirs)
     into("$buildDir/resources_${safeMc}")
 
@@ -20,6 +24,7 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
     }
 
     exclude "fabric.mod.json"
+    exclude "cloud_tweaks.accesswidener"
     exclude "mods.toml"
 }
 
@@ -94,10 +99,19 @@ dependencies {
 
     neoForge "net.neoforged:neoforge:${project.neoforge_version}"
 
-    modApi "me.shedaniel.cloth:cloth-config-neoforge:15.0.140"
+    modApi "me.shedaniel.cloth:cloth-config-neoforge:12.0.137"
 }
 
 processResources {
+    doFirst {
+        delete "$buildDir/resources"
+    }
+
+    from(sourceSets.main.resources.srcDirs)
+    into("$buildDir/resources")
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    
     filteringCharset = "UTF-8"
     
     filesMatching("META-INF/neoforge.mods.toml") {
@@ -115,6 +129,7 @@ tasks.withType(JavaCompile).configureEach {
 
 shadowJar {
     exclude "fabric.mod.json"
+    exclude "cloud_tweaks.accesswidener"
     exclude "**/*-refmap.json"
 
     configurations = [project.configurations.shadowCommon]
