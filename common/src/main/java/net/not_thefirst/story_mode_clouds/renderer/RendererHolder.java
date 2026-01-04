@@ -32,7 +32,7 @@ public class RendererHolder {
         }
 
         if (renderer.currentTexture.isEmpty()) {
-            var texture = renderer.prepare(client.getResourceManager(), Profiler.get());
+            var texture = renderer.prepare(client.getResourceManager(), Profiler.get(), CustomCloudRenderer.TEXTURE_LOCATION);
             renderer.apply(texture, client.getResourceManager(), Profiler.get());
         }
 

@@ -20,6 +20,7 @@ repositories {
 
 loom {
     mixin.defaultRefmapName = "common-cloud_tweaks.refmap.json"
+    accessWidenerPath = file("src/main/resources/cloud_tweaks.accesswidener")
 }
 
 remapJar {

@@ -9,7 +9,9 @@
   "client": [
     "LevelRendererMixin",
     "OptionsMixin",
-    "ClientMixin"
+    "ClientMixin",
+    "ClientWorldMixin",
+    "CoreShadersMixin"
   ],
   "injectors": {
     "defaultRequire": 1
