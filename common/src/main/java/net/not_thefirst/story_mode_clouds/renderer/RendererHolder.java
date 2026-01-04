@@ -7,13 +7,10 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 
 public class RendererHolder {
-    private static CustomCloudRenderer renderer = null;
+    private static CustomCloudRenderer renderer;
 
     public static CustomCloudRenderer get() {
         return RendererHolder.renderer;
-    }
-
-    public static void initialize() {
     }
 
     public static void renderCloud(
@@ -31,7 +28,7 @@ public class RendererHolder {
         }
 
         if (renderer.currentTexture.isEmpty()) {
-            var texture = renderer.prepare(client.getResourceManager(), Profiler.get());
+            var texture = renderer.prepare(client.getResourceManager(), Profiler.get(), CustomCloudRenderer.TEXTURE_LOCATION);
             renderer.apply(texture, client.getResourceManager(), Profiler.get());
         }
 

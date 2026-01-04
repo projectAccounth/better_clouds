@@ -14,7 +14,8 @@ public final class Compat {
     public static boolean hasClothConfig() {
         return checker.isLoaded("cloth-config") ||
             checker.isLoaded("cloth_config") ||
-            checker.isLoaded("cloth-config2");
+            checker.isLoaded("cloth-config2") ||
+            checker.isLoaded("cloth_config2");
     }
 
     public static boolean hasModMenu() {

@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'maven-publish'
     id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "1.11-SNAPSHOT" apply false
+    id "dev.architectury.loom" version "1.13-SNAPSHOT" apply false
 }
 
 group = rootProject.maven_group
@@ -48,4 +48,70 @@ allprojects {
         options.encoding = "UTF-8"
         options.release = 21
     }
+
+    tasks.withType(JavaExec).configureEach {
+        onlyIf { !System.getenv().containsKey("CI"); }
+    }
+}
+
+tasks.withType(JavaExec).configureEach {
+    onlyIf { !System.getenv().containsKey("CI"); }
+}
+
+ext.releaseOutputDir = file("${buildDir}/release-jars");
+
+tasks.register("cleanReleaseJars") {
+    doLast {
+        delete(releaseOutputDir);
+    }
+}
+
+tasks.register("collectReleaseJars") {
+    dependsOn("cleanReleaseJars");
+    doLast {
+        releaseOutputDir.mkdirs();
+    }
+}
+
+def registerLoaderTask(String loader) {
+    tasks.register("collect${loader.capitalize()}ReleaseJar") {
+        dependsOn("collectReleaseJars");
+
+        doLast {
+            def proj = project(":${loader}");
+            def libsDir = file("${proj.buildDir}/libs");
+
+            if (!libsDir.exists()) {
+                return;
+            }
+
+            def expectedPattern =
+                    ~/^${project.name}\+.+-${version}-${loader}\.jar$/;
+
+            fileTree(libsDir) {
+                include("*.jar");
+            }.matching {
+                include { details ->
+                    details.file.name ==~ expectedPattern;
+                }
+            }.files.each { jar ->
+                copy {
+                    from(jar);
+                    into(releaseOutputDir);
+                }
+            }
+        }
+    }
+}
+
+registerLoaderTask("fabric");
+registerLoaderTask("forge");
+registerLoaderTask("neoforge");
+
+tasks.register("collectAllReleaseJars") {
+    dependsOn(
+        "collectFabricReleaseJar",
+        "collectForgeReleaseJar",
+        "collectNeoforgeReleaseJar"
+    );
 }
