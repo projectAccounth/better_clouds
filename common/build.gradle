@@ -20,6 +20,7 @@ repositories {
 
 loom {
     mixin.defaultRefmapName = "common-cloud_tweaks.refmap.json"
+    accessWidenerPath = file("src/main/resources/cloud_tweaks.accesswidener")
 }
 
 remapJar {
@@ -35,6 +36,7 @@ dependencies {
     implementation "org.spongepowered:mixin:0.8.5"
     mappings loom.officialMojangMappings()
 
+    // compile only, has no Fabric-specific mappings here
     modCompileOnly "me.shedaniel.cloth:cloth-config-fabric:${project.fabric_cloth_config_version}"
 }
 

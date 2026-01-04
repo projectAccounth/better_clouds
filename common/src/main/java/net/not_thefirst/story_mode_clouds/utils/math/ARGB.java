@@ -1,4 +1,4 @@
-package net.not_thefirst.story_mode_clouds.utils;
+package net.not_thefirst.story_mode_clouds.utils.math;
 
 public final class ARGB {
     private ARGB() {}

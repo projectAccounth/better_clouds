@@ -1,4 +1,4 @@
-package net.not_thefirst.story_mode_clouds.utils;
+package net.not_thefirst.story_mode_clouds.utils.math;
 import java.util.Random;
 
 public class PerlinNoise {

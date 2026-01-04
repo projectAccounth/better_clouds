@@ -18,7 +18,7 @@ logoFile="assets/cloud_tweaks/icon.png"
     side="CLIENT"
 
 [[dependencies.minecraft]]
-    modId="cloth_config"
+    modId="minecraft"
     versionRange="[1.20, 1.20.4]"
     mandatory=true
     ordering="NONE"

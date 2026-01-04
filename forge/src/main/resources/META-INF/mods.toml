@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="${forge_loader_version}"
+loaderVersion="[1,)"
 license="MIT"
 [[mods]]
 modId="cloud_tweaks"
@@ -13,19 +13,19 @@ logoFile="assets/cloud_tweaks/icon.png"
 [[dependencies.cloud_tweaks]]
     modId="forge"
     mandatory=true
-    versionRange="${forge_loader_version}"
+    versionRange="[1,)"
     ordering="NONE"
     side="CLIENT"
 
 [[dependencies.cloud_tweaks]]
     modId="cloth_config"
-    versionRange="[11,)"
+    versionRange="[1,)"
     mandatory=false
     ordering="AFTER"
     side="CLIENT"
 
-[[dependencies.minecraft]]
-    modId="cloth_config"
+[[dependencies.cloud_tweaks]]
+    modId="minecraft"
     versionRange="[1.20, 1.20.4]"
     mandatory=true
     ordering="NONE"

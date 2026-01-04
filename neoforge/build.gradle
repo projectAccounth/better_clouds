@@ -2,70 +2,66 @@ plugins {
     id "maven-publish"
     id "com.gradleup.shadow" version "9.2.2"
 }
-def targets = [
-    "1.20.2"  : "[20.2,)"
-]
 
-def versionTasks = []
-
+def mc = rootProject.minecraft_version
+def safeMc = mc.replace('.', '_')
 def loaderName = "neoforge"
 
-targets.each { mc, loaderRange ->
-
-    def safeMc = mc.replace('.', '_')
-
-    def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
-        from(sourceSets.main.resources.srcDirs)
-        into("$buildDir/resources_${safeMc}")
-
-        filteringCharset = "UTF-8"
-        filesMatching("META-INF/mods.toml") {
-            expand(
-                "version": rootProject.version,
-                "forge_loader_version": loaderRange
-            )
-        }
+def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
+    doFirst {
+        delete "$buildDir/resources_${safeMc}"
     }
+    
+    from(sourceSets.main.resources.srcDirs)
+    into("$buildDir/resources_${safeMc}")
 
-    def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
-        group = "build"
-        archiveClassifier.set("shadow_${mc}")
-
-        configurations = [project.configurations.shadowCommon]
-        from sourceSets.main.output
-        from(processResourcesTask.map { it.destinationDir })
-
-        manifest.attributes(
-            "MixinConfigs": "cloud_tweaks.mixins.json"
+    filteringCharset = "UTF-8"
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(
+            "version": rootProject.version,
+            "forge_loader_version": project.neoforge_version
         )
     }
 
-    def remapTask = tasks.register("remapJar_${safeMc}", net.fabricmc.loom.task.RemapJarTask) {
-        group = "build"
-        dependsOn(shadowTask)
+    exclude "fabric.mod.json"
+    exclude "cloud_tweaks.accesswidener"
+    exclude "mods.toml"
+}
 
-        input.set(shadowTask.flatMap { it.archiveFile })
-        archiveClassifier.set("")
+def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    group = "build"
+    archiveClassifier.set("shadow_${mc}")
 
-        archiveFileName.set(
-            "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
-        )
+    configurations = [project.configurations.shadowCommon]
+    from sourceSets.main.output
+    from(processResourcesTask.map { it.destinationDir })
 
-        from(rootProject.file("LICENSE.txt"))
+    manifest.attributes(
+        "MixinConfigs": "cloud_tweaks.mixins.json"
+    )
+}
 
-        manifest.attributes(
-            "MixinConfigs": "cloud_tweaks.mixins.json"
-        )
-    }
+def remapTask = tasks.register("remapJar_${safeMc}", net.fabricmc.loom.task.RemapJarTask) {
+    group = "build"
+    dependsOn(shadowTask)
 
-    versionTasks << remapTask
+    input.set(shadowTask.flatMap { it.archiveFile })
+    archiveClassifier.set("")
+
+    archiveFileName.set(
+        "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
+    )
+
+    manifest.attributes(
+        "MixinConfigs": "cloud_tweaks.mixins.json"
+    )
 }
 
 tasks.register("buildAll") {
     group = "build"
-    description = "Builds JARs for all supported Minecraft versions."
+    description = "Builds JAR for ${mc}."
 
-    dependsOn(versionTasks)
+    dependsOn(remapTask)
 }
 
 architectury {
@@ -107,9 +103,18 @@ dependencies {
 }
 
 processResources {
+    doFirst {
+        delete "$buildDir/resources"
+    }
+
+    from(sourceSets.main.resources.srcDirs)
+    into("$buildDir/resources")
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    
     filteringCharset = "UTF-8"
     
-    filesMatching("META-INF/mods.toml") {
+    filesMatching("META-INF/neoforge.mods.toml") {
         expand(
             "version": rootProject.version,
             "forge_loader_version": project.neoforge_version
@@ -124,7 +129,8 @@ tasks.withType(JavaCompile).configureEach {
 
 shadowJar {
     exclude "fabric.mod.json"
-    exclude "cloth-config.accessWidener"
+    exclude "cloud_tweaks.accesswidener"
+    exclude "**/*-refmap.json"
 
     configurations = [project.configurations.shadowCommon]
     archiveClassifier = "shadow"
@@ -138,14 +144,14 @@ remapJar {
     input.set(shadowJar.archiveFile)
     dependsOn(shadowJar)
     archiveClassifier = "neoforge"
-
-    from rootProject.file("LICENSE.txt")
 }
 
 jar {
     from("LICENSE") {
         rename { "neoforge_${it}_${project.archivesName}" }
     }
+    
+    exclude "**/*-refmap.json"
 
     manifest.attributes(
         "MixinConfigs": "cloud_tweaks.mixins.json"

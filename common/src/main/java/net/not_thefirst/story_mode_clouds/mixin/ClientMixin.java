@@ -11,7 +11,7 @@ import net.not_thefirst.story_mode_clouds.config.ModKeybinds;
 
 @Mixin(Minecraft.class)
 public abstract class ClientMixin {
-    @Inject(method = "handleKeybinds()V", at = @At("HEAD"), require = 0)
+    @Inject(method = "handleKeybinds", at = @At("HEAD"))
     private void handleConfigWindow(CallbackInfo ci) {
         while (ModKeybinds.OPEN_CONFIG_KEYBIND.consumeClick()) {
             Minecraft.getInstance().setScreen(CloudsConfiguration.createConfigScreen(Minecraft.getInstance().screen));

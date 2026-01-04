@@ -11,7 +11,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Options;
 import net.not_thefirst.story_mode_clouds.api.keybindings.KeyMappingHelper;
-import net.not_thefirst.story_mode_clouds.config.ModKeybinds;
 
 @Mixin(Options.class)
 public abstract class OptionsMixin {
@@ -22,8 +21,6 @@ public abstract class OptionsMixin {
 
 	@Inject(at = @At("HEAD"), method = "load()V")
 	public void putKeys(CallbackInfo info) {
-		ModKeybinds.initialize();
 		keyMappings = KeyMappingHelper.put(keyMappings);
-		System.out.println("[cloud_tweaks] Fucking injected the keybinds.");
 	}
 }
