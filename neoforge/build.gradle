@@ -16,7 +16,7 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
     into("$buildDir/resources_${safeMc}")
 
     filteringCharset = "UTF-8"
-    filesMatching("META-INF/neoforge.mods.toml") {
+    filesMatching("META-INF/mods.toml") {
         expand(
             "version": rootProject.version,
             "forge_loader_version": project.neoforge_version
@@ -114,7 +114,7 @@ processResources {
     
     filteringCharset = "UTF-8"
     
-    filesMatching("META-INF/neoforge.mods.toml") {
+    filesMatching("META-INF/mods.toml") {
         expand(
             "version": rootProject.version,
             "forge_loader_version": project.neoforge_version

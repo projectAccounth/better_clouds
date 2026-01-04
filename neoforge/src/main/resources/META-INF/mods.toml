@@ -12,8 +12,8 @@ logoFile="assets/cloud_tweaks/icon.png"
 
 [[dependencies.cloud_tweaks]]
     modId = "neoforge"
-    type = "required"
-    versionRange = "[21,)"
+    mandatory=true
+    versionRange = "[1,)"
     ordering = "NONE"
     side = "CLIENT"
 
