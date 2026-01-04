@@ -11,6 +11,13 @@ credits="Tixork for burning down my house!"
 logoFile="assets/cloud_tweaks/icon.png"
 
 [[dependencies.cloud_tweaks]]
+    modId = "neoforge"
+    type = "required"
+    versionRange = "[21,)"
+    ordering = "NONE"
+    side = "CLIENT"
+
+[[dependencies.cloud_tweaks]]
     modId="cloth_config"
     versionRange="[11,)"
     mandatory=false
