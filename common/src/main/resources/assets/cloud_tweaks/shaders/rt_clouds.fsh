@@ -2,23 +2,36 @@
 
 #moj_import <minecraft:fog.glsl>
 
-layout(std140) uniform Model {
-    vec4 CloudColor;
-    int config; 
-    int pad0;
-    int pad1;
-    int pad2;
-};
+uniform vec4 CloudColor;
+uniform int Config; 
+uniform int CloudFogStart;
+uniform int CloudFogEnd;
 
-bool fogEnabled() { return (config & (1 << 0)) != 0; }
+uniform mat4 ModelViewMat;
+uniform mat4 ProjMat;
+uniform vec3 ModelOffset;
+uniform int FogShape;
+uniform vec4 ColorModulator;
+
+bool fogEnabled() { return (Config & (1 << 0)) != 0; }
 
 in float vertexDistance;
 in vec4 vertexColor;
 
 out vec4 fragColor;
 
+float linearFog(float vertexDistance, float fogStart, float fogEnd) {
+    if (vertexDistance <= fogStart) {
+        return 0.0;
+    } else if (vertexDistance >= fogEnd) {
+        return 1.0;
+    }
+
+    return (vertexDistance - fogStart) / (fogEnd - fogStart);
+}
+
 void main() {
     vec4 color = vertexColor;
-    color.a *= 1.0 - linear_fog_value(vertexDistance, 0.0, FogCloudsEnd);
+    color.a *= 1.0 - (fogEnabled() ? linearFog(vertexDistance, CloudFogStart, CloudFogEnd) : 0.0);
     fragColor = color;
 }

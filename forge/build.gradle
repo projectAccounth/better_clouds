@@ -8,6 +8,10 @@ def safeMc = mc.replace('.', '_')
 def loaderName = "forge"
 
 def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
+    doFirst {
+        delete "$buildDir/resources_${safeMc}"
+    }
+    
     from(sourceSets.main.resources.srcDirs)
     into("$buildDir/resources_${safeMc}")
 
@@ -100,6 +104,13 @@ dependencies {
 }
 
 processResources {
+    doFirst {
+        delete "$buildDir/resources"
+    }
+
+    from(sourceSets.main.resources.srcDirs)
+    into("$buildDir/resources")
+
     filteringCharset = "UTF-8"
     
     filesMatching("META-INF/mods.toml") {
