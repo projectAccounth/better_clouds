@@ -45,6 +45,8 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
         CloudStatus status = client.options.getCloudsType();
         float cloudHeight  = client.level.effects().getCloudHeight();
 
+        if (Float.isNaN(cloudHeight)) return;
+
         Vec3 cam = new Vec3(cameraX, cameraY, cameraZ);
 
         RendererHolder.renderCloud(0, status, cloudHeight, projMatrix, modelViewMatrix, cam, partialTicks);
