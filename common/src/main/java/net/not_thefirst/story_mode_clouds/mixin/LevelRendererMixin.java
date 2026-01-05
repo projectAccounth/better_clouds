@@ -46,12 +46,11 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
     at = 
         @At(
             value = "INVOKE", 
-            target = "Lnet/minecraft/client/renderer/CloudRenderer;render(ILnet/minecraft/client/CloudStatus;FLorg/joml/Matrix4f;Lorg/joml/Matrix4f;Lnet/minecraft/world/phys/Vec3;F)V"
+            target = "Lnet/minecraft/client/renderer/CloudRenderer;render(ILnet/minecraft/client/CloudStatus;FLnet/minecraft/world/phys/Vec3;F)V"
         ), 
         cancellable = true, require = 0
     )
     public void interceptCloudRenderForge(
-        ResourceHandle<?> renderer, 
         float partialTicks, 
         Vec3 cam, 
         Matrix4f projMatrix, 
@@ -65,5 +64,4 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
 
         RendererHolder.renderCloud(color, status, cloudHeight, cam, partialTicks);
     }
-
 }

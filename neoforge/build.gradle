@@ -11,6 +11,8 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
     doFirst {
         delete "$buildDir/resources_${safeMc}"
     }
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     
     from(sourceSets.main.resources.srcDirs)
     into("$buildDir/resources_${safeMc}")
@@ -24,6 +26,7 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
     }
 
     exclude "fabric.mod.json"
+    exclude "cloud_tweaks.accesswidener"
     exclude "mods.toml"
 }
 
@@ -108,6 +111,8 @@ processResources {
 
     from(sourceSets.main.resources.srcDirs)
     into("$buildDir/resources")
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     
     filteringCharset = "UTF-8"
     
@@ -126,6 +131,7 @@ tasks.withType(JavaCompile).configureEach {
 
 shadowJar {
     exclude "fabric.mod.json"
+    exclude "cloud_tweaks.accesswidener"
     exclude "**/*-refmap.json"
 
     configurations = [project.configurations.shadowCommon]
