@@ -3,20 +3,15 @@ package net.not_thefirst.story_mode_clouds.renderer;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.math.Matrix4f;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.Camera;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
@@ -25,8 +20,16 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshTypeBuilder;
-import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.mesh.CompiledMesh;
-import net.not_thefirst.story_mode_clouds.renderer.shader.GLProgram;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.CompiledMesh;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.GpuMesh;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.MeshUploader;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.shader.GLProgram;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.shader.Std140BufferBuilder;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.shader.Std140SizeCalculator;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.shader.UniformBufferObject;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.state.ShaderRenderType;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexFormat;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
@@ -36,7 +39,6 @@ import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
 
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -342,16 +344,17 @@ public class CustomCloudRenderer {
                     currentLayer.buffer.close();
                 }
 
-                currentLayer.buffer = new VertexBuffer(DefaultVertexFormat.POSITION_COLOR);
-                BufferBuilder mesh = buildMeshForLayer(
+                CompiledMesh mesh = buildMeshForLayer(
                     tex, Tesselator.getInstance(), 
                     currentLayer.baseCellX, currentLayer.baseCellZ,
                     status, layerPos, 
                     relY, layer, skyColor, 
                     offX, offZ);
+
+                currentLayer.cachedMesh = mesh;
                 
                 if (mesh != null) {
-                    currentLayer.buffer.upload(mesh);
+                    currentLayer.buffer = MeshUploader.upload(mesh);
                     currentLayer.bufferEmpty = false;
                 } else {
                     currentLayer.bufferEmpty = true;
@@ -365,29 +368,13 @@ public class CustomCloudRenderer {
                 continue;
             }
 
-            currentLayer.buffer.bind();
-
-            RenderSystem.enableFog();
-            RenderSystem.disableTexture();
-
             int shaderColor = ColorUtils.getCloudShaderColor(layer, skyColor);
-
-            if (!layerConfiguration.FOG_ENABLED) {
-                RenderSystem.disableFog();
-            }
-            else {
-                RenderSystem.fogStart(layerConfiguration.FOG.FOG_START_DISTANCE);
-                RenderSystem.fogEnd(layerConfiguration.FOG.FOG_END_DISTANCE);
-            }
 
             if (!type.doDepthWrite()) {
                 drawLayer(ModRenderPipelines.POSITION_COLOR_NO_DEPTH, poseStack.last().pose(), proj,
                     offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ,
                     currentLayer.buffer,
                     layer, currentLayer, shaderColor, tickDelta);
-                VertexBuffer.unbind();
-                RenderSystem.enableTexture();
-                RenderSystem.color4f(1, 1, 1, 1);
                 poseStack.popPose();
                 continue;
             }
@@ -403,7 +390,6 @@ public class CustomCloudRenderer {
                     currentLayer.buffer,
                     layer, currentLayer, shaderColor, tickDelta);
 
-            VertexBuffer.unbind();
             poseStack.popPose();
         }
         RenderSystem.enableTexture();
@@ -416,7 +402,7 @@ public class CustomCloudRenderer {
     }
 
     @Nullable
-    private BufferBuilder buildMeshForLayer(Texture.TextureData tex,
+    private CompiledMesh buildMeshForLayer(Texture.TextureData tex,
                                        Tesselator tess, int cx, int cz,
                                        CloudStatus status, RelativeCameraPos pos,
                                        float relYCenter, int currentLayer,
@@ -426,8 +412,8 @@ public class CustomCloudRenderer {
 
         LayerState state = layers.get(currentLayer);
 
-        BufferBuilder bb = tess.getBuilder();
-        bb.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_COLOR);
+        BuildingMesh mesh = new BuildingMesh(VertexFormat.POSITION_COLOR, GL11.GL_QUADS);
+
         MeshTypeBuilder builder = null;
         try {
             builder = MeshBuilderRegistry.getInstance().getObject(layerConfiguration.MODE);
@@ -437,9 +423,8 @@ public class CustomCloudRenderer {
             return null;
         }
 
-        builder.Build(bb, tex, pos, state, cx, cz, relYCenter, currentLayer, skyColor, offX, offZ);
-        bb.end();
-        return bb;
+        builder.Build(mesh, tex, pos, state, cx, cz, relYCenter, currentLayer, skyColor, offX, offZ);
+        return mesh.compile();
     }
 
     private int packConfig(int layer) {
@@ -485,7 +470,7 @@ public class CustomCloudRenderer {
         public int baseCellZ;
 
         public Texture.TextureData texture;
-        public VertexBuffer buffer;
+        public GpuMesh buffer;
 
         public int indexCount;
         public boolean needsRebuild;
@@ -501,6 +486,9 @@ public class CustomCloudRenderer {
         public float prevFadeMix;
         public boolean bufferEmpty;
         public int layerIndexCount;
+
+        public UniformBufferObject transformsBuffer = new UniformBufferObject(0, TRANSFORMS_SIZE);
+        public UniformBufferObject cloudsInfoBuffer = new UniformBufferObject(1, CLOUDS_INFO_SIZE);
         
         public final RebuildThrottler fadeThrottler = new RebuildThrottler(100);
 
@@ -520,61 +508,76 @@ public class CustomCloudRenderer {
 
     long prev = 1;
 
+    private static final int TRANSFORMS_SIZE =
+        new Std140SizeCalculator()
+            .addMat4()
+            .addMat4()
+            .addVec4()
+            .finish().offset();
+
+    private static final int CLOUDS_INFO_SIZE =
+        new Std140SizeCalculator()
+            .addIVec4()
+            .addVec4()
+            .addVec4()
+            .finish().offset();
+
+
     private void drawLayer(
-        RenderType rt,
+        ShaderRenderType rt,
         Matrix4f mv, Matrix4f proj,
         float ox, float oy, float oz, 
-        VertexBuffer buf,
+        GpuMesh buf,
         int layer,
         LayerState currentLayer, int skyColor, float tickDelta) {
-        rt.setupRenderState();
+        rt.setup();
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
             CloudsConfiguration.INSTANCE.getLayer(layer);
 
-        GLProgram shader = ModRenderPipelines
-            .getProgramManager()
-            .get(ModRenderPipelines.CLOUD_SHADER_ID);
+        GLProgram shader = rt.program();
 
-        GL20.glEnableVertexAttribArray(0); // Position
-        GL20.glEnableVertexAttribArray(1); // Color
-        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 7 * Float.BYTES, 0);
-        GL20.glVertexAttribPointer(1, 4, GL11.GL_FLOAT, false, 7 * Float.BYTES, 3 * Float.BYTES);
+        Std140BufferBuilder transforms = new Std140BufferBuilder(TRANSFORMS_SIZE);
+        transforms.putMat4(proj);
+        transforms.putMat4(mv);
+        transforms.putVec4(-ox, oy, -oz, 1.0f);
 
-        if (System.currentTimeMillis() - prev > 2000) {
-            System.out.println(mv.toString());
-            System.out.println(proj.toString());
-            prev = System.currentTimeMillis();
-        }
+        Std140BufferBuilder cloudsInfo = new Std140BufferBuilder(CLOUDS_INFO_SIZE);
 
-        shader.use();
+        // Info0
+        cloudsInfo.putIVec4(
+            packConfig(layer),
+            (int) layerConfiguration.FOG.FOG_START_DISTANCE,
+            (int) layerConfiguration.FOG.FOG_END_DISTANCE,
+            layerConfiguration.APPEARANCE.BASE_ALPHA
+        );
 
-        shader.setMat4("ProjMat", proj);
-        shader.setMat4("ModelViewMat", mv);
+        // Info1
+        cloudsInfo.putVec4(
+            (float) layerConfiguration.FADE.FADE_ALPHA,
+            layerConfiguration.FADE.TRANSITION_RANGE,
+            MeshBuilder.HEIGHT_IN_BLOCKS *
+                (layerConfiguration.IS_ENABLED
+                    ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE
+                    : 1.0f),
+            0.0f
+        );
 
-        shader.setVec3("ModelOffset", -ox, oy, -oz);
-        shader.setVec4("ColorModulator", 1.0f, 1.0f, 1.0f, 1.0f);
-
-        shader.setVec4(
-            "CloudColor",
+        cloudsInfo.putVec4(
             ARGB.redFloat(skyColor),
             ARGB.greenFloat(skyColor),
             ARGB.blueFloat(skyColor),
             1.0f
         );
 
-        shader.setVec4("ColorModulator", 1, 1, 1, 1);
-        shader.setInt("FogShape", 0);
+        currentLayer.transformsBuffer.bind();
+        currentLayer.cloudsInfoBuffer.bind();
 
-        shader.setInt("CloudFogStart", (int) layerConfiguration.FOG.FOG_START_DISTANCE);
-        shader.setInt("CloudFogEnd", (int) layerConfiguration.FOG.FOG_END_DISTANCE);
-        shader.setInt("Config", packConfig(layer));
+        currentLayer.transformsBuffer.update(transforms.build());
+        currentLayer.cloudsInfoBuffer.update(cloudsInfo.build());
 
-        buf.draw(mv, GL11.GL_QUADS);
+        buf.draw();
 
-        GL20.glDisableVertexAttribArray(0); // Position
-        GL20.glDisableVertexAttribArray(1); // Color
-        shader.stop();
-        rt.clearRenderState();
+        rt.clear();
     }
 }

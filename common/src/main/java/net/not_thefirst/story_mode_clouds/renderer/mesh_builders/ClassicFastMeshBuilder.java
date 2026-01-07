@@ -1,18 +1,17 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
-
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.renderer.utils.WrappedCoordinates;
 import net.not_thefirst.story_mode_clouds.renderer.utils.VertexBuilder;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 
 public class ClassicFastMeshBuilder implements MeshTypeBuilder {
     
-    public BufferBuilder Build(
-        BufferBuilder bb, Texture.TextureData tex, 
+    public BuildingMesh Build(
+        BuildingMesh bb, Texture.TextureData tex, 
         RelativeCameraPos pos, LayerState state,
         int cx, int cz, float relY, 
         int currentLayer, int skyColor,
@@ -38,7 +37,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
 
-    private static void buildFlatCell(BufferBuilder bb, int cx, int cz, int currentLayer, float y, int skyColor) {
+    private static void buildFlatCell(BuildingMesh bb, int cx, int cz, int currentLayer, float y, int skyColor) {
         float x0 = cx * MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float z0 = cz * MeshBuilder.CELL_SIZE_IN_BLOCKS;

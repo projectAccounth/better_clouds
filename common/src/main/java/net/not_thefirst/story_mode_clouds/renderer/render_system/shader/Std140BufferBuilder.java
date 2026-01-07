@@ -1,4 +1,4 @@
-package net.not_thefirst.story_mode_clouds.renderer.shader;
+package net.not_thefirst.story_mode_clouds.renderer.render_system.shader;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -71,7 +71,8 @@ public final class Std140BufferBuilder {
         align(16);
         FloatBuffer fb = BufferUtils.createFloatBuffer(16);
         mat.store(fb);
-        fb.flip();
+        fb.position(0);
+        fb.limit(16);
 
         while (fb.hasRemaining()) {
             buffer.putFloat(fb.get());

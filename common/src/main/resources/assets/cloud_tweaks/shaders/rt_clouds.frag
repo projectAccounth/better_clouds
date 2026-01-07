@@ -1,15 +1,24 @@
-#version 150
+#version 330 core
 
-uniform vec4 CloudColor;
-uniform int Config; 
-uniform int CloudFogStart;
-uniform int CloudFogEnd;
+layout(std140) uniform Transforms {
+    mat4 ProjMat;
+    mat4 ModelViewMat;
+    vec4 ModelOffset;
+};
 
-uniform mat4 ModelViewMat;
-uniform mat4 ProjMat;
-uniform vec3 ModelOffset;
-uniform int FogShape;
-uniform vec4 ColorModulator;
+layout(std140) uniform CloudInfo {
+    ivec4 Info0;   // x=Config, y=FogStart, z=FogEnd, w=BaseAlpha
+    vec4  Info1;   // x=FadeAlpha, y=TransitionRange, z=CloudBlockHeight, w=unused
+    vec4  CloudColor;
+};
+
+int Config = Info0.x;
+int CloudFogStart = Info0.y;
+int CloudFogEnd = Info0.z;
+int BaseAlpha = Info0.w;
+int FadeAlpha = int(Info1.x);
+float TransitionRange = Info1.y;
+float CloudBlockHeight = Info1.z;
 
 bool fogEnabled() { return (Config & (1 << 0)) != 0; }
 

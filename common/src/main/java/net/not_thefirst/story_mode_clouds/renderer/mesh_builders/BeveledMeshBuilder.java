@@ -1,12 +1,11 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceMask;
@@ -17,8 +16,8 @@ import net.not_thefirst.story_mode_clouds.utils.Texture.TextureData;
 public class BeveledMeshBuilder implements MeshTypeBuilder {
 
     @Override
-    public BufferBuilder Build(
-        BufferBuilder bb, 
+    public BuildingMesh Build(
+        BuildingMesh bb, 
         TextureData tex, 
         RelativeCameraPos pos, 
         LayerState state, 
@@ -49,7 +48,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
     
-    private static void buildCell(RelativeCameraPos pos, BufferBuilder bb,
+    private static void buildCell(RelativeCameraPos pos, BuildingMesh bb,
                             int cx, int cz, long cell, float relY,
                             int currentLayer, int skyColor, int cellIdxX, int cellIdxZ, LayerState state) {
 

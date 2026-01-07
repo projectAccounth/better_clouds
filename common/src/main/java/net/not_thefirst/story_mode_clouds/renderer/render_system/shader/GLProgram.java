@@ -1,9 +1,10 @@
-package net.not_thefirst.story_mode_clouds.renderer.shader;
+package net.not_thefirst.story_mode_clouds.renderer.render_system.shader;
 
 import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jetbrains.annotations.VisibleForTesting;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
@@ -45,7 +46,8 @@ public final class GLProgram implements AutoCloseable {
         return programId;
     }
 
-    private int uniform(String name) {
+    @VisibleForTesting
+    public int uniform(String name) {
         Integer cached = uniformLocations.get(name);
         if (cached != null) {
             return cached;
@@ -103,7 +105,7 @@ public final class GLProgram implements AutoCloseable {
         if (loc >= 0) {
             FloatBuffer fb = BufferUtils.createFloatBuffer(16);
             mat.store(fb);
-            fb.flip();
+            // fb.flip();
             GL20.glUniformMatrix4fv(loc, false, fb);
         }
     }
@@ -129,6 +131,15 @@ public final class GLProgram implements AutoCloseable {
         int index = GL31.glGetUniformBlockIndex(programId, name);
         if (index >= 0) {
             GL31.glUniformBlockBinding(programId, index, binding);
+        }
+    }
+
+    public void requireUniformBlock(String name) {
+        int index = GL31.glGetUniformBlockIndex(programId, name);
+        if (index < 0) {
+            throw new IllegalStateException(
+                "Required uniform block missing: " + name
+            );
         }
     }
 

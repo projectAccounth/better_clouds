@@ -1,8 +1,8 @@
-package net.not_thefirst.story_mode_clouds.renderer.mesh_builders.mesh;
+package net.not_thefirst.story_mode_clouds.renderer.render_system.mesh;
 
 import java.util.ArrayDeque;
 
-import com.mojang.blaze3d.vertex.VertexFormat;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexFormat;
 
 public final class MeshPool {
 

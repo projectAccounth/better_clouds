@@ -9,7 +9,7 @@ import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.renderer.shader.ProgramManager;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.shader.ProgramManager;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 
 public class RendererHolder {

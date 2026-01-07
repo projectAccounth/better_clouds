@@ -1,18 +1,27 @@
-#version 150
+#version 330 core
 
-in vec3 Position;
-in vec4 Color;
+layout(location = 0) in vec3 Position;
+layout(location = 1) in vec4 Color;
 
-uniform vec4 CloudColor;
-uniform int Config; 
-uniform int CloudFogStart;
-uniform int CloudFogEnd;
+layout(std140) uniform Transforms {
+    mat4 ProjMat;
+    mat4 ModelViewMat;
+    vec4 ModelOffset;
+};
 
-uniform mat4 ModelViewMat;
-uniform mat4 ProjMat;
-uniform vec3 ModelOffset;
-uniform int FogShape;
-uniform vec4 ColorModulator;
+layout(std140) uniform CloudInfo {
+    ivec4 Info0;   // x=Config, y=FogStart, z=FogEnd, w=BaseAlpha
+    vec4  Info1;   // x=FadeAlpha, y=TransitionRange, z=CloudBlockHeight, w=unused
+    vec4  CloudColor;
+};
+
+int Config = Info0.x;
+int CloudFogStart = Info0.y;
+int CloudFogEnd = Info0.z;
+int BaseAlpha = Info0.w;
+int FadeAlpha = int(Info1.x);
+float TransitionRange = Info1.y;
+float CloudBlockHeight = Info1.z;
 
 bool fogEnabled() { return (Config & (1 << 0)) != 0; }
 bool shadingEnabled() { return (Config & (1 << 1)) != 0; }
@@ -32,5 +41,5 @@ void main() {
     gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);
 
     vertexDistance = fogEnabled() ? fog_spherical_distance(pos) : 0.0;
-    vertexColor = Color * ColorModulator * vec4(CloudColor.rgb, 1.0f);
+    vertexColor = Color * vec4(CloudColor.rgb, 1.0f);
 }

@@ -1,8 +1,7 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
-
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 
 public final class BevelWrappers {
 
@@ -40,7 +39,7 @@ public final class BevelWrappers {
     }
 
     public static void topEdge(
-        BufferBuilder bb,
+        BuildingMesh bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
@@ -80,7 +79,7 @@ public final class BevelWrappers {
     };
 
     public static void bottomEdge(
-        BufferBuilder bb,
+        BuildingMesh bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
@@ -120,7 +119,7 @@ public final class BevelWrappers {
     }
 
     public static void verticalEdge(
-        BufferBuilder bb,
+        BuildingMesh bb,
 
         Sign dirX,
         Sign dirZ,

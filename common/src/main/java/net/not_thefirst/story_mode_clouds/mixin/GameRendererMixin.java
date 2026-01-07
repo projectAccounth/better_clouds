@@ -15,6 +15,7 @@ public class GameRendererMixin {
     protected void reloadShaders(ResourceManager manager, CallbackInfo ci) {
         ModRenderPipelines.getProgramManager().setResourceManager(manager);
         ModRenderPipelines.getProgramManager().reloadAll();
+        ModRenderPipelines.postReload();
         System.out.println("[cloud_tweaks] Successfully initialized shaders!");
     }
 }

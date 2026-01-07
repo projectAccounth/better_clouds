@@ -1,4 +1,4 @@
-package net.not_thefirst.story_mode_clouds.renderer.shader;
+package net.not_thefirst.story_mode_clouds.renderer.render_system.shader;
 
 import java.util.HashMap;
 import java.util.Map;

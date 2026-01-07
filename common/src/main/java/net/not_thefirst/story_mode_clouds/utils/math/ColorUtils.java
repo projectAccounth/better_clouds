@@ -50,32 +50,17 @@ public class ColorUtils {
             return color;
         }
 
-        boolean shaded   = layerConfiguration.APPEARANCE.SHADING_ENABLED;
         boolean useAlpha = layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA;
-        boolean useColor = layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR;
 
         float baseAlpha = useAlpha
                 ? layerConfiguration.APPEARANCE.BASE_ALPHA / 255.0f
                 : ARGB.alphaFloat(color);
 
         float fadeAlpha = layerConfiguration.FADE.FADE_ALPHA / 255.0f;
-        int customColor = layerConfiguration.APPEARANCE.LAYER_COLOR;
 
-        float r = ARGB.redFloat(color);
-        float g = ARGB.greenFloat(color);
-        float b = ARGB.blueFloat(color);
-
-        if (!shaded && useColor) {
-            r = ARGB.redFloat(customColor);
-            g = ARGB.greenFloat(customColor);
-            b = ARGB.blueFloat(customColor);
-        } else if (useColor) {
-            r *= ARGB.redFloat(customColor);
-            g *= ARGB.greenFloat(customColor);
-            b *= ARGB.blueFloat(customColor);
-        } else if (!shaded) {
-            r = g = b = 1.0f;
-        }
+        float r = 1;
+        float g = 1;
+        float b = 1;
 
         if (!layerConfiguration.FADE.FADE_ENABLED) {
             return ARGB.colorFromFloat(baseAlpha, r, g, b);

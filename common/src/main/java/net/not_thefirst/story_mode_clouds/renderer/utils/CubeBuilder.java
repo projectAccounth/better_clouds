@@ -1,9 +1,8 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
-
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers.EdgeDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers.Sign;
 
@@ -111,7 +110,7 @@ public class CubeBuilder {
 
 
     public static void emitCorner(
-        BufferBuilder bb,
+        BuildingMesh bb,
         float x, float y, float z,
         Sign sx, Sign sy, Sign sz,
         float radius,
@@ -139,7 +138,7 @@ public class CubeBuilder {
     }
 
     public static void emitTopAndBottomEdges(
-        BufferBuilder bb,
+        BuildingMesh bb,
         float minX, float maxX,
         float minZ, float maxZ,
         float yTop, float yBot,
@@ -263,7 +262,7 @@ public class CubeBuilder {
     }
 
     private static void emitHorizontalCornerCaps(
-        BufferBuilder bb,
+        BuildingMesh bb,
         float minX, float maxX,
         float minZ, float maxZ,
         float yTop, float yBot,
@@ -327,7 +326,7 @@ public class CubeBuilder {
     };
 
     public static void emitInsetFaces(
-        BufferBuilder bb,
+        BuildingMesh bb,
         float minX, float maxX,
         float minY, float maxY,
         float minZ, float maxZ,
@@ -460,7 +459,7 @@ public class CubeBuilder {
     };
 
     private static void emitVerticalEdges(
-        BufferBuilder bb,
+        BuildingMesh bb,
         float minX, float maxX,
         float minZ, float maxZ,
         float yBot, float yTop,
@@ -493,7 +492,7 @@ public class CubeBuilder {
     }
 
     private static void emitCorners(
-        BufferBuilder bb,
+        BuildingMesh bb,
         float minX, float maxX,
         float minY, float maxY,
         float minZ, float maxZ,
@@ -528,7 +527,7 @@ public class CubeBuilder {
     }
 
     public static void buildBeveledCube(
-        BufferBuilder bb,
+        BuildingMesh bb,
         float minX, float maxX,
         float minY, float maxY,
         float minZ, float maxZ,

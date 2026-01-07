@@ -1,9 +1,8 @@
-package net.not_thefirst.story_mode_clouds.renderer.mesh_builders.mesh;
+package net.not_thefirst.story_mode_clouds.renderer.render_system.mesh;
 
 import java.util.Arrays;
 
-import com.mojang.blaze3d.vertex.VertexFormat;
-
+import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexFormat;
 import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 
 public final class BuildingMesh {
@@ -58,7 +57,7 @@ public final class BuildingMesh {
         }
     }
 
-    public BuildingMesh vertex(float x, float y, float z) {
+    public BuildingMesh addVertex(float x, float y, float z) {
         beginVert();
         ensureCapacity(1);
 
@@ -142,4 +141,6 @@ public final class BuildingMesh {
             mode
         );
     }
+
+    
 }

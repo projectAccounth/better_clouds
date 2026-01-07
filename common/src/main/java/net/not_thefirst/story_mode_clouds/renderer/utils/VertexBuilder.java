@@ -1,27 +1,27 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils;
 
 import java.util.List;
-import com.mojang.blaze3d.vertex.BufferBuilder;
 
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
 
 public class VertexBuilder {
     private static CloudsConfiguration CONFIG = CloudsConfiguration.INSTANCE;
     
-    public static void quad(BufferBuilder bb, float x0, float y0, float z0,
+    public static void quad(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, float r, float g, float b, float a) {
         
-        bb.vertex(x0, y0, z0).color(r, g, b, a).endVertex();
-        bb.vertex(x1, y1, z1).color(r, g, b, a).endVertex();
-        bb.vertex(x2, y2, z2).color(r, g, b, a).endVertex();
-        bb.vertex(x3, y3, z3).color(r, g, b, a).endVertex();
+        bb.addVertex(x0, y0, z0).setColor(r, g, b, a);
+        bb.addVertex(x1, y1, z1).setColor(r, g, b, a);
+        bb.addVertex(x2, y2, z2).setColor(r, g, b, a);
+        bb.addVertex(x3, y3, z3).setColor(r, g, b, a);
     }
 
-    public static void triangle(BufferBuilder bb, float x0, float y0, float z0,
+    public static void triangle(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float r, float g, float b, float a) {
 
@@ -44,27 +44,23 @@ public class VertexBuilder {
         return new int[]{r, g, b, a};
     }
 
-    public static void quadColored(BufferBuilder bb, float x0, float y0, float z0,
+    public static void quadColored(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int c0, int c1, int c2, int c3) {
-        int[] c0d = decomposeARGB(c0);
-        int[] c1d = decomposeARGB(c1);
-        int[] c2d = decomposeARGB(c2);
-        int[] c3d = decomposeARGB(c3);
 
-        bb.vertex(x0, y0, z0).color(c0d[1], c0d[2], c0d[3], c0d[0]).endVertex();
-        bb.vertex(x1, y1, z1).color(c1d[1], c1d[2], c1d[3], c1d[0]).endVertex();
-        bb.vertex(x2, y2, z2).color(c2d[1], c2d[2], c2d[3], c2d[0]).endVertex();
-        bb.vertex(x3, y3, z3).color(c3d[1], c3d[2], c3d[3], c3d[0]).endVertex();
+        bb.addVertex(x0, y0, z0).setColor(c0);
+        bb.addVertex(x1, y1, z1).setColor(c1);
+        bb.addVertex(x2, y2, z2).setColor(c2);
+        bb.addVertex(x3, y3, z3).setColor(c3);
     }
 
-    public static void triangleColored(BufferBuilder bb, float x0, float y0, float z0,
+    public static void triangleColored(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         int c0, int c1, int c2) {
         quadColored(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
     }
 
-    public static void quadPreshaded(BufferBuilder bb, float x0, float y0, float z0,
+    public static void quadPreshaded(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, float r, float g, float b, float a, 
         List<DiffuseLight> diffuseLights) {
@@ -73,18 +69,18 @@ public class VertexBuilder {
         for (int i = 0; i < 4; i++) {
             float shade = calculateDiffuseShade(normals[i], diffuseLights);
             float[] pos = getVertexPosition(i, x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-            bb.vertex(pos[0], pos[1], pos[2]).color(r * shade, g * shade, b * shade, a).endVertex();
+            bb.addVertex(pos[0], pos[1], pos[2]).setColor(r * shade, g * shade, b * shade, a);
         }
     }
 
-    public static void trianglePreshaded(BufferBuilder bb, float x0, float y0, float z0,
+    public static void trianglePreshaded(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float r, float g, float b, float a,
         List<DiffuseLight> diffuseLights) {
         quadPreshaded(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, r, g, b, a, diffuseLights);
     }
 
-    public static void quadColoredPreshaded(BufferBuilder bb, float x0, float y0, float z0,
+    public static void quadColoredPreshaded(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int c0, int c1, int c2, int c3,
         List<DiffuseLight> diffuseLights) {
@@ -94,20 +90,19 @@ public class VertexBuilder {
         for (int i = 0; i < 4; i++) {
             float shade = calculateDiffuseShade(normals[i], diffuseLights);
             float[] pos = getVertexPosition(i, x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3); 
-            int[] decomposed = decomposeRGBA(multiplyColor(colors[i], shade));
-            bb.vertex(pos[0], pos[1], pos[2])
-                .color(decomposed[0], decomposed[1], decomposed[2], decomposed[3]).endVertex();
+            bb.addVertex(pos[0], pos[1], pos[2])
+                .setColor(multiplyColor(colors[i], shade));
         }
     }
 
-    public static void triangleColoredPreshaded(BufferBuilder bb, float x0, float y0, float z0,
+    public static void triangleColoredPreshaded(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         int c0, int c1, int c2,
         List<DiffuseLight> diffuseLights) {
         quadColoredPreshaded(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2, diffuseLights);
     }
 
-    public static void quadNormal(BufferBuilder bb, float x0, float y0, float z0,
+    public static void quadNormal(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int c0, int c1, int c2, int c3) {
         float[][] normals = computeNormals(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
@@ -115,15 +110,14 @@ public class VertexBuilder {
         for (int i = 0; i < 4; i++) {
             float[] pos = getVertexPosition(i, x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
             int color = getVertexColor(i, c0, c1, c2, c3);
-            int[] decomposed = decomposeRGBA(color);
-            bb.vertex(pos[0], pos[1], pos[2])
-                .normal(normals[i][0], normals[i][1], normals[i][2])
-                .color(decomposed[0], decomposed[1], decomposed[2], decomposed[3])
-                .endVertex();
+            bb.addVertex(pos[0], pos[1], pos[2])
+                .setNormal(normals[i][0], normals[i][1], normals[i][2])
+                .setColor(color)
+                ;
         }
     }
 
-    public static void triangleNormal(BufferBuilder bb, float x0, float y0, float z0,
+    public static void triangleNormal(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         int c0, int c1, int c2) {
         quadNormal(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
@@ -226,7 +220,7 @@ public class VertexBuilder {
         }
     }
 
-    public static void quad(BufferBuilder bb, float x0, float y0, float z0,
+    public static void quad(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int layer, RelativeCameraPos pos, float relY, int skyColor) {
 
@@ -273,7 +267,7 @@ public class VertexBuilder {
         }
     }
 
-    public static void triangle(BufferBuilder bb, float x0, float y0, float z0,
+    public static void triangle(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         int layer, RelativeCameraPos pos, float relY, int skyColor) {
 
