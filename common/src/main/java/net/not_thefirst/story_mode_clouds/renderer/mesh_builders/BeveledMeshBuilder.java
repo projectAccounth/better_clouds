@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceDir;
@@ -18,15 +17,14 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
     @Override
     public BuildingMesh Build(
         BuildingMesh bb, 
-        TextureData tex, 
-        RelativeCameraPos pos, 
+        TextureData tex,
         LayerState state, 
         int cx, int cz, float relY,
         int currentLayer, 
         int skyColor, 
         float chunkOffX, float chunkOffZ) {
 
-        int range = 32;
+        int range = CloudsConfiguration.INSTANCE.CLOUD_GRID_SIZE;
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
@@ -40,7 +38,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 int z = Math.floorMod(cz + dz, h);
                 long cell = cells[x + z * w];
                 if (cell != 0L) {
-                    buildCell(pos, bb, dx, dz, cell, relY, currentLayer, skyColor, x, z, state);
+                    buildCell(bb, dx, dz, cell, relY, currentLayer, skyColor, x, z, state);
                 }
             }
         }
@@ -48,7 +46,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
     
-    private static void buildCell(RelativeCameraPos pos, BuildingMesh bb,
+    private static void buildCell(BuildingMesh bb,
                             int cx, int cz, long cell, float relY,
                             int currentLayer, int skyColor, int cellIdxX, int cellIdxZ, LayerState state) {
 
@@ -81,14 +79,6 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         if (!n) excluded.add(FaceDir.NEG_Z);
         if (!s) excluded.add(FaceDir.POS_Z);
 
-        if (pos == RelativeCameraPos.BELOW_CLOUDS) {
-            // excluded.addMask(FaceDir.POS_Y);
-        }
-
-        if (pos == RelativeCameraPos.ABOVE_CLOUDS) {
-            // excluded.addMask(FaceDir.NEG_Y);
-        }
-
         float bevelRadius = layerConfiguration.BEVEL.BEVEL_SIZE;
         int edgeSegments = layerConfiguration.BEVEL.BEVEL_EDGE_SEGMENTS;
         int cornerSegments = layerConfiguration.BEVEL.BEVEL_CORNER_SEGMENTS;
@@ -107,7 +97,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 excluded,
                 currentLayer,
                 (float) cam.x, (float) cam.y, (float) cam.z,
-                state, pos, relY, cellIdxX, cellIdxZ, skyColor
+                state, relY, cellIdxX, cellIdxZ, skyColor
         );
     }
 }

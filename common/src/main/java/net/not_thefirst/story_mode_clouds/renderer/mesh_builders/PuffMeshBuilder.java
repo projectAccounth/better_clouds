@@ -7,7 +7,6 @@ import net.minecraft.util.Mth;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder.PuffMode;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.renderer.utils.WrappedCoordinates;
@@ -197,7 +196,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
     @Override
     public BuildingMesh Build(
         BuildingMesh bb, Texture.TextureData tex, 
-        RelativeCameraPos pos, LayerState state,
+        LayerState state,
         int cx, int cz, float relY, 
         int currentLayer, int skyColor,
         float offX, float offZ) {
@@ -205,7 +204,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
             CloudsConfiguration.INSTANCE.getLayer(currentLayer);
         
-        final int RANGE = 32;
+        final int RANGE = CloudsConfiguration.INSTANCE.CLOUD_GRID_SIZE;
         final int PUFFS_PER_CELL = 6;
         final float PUFF_MIN_SIZE = 1.8f;
         final float PUFF_MAX_SIZE = 5.2f;
@@ -254,11 +253,11 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
                     switch (MeshBuilder.SHAPE) {
                         case CROSS:
-                            drawCross(bb, px, py, pz, hr, vr, currentLayer, pos, relY, skyColor);
+                            drawCross(bb, px, py, pz, hr, vr, currentLayer, relY, skyColor);
                             break;
                         case CUBE:
                         default:
-                            drawCube(bb, px, py, pz, hr, vr, currentLayer, pos, relY, skyColor);
+                            drawCube(bb, px, py, pz, hr, vr, currentLayer, relY, skyColor);
                             break;
                     }
                 }
@@ -272,7 +271,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         BuildingMesh bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        int layer, RelativeCameraPos pos, float relY, int skyColor) {
+        int layer, float relY, int skyColor) {
 
         float x0 = cx - hr, x1 = cx + hr;
         float y0 = cy,      y1 = cy + vr;
@@ -284,7 +283,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                 x1, y1, z1,
                 x1, y1, z0,
                 x0, y1, z0,
-                layer, pos, relY, skyColor
+                layer, relY, skyColor
         );
 
         VertexBuilder.quad(
@@ -293,7 +292,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                 x1, y0, z0,
                 x1, y0, z1,
                 x0, y0, z1,
-                layer, pos, relY, skyColor
+                layer, relY, skyColor
         );
 
         VertexBuilder.quad(
@@ -302,7 +301,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                 x1, y0, z1,
                 x1, y1, z1,
                 x0, y1, z1,
-                layer, pos, relY, skyColor
+                layer, relY, skyColor
         );
 
         VertexBuilder.quad(
@@ -311,7 +310,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                 x0, y0, z0,
                 x0, y1, z0,
                 x1, y1, z0,
-                layer, pos, relY, skyColor
+                layer, relY, skyColor
         );
 
         VertexBuilder.quad(
@@ -320,7 +319,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                 x0, y0, z1,
                 x0, y1, z1,
                 x0, y1, z0,
-                layer, pos, relY, skyColor
+                layer, relY, skyColor
         );
 
         VertexBuilder.quad(
@@ -329,7 +328,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                 x1, y0, z0,
                 x1, y1, z0,
                 x1, y1, z1,
-                layer, pos, relY, skyColor
+                layer, relY, skyColor
         );
     }
 
@@ -337,7 +336,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         BuildingMesh bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        int layer, RelativeCameraPos pos, float relY, int skyColor) {
+        int layer, float relY, int skyColor) {
 
         float y0 = cy;
         float y1 = cy + vr;
@@ -347,7 +346,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
             cx + hr, y0, cz,
             cx + hr, y1, cz,
             cx - hr, y1, cz,
-            layer, pos, relY, skyColor
+            layer, relY, skyColor
         );
 
         VertexBuilder.quad(bb, 
@@ -355,7 +354,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
             cx, y0, cz + hr,
             cx, y1, cz + hr,
             cx, y1, cz - hr,
-            layer, pos, relY, skyColor
+            layer, relY, skyColor
         );
     }
 }

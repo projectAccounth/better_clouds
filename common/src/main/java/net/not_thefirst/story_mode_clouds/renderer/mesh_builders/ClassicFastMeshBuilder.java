@@ -1,8 +1,8 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.renderer.utils.WrappedCoordinates;
 import net.not_thefirst.story_mode_clouds.renderer.utils.VertexBuilder;
@@ -12,12 +12,12 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
     
     public BuildingMesh Build(
         BuildingMesh bb, Texture.TextureData tex, 
-        RelativeCameraPos pos, LayerState state,
+        LayerState state,
         int cx, int cz, float relY, 
         int currentLayer, int skyColor,
         float chunkOffX, float chunkOffZ) {
         
-        int range = 32;
+        int range = CloudsConfiguration.INSTANCE.CLOUD_GRID_SIZE;
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
@@ -48,7 +48,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
             x1, 0, z1,
             x1, 0, z0,
             x0, 0, z0,
-            currentLayer, RelativeCameraPos.ABOVE_CLOUDS, y, skyColor
+            currentLayer, y, skyColor
         );
 
         VertexBuilder.quad(bb, 
@@ -56,7 +56,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
             x1, 0, z0,
             x1, 0, z1,
             x0, 0, z1,
-            currentLayer, RelativeCameraPos.BELOW_CLOUDS, y, skyColor
+            currentLayer, y, skyColor
         );
     }
 }
