@@ -1,6 +1,5 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils;
 
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 
 public final class BevelWrappers {
@@ -47,7 +46,7 @@ public final class BevelWrappers {
         float radius,
         int segments,
         int layer,
-        RelativeCameraPos pos, float relY, int skyColor
+        float relY, int skyColor
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -74,7 +73,7 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.SOUTH || dir == EdgeDir.WEST),
-            layer, pos, relY, skyColor
+            layer, relY, skyColor
         );
     };
 
@@ -87,7 +86,7 @@ public final class BevelWrappers {
         float radius,
         int segments,
         int layer,
-        RelativeCameraPos pos, float relY, int skyColor
+        float relY, int skyColor
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -114,7 +113,7 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.EAST || dir == EdgeDir.NORTH),
-            layer, pos, relY, skyColor
+            layer, relY, skyColor
         );
     }
 
@@ -133,7 +132,7 @@ public final class BevelWrappers {
         int segments,
 
         int layer,
-        RelativeCameraPos pos, float relY, int skyColor
+        float relY, int skyColor
     ) {
         float sx = (float) dirX.value;
         float sz = (float) dirZ.value;
@@ -165,7 +164,7 @@ public final class BevelWrappers {
             radius,
             segments,
             flip,
-            layer, pos, relY, skyColor
+            layer, relY, skyColor
         );
     }
 }

@@ -4,6 +4,7 @@ import com.mojang.math.Vector3f;
 
 public class DiffuseLight {
     public Vector3f direction;
+    public Vector3f color = new Vector3f(1, 1, 1); // no intentions for color at the moment, for future support
     public float intensity;
     
     public DiffuseLight(Vector3f direction, float intensity) {

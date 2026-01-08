@@ -222,7 +222,7 @@ public class VertexBuilder {
 
     public static void quad(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
-        float x3, float y3, float z3, int layer, RelativeCameraPos pos, float relY, int skyColor) {
+        float x3, float y3, float z3, int layer, float relY, int skyColor) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
             CloudsConfiguration.INSTANCE.getLayer(layer);
@@ -240,37 +240,20 @@ public class VertexBuilder {
 
         int color = ARGB.colorFromFloat(a, r, g, b);
 
-        if (layerConfiguration.APPEARANCE.SHADING_ENABLED) {
-            quadPreshaded(
-                bb,
-                x0, y0, z0,
-                x1, y1, z1,
-                x2, y2, z2,
-                x3, y3, z3,
-                r, g, b, a,
-                CONFIG.LIGHTING.lights
-            );
-        } else {
-            int color0 = ColorUtils.recolor(color, y0, pos, relY, layer, skyColor);
-            int color1 = ColorUtils.recolor(color, y1, pos, relY, layer, skyColor);
-            int color2 = ColorUtils.recolor(color, y2, pos, relY, layer, skyColor);
-            int color3 = ColorUtils.recolor(color, y3, pos, relY, layer, skyColor);
-
-            quadColored(
-                bb,
-                x0, y0, z0,
-                x1, y1, z1,
-                x2, y2, z2,
-                x3, y3, z3,
-                color0, color1, color2, color3
-            );
-        }
+        quadNormal(
+            bb,
+            x0, y0, z0,
+            x1, y1, z1,
+            x2, y2, z2,
+            x3, y3, z3,
+            ARGB.WHITE, ARGB.WHITE, ARGB.WHITE, ARGB.WHITE
+        );
     }
 
     public static void triangle(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
-        int layer, RelativeCameraPos pos, float relY, int skyColor) {
+        int layer, float relY, int skyColor) {
 
-        quad(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, layer, pos, relY, skyColor);
+        quad(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, layer, relY, skyColor);
     }
 }
