@@ -6,6 +6,12 @@ public final class RenderStateBuilder {
     private BlendState blend = BlendState.NONE;
     private CullState cull = CullState.CULL;
     private MaskState mask = MaskState.COLOR_DEPTH;
+    private ShadeState shade = ShadeState.SMOOTH;
+
+    public RenderStateBuilder shade(ShadeState state) {
+        this.shade = state;
+        return this;
+    }
 
     public RenderStateBuilder depthTest(DepthTestState state) {
         this.depth = state;
@@ -32,7 +38,8 @@ public final class RenderStateBuilder {
             depth,
             blend,
             cull,
-            mask
+            mask,
+            shade
         );
     }
 }

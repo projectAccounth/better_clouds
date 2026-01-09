@@ -1,10 +1,6 @@
 package net.not_thefirst.story_mode_clouds.renderer.render_system.mesh;
 
-import com.google.common.collect.ImmutableList;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-
 import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexFormat;
-import net.not_thefirst.story_mode_clouds.renderer.utils.VertexBuilder;
 
 // for the scripting engine
 public final class CompiledMesh {

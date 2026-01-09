@@ -65,4 +65,40 @@ public final class Std140SizeCalculator {
         alignInternal(16);
         return this;
     }
+
+    public static int getFloatSize() {
+        return 4;
+    }
+
+    public static int getIntSize() {
+        return 4;
+    }
+
+    public static int getVec4Size() {
+        return getFloatSize() * 4;
+    }
+
+    public static int getMat4Size() {
+        return getVec4Size() * 4;
+    }
+
+    public static int getIVec4Size() {
+        return getIntSize() * 4;
+    }
+
+    public static int getVec3Size() {
+        return getFloatSize() * 3;
+    }
+
+    public static int getMat3Size() {
+        return getVec3Size() * 3;
+    }
+
+    public static int getVec2Size() {
+        return getFloatSize() * 2;
+    }
+
+    public static int getMat2Size() {
+        return getVec2Size() * 2;
+    }
 }

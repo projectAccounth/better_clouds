@@ -13,6 +13,13 @@ public final class MeshUploader {
     private MeshUploader() {}
 
     public static GpuMesh upload(CompiledMesh mesh) {
+        return upload(mesh, 0, 0, 0);
+    }
+
+    public static GpuMesh upload(
+        CompiledMesh mesh,
+        float offX, float offY, float offZ
+    ) {
         VertexFormat format = mesh.format();
         int vertexCount = mesh.vertexCount();
 
@@ -27,7 +34,7 @@ public final class MeshUploader {
         int[]   col = mesh.colors();
 
         for (int i = 0; i < vertexCount; i++) {
-            format.putVertex(buffer, i, pos, nor, uv, col);
+            format.putVertex(buffer, i, pos, nor, uv, col, offX, offY, offZ);
         }
 
         buffer.flip();

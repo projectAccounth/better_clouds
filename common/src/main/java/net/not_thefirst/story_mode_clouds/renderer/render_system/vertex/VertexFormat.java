@@ -128,15 +128,16 @@ public final class VertexFormat {
         float[] positions,
         float[] normals,
         float[] uvs,
-        int[] colors
+        int[] colors,
+        float offX, float offY, float offZ
     ) {
         for (Element e : elements) {
             switch (e.attribute) {
                 case POSITION -> {
                     int p = vertexIndex * 3;
-                    buf.putFloat(positions[p]);
-                    buf.putFloat(positions[p + 1]);
-                    buf.putFloat(positions[p + 2]);
+                    buf.putFloat(positions[p]     + offX);
+                    buf.putFloat(positions[p + 1] + offY);
+                    buf.putFloat(positions[p + 2] + offZ);
                 }
                 case NORMAL -> {
                     int p = vertexIndex * 3;

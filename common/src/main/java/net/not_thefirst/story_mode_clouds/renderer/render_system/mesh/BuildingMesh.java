@@ -99,7 +99,7 @@ public final class BuildingMesh {
         int ib = Math.min(255, Math.max(0, (int)(b * 255.0f)));
         int ia = Math.min(255, Math.max(0, (int)(a * 255.0f)));
 
-        int color = ARGB.colorFromFloat(ia, ir, ig, ib);
+        int color = ARGB.color(ia, ir, ig, ib);
         return setColor(color);
     }
 
