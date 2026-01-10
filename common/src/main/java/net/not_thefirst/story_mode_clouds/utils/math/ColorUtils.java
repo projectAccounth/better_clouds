@@ -2,7 +2,6 @@ package net.not_thefirst.story_mode_clouds.utils.math;
 
 import net.minecraft.util.Mth;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 
 public class ColorUtils {
     public static int recolor(int color, int currentLayer, int skyColor) {
@@ -41,7 +40,7 @@ public class ColorUtils {
         return ARGB.colorFromFloat(baseAlpha, r, g, b);
     }
 
-    public static int recolor(int color, float vertexY, RelativeCameraPos pos, float relY, int currentLayer, int skyColor) {
+    public static int recolor(int color, float vertexY, float relY, int currentLayer, int skyColor) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
                 CloudsConfiguration.INSTANCE.getLayer(currentLayer);

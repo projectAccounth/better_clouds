@@ -3,10 +3,8 @@ package net.not_thefirst.story_mode_clouds.renderer.utils;
 import java.util.List;
 
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
-import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
 
 public class VertexBuilder {
     private static CloudsConfiguration CONFIG = CloudsConfiguration.INSTANCE;
@@ -223,23 +221,6 @@ public class VertexBuilder {
     public static void quad(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int layer, float relY, int skyColor) {
-
-        CloudsConfiguration.LayerConfiguration layerConfiguration =
-            CloudsConfiguration.INSTANCE.getLayer(layer);
-
-        float r = 1.0f;
-        float g = 1.0f;
-        float b = 1.0f;
-        float a = layerConfiguration.APPEARANCE.BASE_ALPHA / 255.0f;
-
-        if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR) {
-            r = ARGB.redFloat(layerConfiguration.APPEARANCE.LAYER_COLOR);
-            g = ARGB.greenFloat(layerConfiguration.APPEARANCE.LAYER_COLOR);
-            b = ARGB.blueFloat(layerConfiguration.APPEARANCE.LAYER_COLOR);
-        }
-
-        int color = ARGB.colorFromFloat(a, r, g, b);
-
         quadNormal(
             bb,
             x0, y0, z0,

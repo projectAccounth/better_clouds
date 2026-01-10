@@ -64,7 +64,16 @@ public class ClothConfigScreen {
             .setDefaultValue(true)
             .setSaveConsumer(value -> config.CLOUDS_RENDERED = value)
             .build());
-            
+        
+        globalCategory.addEntry(entryBuilder.startIntField(
+            new TextComponent("Grid Size"),
+            config.CLOUD_GRID_SIZE)
+            .setDefaultValue(48)
+            .setMin(32)
+            .setMax(256)
+            .setSaveConsumer(value -> config.CLOUD_GRID_SIZE = value)
+            .build());
+        
         ConfigCategory lightingCategory = builder.getOrCreateCategory(new TextComponent("Lighting"));
         lightingCategory.addEntry(entryBuilder.startFloatField(
                 new TextComponent("Ambient Strength"),
@@ -98,6 +107,9 @@ public class ClothConfigScreen {
             newValue -> {
                 config.LIGHTING.lights.clear();
                 config.LIGHTING.lights.addAll(newValue);
+                final int maxLightCount = CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT;
+                if (config.LIGHTING.lights.size() > maxLightCount)
+                    config.LIGHTING.lights.subList(maxLightCount, config.LIGHTING.lights.size()).clear();
             },
             () -> new ArrayList<>(config.LIGHTING.lights),
             entryBuilder.getResetButtonKey(),
@@ -552,6 +564,7 @@ public class ClothConfigScreen {
             .setMax(MAX_MESH_REBUILD_BUDGET_MS)
             .setSaveConsumer(value -> layer.PERFORMANCE.MESH_REBUILD_BUDGET_MS = Math.max(MIN_MESH_REBUILD_BUDGET_MS, Math.min(MAX_MESH_REBUILD_BUDGET_MS, value)))
             .build());
+
         return new ParameterGroup("Performance", entries);
     }
     

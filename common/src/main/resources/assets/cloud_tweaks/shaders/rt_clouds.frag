@@ -39,6 +39,6 @@ float linearFog(float vertexDistance, float fogStart, float fogEnd) {
 
 void main() {
     vec4 color = vertexColor;
-    color.a *= 1.0 - (fogEnabled() ? linearFog(vertexDistance, CloudFogStart, CloudFogEnd) : 0.0);
+    color.a *= 1.0 - int(fogEnabled()) * linearFog(vertexDistance, CloudFogStart, CloudFogEnd);
     fragColor = color;
 }

@@ -1,10 +1,10 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.math.Matrix4f;
+import com.mojang.math.Vector3f;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.fabricmc.api.EnvType;
@@ -32,10 +32,12 @@ import net.not_thefirst.story_mode_clouds.renderer.render_system.state.ShaderRen
 import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexFormat;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
+import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
+import net.not_thefirst.story_mode_clouds.utils.memory.Cache;
 
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
@@ -47,7 +49,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Environment(EnvType.CLIENT)
-public class CustomCloudRenderer {
+public class CustomCloudRenderer implements AutoCloseable {
 
     @Nullable
     public Optional<Texture.TextureData> currentTexture = Optional.empty();
@@ -72,7 +74,6 @@ public class CustomCloudRenderer {
             layerState.needsRebuild = true;
             layerState.prevCellX = Integer.MIN_VALUE;
             layerState.prevCellZ = Integer.MIN_VALUE;
-            layerState.prevPos = RelativeCameraPos.INSIDE_CLOUDS;
             layerState.prevStatus = null;
             layers.add(layerState);
         }
@@ -90,88 +91,17 @@ public class CustomCloudRenderer {
         ProfilerFiller profilerFiller,
         ResourceLocation textureLocation
     ) {
-        try (InputStream inputStream = resourceManager.getResource(textureLocation).getInputStream();
-            NativeImage nativeImage = NativeImage.read(inputStream)) {
+        try (InputStream inputStream = 
+            resourceManager.getResource(textureLocation).getInputStream()) {
 
-            int w = nativeImage.getWidth();
-            int h = nativeImage.getHeight();
-
-            long[] cells = new long[w * h];
-            byte[] neighbors = new byte[w * h];
-
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) {
-                    int idx = x + y * w;
-                    int pixelRGBA = nativeImage.getPixelRGBA(x, y);
-
-                    int b = (pixelRGBA >> 16) & 0xFF;
-                    int g = (pixelRGBA >> 8) & 0xFF;
-                    int r = (pixelRGBA) & 0xFF;
-                    int a = (pixelRGBA >> 24) & 0xFF;
-                    int pixel = ARGB.color(a, r, g, b);
-
-                    if (ARGB.alpha(pixel) < 10) {
-                        cells[idx] = 0L;
-                        neighbors[idx] = 0;
-                        continue;
-                    }
-
-                    int count = 0;
-
-                    for (int dz = -1; dz <= 1; dz++) {
-                        for (int dx = -1; dx <= 1; dx++) {
-                            if (dx == 0 && dz == 0) {
-                                continue;
-                            }
-
-                            if (isSolid(nativeImage, x + dx, y + dz, w, h)) {
-                                count++;
-                            }
-                        }
-                    }
-
-                    boolean n  = !isSolid(nativeImage, x,     y - 1, w, h);
-                    boolean e  = !isSolid(nativeImage, x + 1, y,     w, h);
-                    boolean s  = !isSolid(nativeImage, x,     y + 1, w, h);
-                    boolean w0 = !isSolid(nativeImage, x - 1, y,     w, h);
-
-                    cells[idx] = packCellData(pixel, n, e, s, w0);
-                    neighbors[idx] = (byte)count;
-                }
-            }
-
-            currentTexture = Optional.of(
-                new Texture.TextureData(cells, neighbors, w, h)
-            );
-
-            return currentTexture;
-
-        } catch (IOException e) {
-            System.out.println("Failed to load cloud texture: " + e);
-            return Optional.empty();
+            this.currentTexture = Texture.buildTexture(inputStream);
+            return this.currentTexture;
         }
-    }
-
-    private static boolean isSolid(NativeImage img, int x, int y, int w, int h) {
-        int pixelRGBA = img.getPixelRGBA(
-            Math.floorMod(x, w),
-            Math.floorMod(y, h));
-
-        int b = (pixelRGBA >> 16) & 0xFF;
-        int g = (pixelRGBA >> 8) & 0xFF;
-        int r = (pixelRGBA) & 0xFF;
-        int a = (pixelRGBA >> 24) & 0xFF;
-        int pixel = ARGB.color(a, r, g, b);
-
-        return ARGB.alpha(pixel) >= 10;
-    }
-
-    private static long packCellData(int color, boolean north, boolean east, boolean south, boolean west) {
-        return (long) color << 4 |
-               (north ? 1 : 0) << 3 |
-               (east ? 1 : 0) << 2 |
-               (south ? 1 : 0) << 1 |
-               (west ? 1 : 0);
+        catch (IOException exception) {
+            exception.printStackTrace();
+            System.out.println("[cloud_tweaks]: Failed to build cloud texture, discarding");
+            return null;
+        }
     }
 
     public void apply(Optional<Texture.TextureData> optional, ResourceManager resourceManager, ProfilerFiller profilerFiller) {
@@ -211,9 +141,9 @@ public class CustomCloudRenderer {
             applyTexture();
         }
 
-         List<Integer> order = new ArrayList<>();
-         for (int i = 0; i < activeLayers; i++) order.add(i);
-         order.sort((a, b) -> {
+        List<Integer> order = new ArrayList<>();
+        for (int i = 0; i < activeLayers; i++) order.add(i);
+        order.sort((a, b) -> {
             float ya = (float)(CloudsConfiguration.INSTANCE.getLayer(a).LAYER_HEIGHT - cam.y);
             float yb = (float)(CloudsConfiguration.INSTANCE.getLayer(b).LAYER_HEIGHT - cam.y);
             return Float.compare(Math.abs(yb), Math.abs(ya));
@@ -226,21 +156,7 @@ public class CustomCloudRenderer {
         GameRenderer renderer = Minecraft.getInstance().gameRenderer;
         Matrix4f proj = renderer.getProjectionMatrix(renderer.getMainCamera(), tickDelta, true);
 
-        RenderSystem.disableTexture();
-        RenderSystem.pushMatrix();
-        RenderSystem.enableBlend();
-        RenderSystem.enableCull();
-        RenderSystem.enableAlphaTest();
-        RenderSystem.enableFog();
-        RenderSystem.enableDepthTest();
-        RenderSystem.defaultAlphaFunc();
-        RenderSystem.blendFuncSeparate(
-            GlStateManager.SourceFactor.SRC_COLOR, 
-            GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR, 
-            GlStateManager.SourceFactor.ONE, 
-            GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR
-        );
-        RenderSystem.shadeModel(GL11.GL_SMOOTH);
+        startRender();
         for (int layer : order) {
             LayerState currentLayer = this.layers.get(layer);
 
@@ -284,10 +200,6 @@ public class CustomCloudRenderer {
             float layerY = (float)(layerConfiguration.LAYER_HEIGHT - cam.y);
             float relYTop = layerY + cloudChunkHeight;
 
-            RelativeCameraPos layerPos =
-                (relYTop < 0.0F) ? RelativeCameraPos.ABOVE_CLOUDS :
-                (layerY > 0.0F) ? RelativeCameraPos.BELOW_CLOUDS : RelativeCameraPos.INSIDE_CLOUDS;
-
             int cellX = Mth.floor(dxLayer / MeshBuilder.CELL_SIZE_IN_BLOCKS);
             int cellZ = Mth.floor(dzLayer / MeshBuilder.CELL_SIZE_IN_BLOCKS);
 
@@ -297,8 +209,8 @@ public class CustomCloudRenderer {
                 currentLayer.needsRebuild = true;
             }
 
-            int range = 32;
-            int slack = range / 2;
+            int range = CloudsConfiguration.INSTANCE.CLOUD_GRID_SIZE;
+            int slack = range * 2 / 3;
 
             int dxCell = cellX - currentLayer.baseCellX;
             int dzCell = cellZ - currentLayer.baseCellZ;
@@ -312,33 +224,19 @@ public class CustomCloudRenderer {
             float offX = (float)(dxLayer - currentLayer.baseCellX * MeshBuilder.CELL_SIZE_IN_BLOCKS);
             float offZ = (float)(dzLayer - currentLayer.baseCellZ * MeshBuilder.CELL_SIZE_IN_BLOCKS);
 
-            long now = System.currentTimeMillis();
-
             float relY = (float)(relYTop - cloudChunkHeight / 2.0f);
-            float transition = Math.max(0.0001f, layerConfiguration.FADE.TRANSITION_RANGE);
-            float dir = Mth.clamp(relY / transition, -1.0f, 1.0f);
 
-            boolean cameraChanged =
-                layerPos != currentLayer.prevPos
-                || status != currentLayer.prevStatus;
-
-            boolean fadeChanged = layerConfiguration.FADE.FADE_ENABLED &&
-                    Math.abs(relY) <= layerConfiguration.FADE.TRANSITION_RANGE &&
-                    (Float.isNaN(currentLayer.prevFadeMix) || 
-                     Math.abs(dir - currentLayer.prevFadeMix) > 0.02f);
+            boolean statusChanged = status != currentLayer.prevStatus;
 
             boolean needs = currentLayer.needsRebuild
-                    || cameraChanged
-                    || (fadeChanged && currentLayer.fadeThrottler.shouldRebuild(now));
+                || statusChanged;
 
             if (needs) {
                 currentLayer.needsRebuild  = false;
                 currentLayer.prevCellX     = cellX;
                 currentLayer.prevCellZ     = cellZ;
-                currentLayer.prevPos       = layerPos;
                 currentLayer.prevStatus    = status;
                 currentLayer.currentStatus = status;
-                currentLayer.prevFadeMix   = dir;
 
                 if (currentLayer.buffer != null) {
                     currentLayer.buffer.close();
@@ -347,11 +245,10 @@ public class CustomCloudRenderer {
                 CompiledMesh mesh = buildMeshForLayer(
                     tex, Tesselator.getInstance(), 
                     currentLayer.baseCellX, currentLayer.baseCellZ,
-                    status, layerPos, 
-                    relY, layer, skyColor, 
-                    offX, offZ);
-
-                currentLayer.cachedMesh = mesh;
+                    status,
+                    relY, layer, skyColor);
+                
+                currentLayer.meshCache.put(0, mesh);
                 
                 if (mesh != null) {
                     currentLayer.buffer = MeshUploader.upload(mesh);
@@ -362,7 +259,6 @@ public class CustomCloudRenderer {
             }
 
             poseStack.pushPose();
-			poseStack.translate(-offX, layerY, -offZ);
             if (currentLayer.bufferEmpty) {
                 poseStack.popPose();
                 continue;
@@ -374,45 +270,40 @@ public class CustomCloudRenderer {
                 drawLayer(ModRenderPipelines.POSITION_COLOR_NO_DEPTH, poseStack.last().pose(), proj,
                     offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ,
                     currentLayer.buffer,
-                    layer, currentLayer, shaderColor, tickDelta);
+                    layer, currentLayer, shaderColor, tickDelta, relY);
                 poseStack.popPose();
                 continue;
             }
 
             drawLayer(
-                ModRenderPipelines.CUSTOM_POSITION_COLOR, poseStack.last().pose(), proj,
+                ModRenderPipelines.POSITION_COLOR_DEPTH_ONLY, poseStack.last().pose(), proj,
                     offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ,
                     currentLayer.buffer,
-                    layer, currentLayer, shaderColor, tickDelta);
+                    layer, currentLayer, shaderColor, tickDelta, relY);
             drawLayer(
                 ModRenderPipelines.CUSTOM_POSITION_COLOR, poseStack.last().pose(), proj,
                     offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ,
                     currentLayer.buffer,
-                    layer, currentLayer, shaderColor, tickDelta);
+                    layer, currentLayer, shaderColor, tickDelta, relY);
 
             poseStack.popPose();
         }
-        RenderSystem.enableTexture();
-        RenderSystem.popMatrix();
-        RenderSystem.disableBlend();
-        RenderSystem.disableAlphaTest();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableDepthTest();
-        RenderSystem.shadeModel(GL11.GL_FLAT);
+        finishRender();
     }
 
     @Nullable
     private CompiledMesh buildMeshForLayer(Texture.TextureData tex,
-                                       Tesselator tess, int cx, int cz,
-                                       CloudStatus status, RelativeCameraPos pos,
+                                       Tesselator tess, 
+                                       int baseCx, int baseCz,
+                                       CloudStatus status,
                                        float relYCenter, int currentLayer,
-                                       int skyColor, float offX, float offZ) {
+                                       int skyColor) {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
                 CloudsConfiguration.INSTANCE.getLayer(currentLayer);
 
         LayerState state = layers.get(currentLayer);
 
-        BuildingMesh mesh = new BuildingMesh(VertexFormat.POSITION_COLOR, GL11.GL_QUADS);
+        BuildingMesh mesh = new BuildingMesh(VertexFormat.POSITION_COLOR_NORMAL, GL11.GL_QUADS);
 
         MeshTypeBuilder builder = null;
         try {
@@ -423,8 +314,36 @@ public class CustomCloudRenderer {
             return null;
         }
 
-        builder.Build(mesh, tex, pos, state, cx, cz, relYCenter, currentLayer, skyColor, offX, offZ);
+        builder.Build(mesh, tex, state, baseCx, baseCz, relYCenter, currentLayer, skyColor, 0, 0);
         return mesh.compile();
+    }
+
+    private void startRender() {
+        RenderSystem.disableTexture();
+        RenderSystem.pushMatrix();
+        RenderSystem.enableBlend();
+        RenderSystem.enableCull();
+        RenderSystem.enableAlphaTest();
+        RenderSystem.enableFog();
+        RenderSystem.enableDepthTest();
+        RenderSystem.defaultAlphaFunc();
+        RenderSystem.blendFuncSeparate(
+            GlStateManager.SourceFactor.SRC_COLOR, 
+            GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR, 
+            GlStateManager.SourceFactor.ONE, 
+            GlStateManager.DestFactor.ONE_MINUS_SRC_COLOR
+        );
+        RenderSystem.shadeModel(GL11.GL_SMOOTH);
+    }
+
+    private void finishRender() {
+        RenderSystem.enableTexture();
+        RenderSystem.popMatrix();
+        RenderSystem.disableBlend();
+        RenderSystem.disableAlphaTest();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.disableDepthTest();
+        RenderSystem.shadeModel(GL11.GL_FLAT);
     }
 
     private int packConfig(int layer) {
@@ -438,6 +357,7 @@ public class CustomCloudRenderer {
         if (layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA) config |= 1 << 2;
         if (layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS) config |= 1 << 3;
         if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR) config |= 1 << 4;
+        if (layerConfiguration.FADE.FADE_ENABLED)            config |= 1 << 5;
 
         return config;
     }
@@ -454,17 +374,19 @@ public class CustomCloudRenderer {
         }
     }
 
+    @Override
     public void close() {
         for (LayerState layer : layers) {
             if (layer.buffer != null) layer.buffer.close();
+            layer.meshCache.clear();
         }
     }
     
     public static class LayerState {
         public int index;
         public float offsetX, offsetZ;
-
-        public CompiledMesh cachedMesh;
+        
+        public Cache<CompiledMesh> meshCache = new Cache<>(3);
 
         public int baseCellX;
         public int baseCellZ;
@@ -472,25 +394,22 @@ public class CustomCloudRenderer {
         public Texture.TextureData texture;
         public GpuMesh buffer;
 
-        public int indexCount;
         public boolean needsRebuild;
 
         public int 
             prevCellX = Integer.MIN_VALUE, 
             prevCellZ = Integer.MIN_VALUE;
-        public RelativeCameraPos prevPos;
 
         public CloudStatus prevStatus;
         public CloudStatus currentStatus;
 
-        public float prevFadeMix;
+        public double phaseX = Double.MIN_VALUE;
+        public double phaseZ = Double.MIN_VALUE;
         public boolean bufferEmpty;
-        public int layerIndexCount;
 
         public UniformBufferObject transformsBuffer = new UniformBufferObject(0, TRANSFORMS_SIZE);
         public UniformBufferObject cloudsInfoBuffer = new UniformBufferObject(1, CLOUDS_INFO_SIZE);
-        
-        public final RebuildThrottler fadeThrottler = new RebuildThrottler(100);
+        public UniformBufferObject lightingBuffer   = new UniformBufferObject(2, LIGHTING_SIZE);
 
         public LayerState(int index) {
             this.index = index;
@@ -500,13 +419,6 @@ public class CustomCloudRenderer {
             this(-1);
         }
     }
-
-    @Environment(EnvType.CLIENT)
-    public enum RelativeCameraPos {
-        ABOVE_CLOUDS, INSIDE_CLOUDS, BELOW_CLOUDS
-    }
-
-    long prev = 1;
 
     private static final int TRANSFORMS_SIZE =
         new Std140SizeCalculator()
@@ -522,6 +434,10 @@ public class CustomCloudRenderer {
             .addVec4()
             .finish().offset();
 
+    private static final int LIGHTING_SIZE = 
+        Std140SizeCalculator.getVec4Size() * CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT +
+        Std140SizeCalculator.getVec4Size() * CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT +
+        Std140SizeCalculator.getVec4Size();
 
     private void drawLayer(
         ShaderRenderType rt,
@@ -529,7 +445,10 @@ public class CustomCloudRenderer {
         float ox, float oy, float oz, 
         GpuMesh buf,
         int layer,
-        LayerState currentLayer, int skyColor, float tickDelta) {
+        LayerState currentLayer, 
+        int skyColor, 
+        float tickDelta,
+        float relY) {
         rt.setup();
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
@@ -538,11 +457,19 @@ public class CustomCloudRenderer {
         GLProgram shader = rt.program();
 
         Std140BufferBuilder transforms = new Std140BufferBuilder(TRANSFORMS_SIZE);
+        Std140BufferBuilder cloudsInfo = new Std140BufferBuilder(CLOUDS_INFO_SIZE);
+        Std140BufferBuilder lighting   = new Std140BufferBuilder(LIGHTING_SIZE);
+
+        CloudsConfiguration.LightingParameters LIGHTING = 
+            CloudsConfiguration.INSTANCE.LIGHTING;
+        List<DiffuseLight> lights = LIGHTING.lights;
+        int maxLightCount = CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT;
+        float lightAmbientFactor = LIGHTING.AMBIENT_LIGHTING_STRENGTH;
+        float lightShadingStrength = LIGHTING.MAX_LIGHTING_SHADING;
+
         transforms.putMat4(proj);
         transforms.putMat4(mv);
         transforms.putVec4(-ox, oy, -oz, 1.0f);
-
-        Std140BufferBuilder cloudsInfo = new Std140BufferBuilder(CLOUDS_INFO_SIZE);
 
         // Info0
         cloudsInfo.putIVec4(
@@ -560,7 +487,7 @@ public class CustomCloudRenderer {
                 (layerConfiguration.IS_ENABLED
                     ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE
                     : 1.0f),
-            0.0f
+            relY
         );
 
         cloudsInfo.putVec4(
@@ -570,11 +497,48 @@ public class CustomCloudRenderer {
             1.0f
         );
 
+        int lightCount = Math.min(lights.size(), maxLightCount);
+
+        for (int i = 0; i < maxLightCount; i++) {
+            if (i < lightCount) {
+                DiffuseLight l = lights.get(i).normalized();
+                lighting.putVec4(
+                    l.direction.x(),
+                    l.direction.y(),
+                    l.direction.z(),
+                    l.intensity
+                );
+            } else {
+                lighting.putVec4(0.0f, 0.0f, 0.0f, 0.0f);
+            }
+        }
+
+        // LightColors
+        for (int i = 0; i < maxLightCount; i++) {
+            if (i < lightCount) {
+                Vector3f c = lights.get(i).color;
+                lighting.putVec4(c.x(), c.y(), c.z(), 1.0f);
+            } else {
+                lighting.putVec4(0.0f, 0.0f, 0.0f, 0.0f);
+            }
+        }
+
+        // LightInformation
+        lighting.putVec4(
+            (float) lightCount,
+            lightShadingStrength,
+            lightAmbientFactor,
+            0.0f
+        );
+
+
         currentLayer.transformsBuffer.bind();
         currentLayer.cloudsInfoBuffer.bind();
+        currentLayer.lightingBuffer.bind();
 
         currentLayer.transformsBuffer.update(transforms.build());
         currentLayer.cloudsInfoBuffer.update(cloudsInfo.build());
+        currentLayer.lightingBuffer.update(lighting.build());
 
         buf.draw();
 

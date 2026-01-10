@@ -34,6 +34,7 @@ public class CloudsConfiguration {
     public static class LightingParameters {
         public float AMBIENT_LIGHTING_STRENGTH  = 0.7f;
         public float MAX_LIGHTING_SHADING       = 0.8f;
+        public static final int MAX_LIGHT_COUNT = 32;
 
         public List<DiffuseLight> lights = new ArrayList<>(Arrays.asList(
             new DiffuseLight(new Vector3f(0.5f, 0.8f, 1.0f), 0.6f),
@@ -111,7 +112,9 @@ public class CloudsConfiguration {
   
     public CloudColorProviderMode COLOR_MODE = CloudColorProviderMode.VANILLA;
 
-    public LightingParameters LIGHTING = new LightingParameters();
+    public LightingParameters LIGHTING        = new LightingParameters();
+    public int                CLOUD_GRID_SIZE = 48;
+
     private LayerHolder LAYERS = new LayerHolder();
     public LayerHolder getHolder() { return LAYERS; }
 
