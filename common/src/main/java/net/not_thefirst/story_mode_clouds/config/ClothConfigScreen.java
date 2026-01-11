@@ -130,6 +130,56 @@ public class ClothConfigScreen {
         );
 
         lightingCategory.addEntry(
+            entryBuilder.startEnumSelector(
+                ComponentWrapper.translatable("cloudtweaks.option.shading_mode"),
+                CloudsConfiguration.ShadingMode.class,
+                config.LIGHTING.SHADING_MODE
+            )
+            .setSaveConsumer(value -> config.LIGHTING.SHADING_MODE = value)
+            .build()
+        );
+
+        lightingCategory.addEntry(
+            entryBuilder.startColorField(
+                ComponentWrapper.translatable("cloudtweaks.option.rain_color"), 
+                config.WEATHER_COLOR.rainColor
+            )
+            .setSaveConsumer(value -> config.WEATHER_COLOR.rainColor = value)
+            .build()
+        );
+
+        lightingCategory.addEntry(
+            entryBuilder.startColorField(
+                ComponentWrapper.translatable("cloudtweaks.option.thunder_color"), 
+                config.WEATHER_COLOR.thunderColor
+            )
+            .setSaveConsumer(value -> config.WEATHER_COLOR.thunderColor = value)
+            .build()
+        );
+
+        lightingCategory.addEntry(
+            entryBuilder.startFloatField(
+                ComponentWrapper.translatable("cloudtweaks.option.rain_strength"), 
+                config.WEATHER_COLOR.rainStrength
+            )
+            .setSaveConsumer(value -> config.WEATHER_COLOR.rainStrength = value)
+            .setMin(0)
+            .setMax(1)
+            .build()
+        );
+
+        lightingCategory.addEntry(
+            entryBuilder.startFloatField(
+                ComponentWrapper.translatable("cloudtweaks.option.thunder_strength"), 
+                config.WEATHER_COLOR.thunderStrength
+            )
+            .setSaveConsumer(value -> config.WEATHER_COLOR.thunderStrength = value)
+            .setMin(0)
+            .setMax(1)
+            .build()
+        );
+
+        lightingCategory.addEntry(
             new NestedListListEntry<>(
                 ComponentWrapper.translatable("cloudtweaks.option.light_sources"),
                 config.LIGHTING.lights,
@@ -292,18 +342,18 @@ public class ClothConfigScreen {
 
         entries.add(
             entryBuilder.startFloatField(
-                ComponentWrapper.translatable("cloudtweaks.option.direction_x"),
-                light.direction.x()
+                ComponentWrapper.translatable("cloudtweaks.option.position_x"),
+                light.location.x()
             )
             .setDefaultValue(0.0f)
-            .setMin(-1.0f)
-            .setMax(1.0f)
+            .setMin(-32767.0f)
+            .setMax(32767.0f)
             .setSaveConsumer(value ->
-                light.direction =
+                light.location =
                     new Vector3f(
                         value,
-                        light.direction.y(),
-                        light.direction.z()
+                        light.location.y(),
+                        light.location.z()
                     )
             )
             .build()
@@ -311,18 +361,18 @@ public class ClothConfigScreen {
 
         entries.add(
             entryBuilder.startFloatField(
-                ComponentWrapper.translatable("cloudtweaks.option.direction_y"),
-                light.direction.y()
+                ComponentWrapper.translatable("cloudtweaks.option.position_y"),
+                light.location.y()
             )
             .setDefaultValue(1.0f)
-            .setMin(-1.0f)
-            .setMax(1.0f)
+            .setMin(-32767.0f)
+            .setMax(32767.0f)
             .setSaveConsumer(value ->
-                light.direction =
+                light.location =
                     new Vector3f(
-                        light.direction.x(),
+                        light.location.x(),
                         value,
-                        light.direction.z()
+                        light.location.z()
                     )
             )
             .build()
@@ -330,17 +380,17 @@ public class ClothConfigScreen {
 
         entries.add(
             entryBuilder.startFloatField(
-                ComponentWrapper.translatable("cloudtweaks.option.direction_z"),
-                light.direction.z()
+                ComponentWrapper.translatable("cloudtweaks.option.position_z"),
+                light.location.z()
             )
             .setDefaultValue(0.0f)
-            .setMin(-1.0f)
-            .setMax(1.0f)
+            .setMin(-32767.0f)
+            .setMax(32767.0f)
             .setSaveConsumer(value ->
-                light.direction =
+                light.location =
                     new Vector3f(
-                        light.direction.x(),
-                        light.direction.y(),
+                        light.location.x(),
+                        light.location.y(),
                         value
                     )
             )

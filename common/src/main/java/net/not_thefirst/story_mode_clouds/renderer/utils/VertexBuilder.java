@@ -1,12 +1,11 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils;
 
-import java.util.List;
-
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 
 public class VertexBuilder {
+    @SuppressWarnings("unused")
     private static CloudsConfiguration CONFIG = CloudsConfiguration.INSTANCE;
     
     public static void quad(BuildingMesh bb, float x0, float y0, float z0,
@@ -58,48 +57,6 @@ public class VertexBuilder {
         quadColored(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
     }
 
-    public static void quadPreshaded(BuildingMesh bb, float x0, float y0, float z0,
-        float x1, float y1, float z1, float x2, float y2, float z2,
-        float x3, float y3, float z3, float r, float g, float b, float a, 
-        List<DiffuseLight> diffuseLights) {
-        float[][] normals = computeNormals(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-
-        for (int i = 0; i < 4; i++) {
-            float shade = calculateDiffuseShade(normals[i], diffuseLights);
-            float[] pos = getVertexPosition(i, x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-            bb.addVertex(pos[0], pos[1], pos[2]).setColor(r * shade, g * shade, b * shade, a);
-        }
-    }
-
-    public static void trianglePreshaded(BuildingMesh bb, float x0, float y0, float z0,
-        float x1, float y1, float z1, float x2, float y2, float z2,
-        float r, float g, float b, float a,
-        List<DiffuseLight> diffuseLights) {
-        quadPreshaded(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, r, g, b, a, diffuseLights);
-    }
-
-    public static void quadColoredPreshaded(BuildingMesh bb, float x0, float y0, float z0,
-        float x1, float y1, float z1, float x2, float y2, float z2,
-        float x3, float y3, float z3, int c0, int c1, int c2, int c3,
-        List<DiffuseLight> diffuseLights) {
-        float[][] normals = computeNormals(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
-        int[] colors = {c0, c1, c2, c3};
-
-        for (int i = 0; i < 4; i++) {
-            float shade = calculateDiffuseShade(normals[i], diffuseLights);
-            float[] pos = getVertexPosition(i, x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3); 
-            bb.addVertex(pos[0], pos[1], pos[2])
-                .setColor(multiplyColor(colors[i], shade));
-        }
-    }
-
-    public static void triangleColoredPreshaded(BuildingMesh bb, float x0, float y0, float z0,
-        float x1, float y1, float z1, float x2, float y2, float z2,
-        int c0, int c1, int c2,
-        List<DiffuseLight> diffuseLights) {
-        quadColoredPreshaded(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2, diffuseLights);
-    }
-
     public static void quadNormal(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int c0, int c1, int c2, int c3) {
@@ -119,30 +76,6 @@ public class VertexBuilder {
         float x1, float y1, float z1, float x2, float y2, float z2,
         int c0, int c1, int c2) {
         quadNormal(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
-    }
-
-    private static float calculateDiffuseShade(float[] normal, List<DiffuseLight> diffuseLights) {
-        float totalLighting = 0f;
-        
-        for (DiffuseLight light : diffuseLights) {
-            float dot = normal[0] * light.direction.x() +
-                        normal[1] * light.direction.y() +
-                        normal[2] * light.direction.z();
-            totalLighting += Math.max(dot, 0f) * light.intensity;
-        }
-
-        final float AMBIENT_LIGHT = CONFIG.LIGHTING.AMBIENT_LIGHTING_STRENGTH;
-        final float MAX_SHADED = CONFIG.LIGHTING.MAX_LIGHTING_SHADING;
-        
-        return Math.min(MAX_SHADED, AMBIENT_LIGHT + totalLighting);
-    }
-
-    private static int multiplyColor(int color, float shade) {
-        int a = (color >> 24) & 0xFF;
-        int r = (int)((color >> 16 & 0xFF) * shade);
-        int g = (int)((color >> 8 & 0xFF) * shade);
-        int b = (int)((color & 0xFF) * shade);
-        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
     private static float[] getVertexPosition(int index, float x0, float y0, float z0,

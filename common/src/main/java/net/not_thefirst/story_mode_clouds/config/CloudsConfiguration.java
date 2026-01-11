@@ -31,9 +31,13 @@ public class CloudsConfiguration {
 
     public static CloudsConfiguration INSTANCE = new CloudsConfiguration();
 
+    public enum ShadingMode {
+        GOURAUD, PHONG
+    }
     public static class LightingParameters {
         public float AMBIENT_LIGHTING_STRENGTH  = 0.7f;
         public float MAX_LIGHTING_SHADING       = 0.8f;
+        public ShadingMode SHADING_MODE         = ShadingMode.GOURAUD;
         public static final int MAX_LIGHT_COUNT = 32;
 
         public List<DiffuseLight> lights = new ArrayList<>(Arrays.asList(
@@ -43,6 +47,14 @@ public class CloudsConfiguration {
 
         public LightingParameters() {
         }
+    }
+
+    public static class WeatherColorConfig {
+        public int rainColor = 0xB0B0B0;      // gray
+        public int thunderColor = 0x808080;   // gray but darker
+
+        public float rainStrength = 0.3f;
+        public float thunderStrength = 0.4f;
     }
 
     public static class SkyColorKeypoint {
@@ -113,7 +125,8 @@ public class CloudsConfiguration {
     public CloudColorProviderMode COLOR_MODE = CloudColorProviderMode.VANILLA;
 
     public LightingParameters LIGHTING        = new LightingParameters();
-    public int                CLOUD_GRID_SIZE = 48;
+    public WeatherColorConfig WEATHER_COLOR   = new WeatherColorConfig();
+    public int                CLOUD_GRID_SIZE = 64;
 
     private LayerHolder LAYERS = new LayerHolder();
     public LayerHolder getHolder() { return LAYERS; }

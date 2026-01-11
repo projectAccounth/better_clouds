@@ -11,6 +11,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -34,6 +35,7 @@ import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
+import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider.WeatherState;
 import net.not_thefirst.story_mode_clouds.utils.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
@@ -149,14 +151,22 @@ public class CustomCloudRenderer implements AutoCloseable {
             return Float.compare(Math.abs(yb), Math.abs(ya));
         });
 
-        skyColor = CloudColorProvider.getCloudColor();
         Minecraft client = Minecraft.getInstance();
-        float time = (client.level.getGameTime() + tickDelta) / 20.0F;
+        ClientLevel level = client.level;
+        WeatherState weather = WeatherState.from(level, tickDelta);
+
+        skyColor = CloudColorProvider.getCloudColor(weather);
+        long gameTime = client.level.getGameTime();
+        float time = (gameTime + tickDelta) / 20.0F;
 
         GameRenderer renderer = Minecraft.getInstance().gameRenderer;
         Matrix4f proj = renderer.getProjectionMatrix(renderer.getMainCamera(), tickDelta, true);
 
         startRender();
+
+        int range = CloudsConfiguration.INSTANCE.CLOUD_GRID_SIZE;
+        final int slack = range * 2 / 3;
+
         for (int layer : order) {
             LayerState currentLayer = this.layers.get(layer);
 
@@ -183,34 +193,25 @@ public class CustomCloudRenderer implements AutoCloseable {
             Texture.TextureData tex = currentLayer.texture;
             if (tex == null) continue;
 
-            double wrapX = tex.width * MeshBuilder.CELL_SIZE_IN_BLOCKS;
-            double wrapZ = tex.height * MeshBuilder.CELL_SIZE_IN_BLOCKS;
-
             double timeOffsetX = time * layerConfiguration.APPEARANCE.LAYER_SPEED_X;
             double timeOffsetZ = time * layerConfiguration.APPEARANCE.LAYER_SPEED_Z;
 
             double dxLayer = baseDx + currentLayer.offsetX + timeOffsetX;
             double dzLayer = baseDz + currentLayer.offsetZ + timeOffsetZ;
 
-            dxLayer -= Mth.floor(dxLayer / wrapX) * wrapX;
-            dzLayer -= Mth.floor(dzLayer / wrapZ) * wrapZ;
-
             float cloudChunkHeight = MeshBuilder.HEIGHT_IN_BLOCKS * 
                 (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0F);
             float layerY = (float)(layerConfiguration.LAYER_HEIGHT - cam.y);
             float relYTop = layerY + cloudChunkHeight;
 
-            int cellX = Mth.floor(dxLayer / MeshBuilder.CELL_SIZE_IN_BLOCKS);
-            int cellZ = Mth.floor(dzLayer / MeshBuilder.CELL_SIZE_IN_BLOCKS);
+            int cellX = (int) Math.floor(dxLayer / MeshBuilder.CELL_SIZE_IN_BLOCKS);
+            int cellZ = (int) Math.floor(dzLayer / MeshBuilder.CELL_SIZE_IN_BLOCKS);
 
             if (currentLayer.prevCellX == Integer.MIN_VALUE) {
                 currentLayer.baseCellX = cellX;
                 currentLayer.baseCellZ = cellZ;
                 currentLayer.needsRebuild = true;
             }
-
-            int range = CloudsConfiguration.INSTANCE.CLOUD_GRID_SIZE;
-            int slack = range * 2 / 3;
 
             int dxCell = cellX - currentLayer.baseCellX;
             int dzCell = cellZ - currentLayer.baseCellZ;
@@ -270,7 +271,7 @@ public class CustomCloudRenderer implements AutoCloseable {
                 drawLayer(ModRenderPipelines.POSITION_COLOR_NO_DEPTH, poseStack.last().pose(), proj,
                     offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ,
                     currentLayer.buffer,
-                    layer, currentLayer, shaderColor, tickDelta, relY);
+                    layer, currentLayer, shaderColor, tickDelta, relY, gameTime);
                 poseStack.popPose();
                 continue;
             }
@@ -279,12 +280,12 @@ public class CustomCloudRenderer implements AutoCloseable {
                 ModRenderPipelines.POSITION_COLOR_DEPTH_ONLY, poseStack.last().pose(), proj,
                     offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ,
                     currentLayer.buffer,
-                    layer, currentLayer, shaderColor, tickDelta, relY);
+                    layer, currentLayer, shaderColor, tickDelta, relY, gameTime);
             drawLayer(
                 ModRenderPipelines.CUSTOM_POSITION_COLOR, poseStack.last().pose(), proj,
                     offX, (float) (layerConfiguration.LAYER_HEIGHT - cam.y), offZ,
                     currentLayer.buffer,
-                    layer, currentLayer, shaderColor, tickDelta, relY);
+                    layer, currentLayer, shaderColor, tickDelta, relY, gameTime);
 
             poseStack.popPose();
         }
@@ -314,7 +315,14 @@ public class CustomCloudRenderer implements AutoCloseable {
             return null;
         }
 
-        builder.Build(mesh, tex, state, baseCx, baseCz, relYCenter, currentLayer, skyColor, 0, 0);
+        builder.Build(
+            mesh, tex, 
+            state, 
+            baseCx, baseCz, 
+            relYCenter, 
+            currentLayer, 
+            skyColor, 
+            0, 0);
         return mesh.compile();
     }
 
@@ -448,7 +456,8 @@ public class CustomCloudRenderer implements AutoCloseable {
         LayerState currentLayer, 
         int skyColor, 
         float tickDelta,
-        float relY) {
+        float relY,
+        long timeTicks) {
         rt.setup();
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
@@ -498,14 +507,16 @@ public class CustomCloudRenderer implements AutoCloseable {
         );
 
         int lightCount = Math.min(lights.size(), maxLightCount);
+        float[] lightPos = new float[3];
 
         for (int i = 0; i < maxLightCount; i++) {
             if (i < lightCount) {
-                DiffuseLight l = lights.get(i).normalized();
+                DiffuseLight l = lights.get(i);
+                l.evaluate(timeTicks, lightPos);
                 lighting.putVec4(
-                    l.direction.x(),
-                    l.direction.y(),
-                    l.direction.z(),
+                    lightPos[0],
+                    lightPos[1],
+                    lightPos[2],
                     l.intensity
                 );
             } else {
@@ -528,7 +539,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             (float) lightCount,
             lightShadingStrength,
             lightAmbientFactor,
-            0.0f
+            LIGHTING.SHADING_MODE.ordinal()
         );
 
 
