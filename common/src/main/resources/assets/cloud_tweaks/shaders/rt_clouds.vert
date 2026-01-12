@@ -24,6 +24,10 @@ layout(std140) uniform Lighting {
     vec4 LightInformation; // x=LightCount, y=MaxShading, z=Ambient, w=ShadingMode
 };
 
+layout(std140) uniform Camera {
+    vec4 CameraPosition;
+};
+
 int   LightCount         = int(min(LightInformation.x, float(MAX_LIGHT)));
 float MaxShading         = LightInformation.y;
 float AmbientFactor      = LightInformation.z;

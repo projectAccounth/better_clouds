@@ -1,7 +1,5 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
@@ -83,9 +81,6 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         int edgeSegments = layerConfiguration.BEVEL.BEVEL_EDGE_SEGMENTS;
         int cornerSegments = layerConfiguration.BEVEL.BEVEL_CORNER_SEGMENTS;
 
-        Minecraft client = Minecraft.getInstance(); 
-        Vec3 cam = client.getCameraEntity().getPosition(1.0f);
-
         CubeBuilder.buildBeveledCube(
                 bb,
                 x0, x1,
@@ -96,7 +91,6 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 cornerSegments,
                 excluded,
                 currentLayer,
-                (float) cam.x, (float) cam.y, (float) cam.z,
                 state, relY, cellIdxX, cellIdxZ, skyColor
         );
     }

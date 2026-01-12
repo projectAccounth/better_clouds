@@ -33,9 +33,9 @@ public class ModRenderPipelines {
             .build()
     );
 
-    public static ResourceLocation CLOUD_SHADER_VERT = 
+    public static final ResourceLocation CLOUD_SHADER_VERT = 
         new ResourceLocation(Initializer.MOD_ID, "shaders/rt_clouds.vert");
-    public static ResourceLocation CLOUD_SHADER_FRAG = 
+    public static final ResourceLocation CLOUD_SHADER_FRAG = 
         new ResourceLocation(Initializer.MOD_ID, "shaders/rt_clouds.frag");
 
     public static final ResourceLocation CLOUD_SHADER_ID = new ResourceLocation(Initializer.MOD_ID, "clouds");
@@ -49,6 +49,7 @@ public class ModRenderPipelines {
         CLOUDS_SHADER.bindUniformBlock("Transforms", 0);
         CLOUDS_SHADER.bindUniformBlock("CloudInfo", 1);
         CLOUDS_SHADER.bindUniformBlock("Lighting", 2);
+        CLOUDS_SHADER.bindUniformBlock("Camera", 3);
 
         POSITION_COLOR_DEPTH_ONLY = new ShaderRenderType(
             "cloud_tweaks_rt_clouds_cdo",

@@ -424,8 +424,7 @@ public class CubeBuilder {
         float maxZ = initialMaxZ;
 
         switch (dir) {
-            case NORTH:
-            case SOUTH:
+            case NORTH, SOUTH:
                 if (hasFace(excluded, FaceDir.POS_X)) {
                     maxX += radius;
                 }
@@ -434,8 +433,7 @@ public class CubeBuilder {
                 }
                 break;
 
-            case WEST:
-            case EAST:
+            case EAST, WEST:
                 if (hasFace(excluded, FaceDir.NEG_Z)) {
                     minZ -= radius;
                 }
@@ -535,7 +533,6 @@ public class CubeBuilder {
         int cornerSegments,
         FaceMask excludedFaces,
         int layer,
-        float camX, float camY, float camZ,
         CustomCloudRenderer.LayerState state,
         float relY, int idxX, int idxY, 
         int skyColor
@@ -613,7 +610,7 @@ public class CubeBuilder {
             layer, relY, skyColor
         );
 
-        if (state.texture.neighbors[idxX + idxY * state.texture.width] < 8) {
+        if (state.texture().neighbors[idxX + idxY * state.texture().width] < 8) {
             emitHorizontalCornerCaps(
                 bb, 
                 minX, maxX, 

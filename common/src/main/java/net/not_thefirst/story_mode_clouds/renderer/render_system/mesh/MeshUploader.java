@@ -28,13 +28,8 @@ public final class MeshUploader {
 
         ByteBuffer buffer = BufferUtils.createByteBuffer(totalBytes);
 
-        float[] pos = mesh.positions();
-        float[] nor = mesh.normals();
-        float[] uv  = mesh.uvs();
-        int[]   col = mesh.colors();
-
         for (int i = 0; i < vertexCount; i++) {
-            format.putVertex(buffer, i, pos, nor, uv, col, offX, offY, offZ);
+            format.putVertex(buffer, i, mesh, offX, offY, offZ);
         }
 
         buffer.flip();

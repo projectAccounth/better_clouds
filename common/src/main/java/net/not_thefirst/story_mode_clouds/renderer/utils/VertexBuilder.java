@@ -5,8 +5,8 @@ import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMe
 import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 
 public class VertexBuilder {
-    @SuppressWarnings("unused")
-    private static CloudsConfiguration CONFIG = CloudsConfiguration.INSTANCE;
+
+    private VertexBuilder() {}
     
     public static void quad(BuildingMesh bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,

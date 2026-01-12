@@ -8,7 +8,6 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
-import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 
 import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,8 +16,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Matrix4f;
-
 @Mixin(value = LevelRenderer.class, priority = 16384)
 public abstract class LevelRendererMixin implements CloudRendererHolder {
 
@@ -47,6 +44,6 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
 
         Vec3 cam = new Vec3(cameraX, cameraY, cameraZ);
 
-        RendererHolder.renderCloud(0, status, cloudHeight, cam, partialTicks, poseStack);
+        RendererHolder.renderCloud(status, cam, partialTicks, poseStack);
     }
 }

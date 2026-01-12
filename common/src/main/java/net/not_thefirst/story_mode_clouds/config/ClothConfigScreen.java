@@ -1,6 +1,5 @@
 package net.not_thefirst.story_mode_clouds.config;
 
-import me.shedaniel.clothconfig2.ClothConfigDemo;
 import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -8,8 +7,6 @@ import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.gui.entries.MultiElementListEntry;
 import me.shedaniel.clothconfig2.gui.entries.NestedListListEntry;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextComponent;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.SkyColorKeypoint;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
@@ -22,8 +19,6 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import com.mojang.math.Vector3f;
 
 public class ClothConfigScreen {
 
@@ -47,6 +42,8 @@ public class ClothConfigScreen {
 
     static final float MIN_BEVEL_SIZE = 0.0f;
     static final float MAX_BEVEL_SIZE = 15.0f;
+
+    private ClothConfigScreen() {}
 
     public static Screen createConfigScreen(Screen parent) {
         ConfigBuilder builder = ConfigBuilder.create()
@@ -251,9 +248,6 @@ public class ClothConfigScreen {
                 newValue -> {
                     config.getHolder().layers.clear();
                     config.getHolder().layers.addAll(newValue);
-                    for (int i = 0; i < newValue.size(); i++) {
-                        // newValue.get(i).LAYER_IDX = i;
-                    }
                 },
                 () -> new ArrayList<>(config.getHolder().layers),
                 entryBuilder.getResetButtonKey(),
@@ -343,69 +337,48 @@ public class ClothConfigScreen {
         entries.add(
             entryBuilder.startFloatField(
                 ComponentWrapper.translatable("cloudtweaks.option.position_x"),
-                light.location.x()
+                light.location().x()
             )
             .setDefaultValue(0.0f)
             .setMin(-32767.0f)
             .setMax(32767.0f)
-            .setSaveConsumer(value ->
-                light.location =
-                    new Vector3f(
-                        value,
-                        light.location.y(),
-                        light.location.z()
-                    )
-            )
+            .setSaveConsumer(light::setXLocation)
             .build()
         );
 
         entries.add(
             entryBuilder.startFloatField(
                 ComponentWrapper.translatable("cloudtweaks.option.position_y"),
-                light.location.y()
+                light.location().y()
             )
             .setDefaultValue(1.0f)
             .setMin(-32767.0f)
             .setMax(32767.0f)
-            .setSaveConsumer(value ->
-                light.location =
-                    new Vector3f(
-                        light.location.x(),
-                        value,
-                        light.location.z()
-                    )
-            )
+            .setSaveConsumer(light::setYLocation)
             .build()
         );
 
         entries.add(
             entryBuilder.startFloatField(
                 ComponentWrapper.translatable("cloudtweaks.option.position_z"),
-                light.location.z()
+                light.location().z()
             )
             .setDefaultValue(0.0f)
             .setMin(-32767.0f)
             .setMax(32767.0f)
-            .setSaveConsumer(value ->
-                light.location =
-                    new Vector3f(
-                        light.location.x(),
-                        light.location.y(),
-                        value
-                    )
-            )
+            .setSaveConsumer(light::setZLocation)
             .build()
         );
 
         entries.add(
             entryBuilder.startFloatField(
                 ComponentWrapper.translatable("cloudtweaks.option.intensity"),
-                light.intensity
+                light.intensity()
             )
             .setDefaultValue(1.0f)
             .setMin(0.0f)
             .setMax(10.0f)
-            .setSaveConsumer(value -> light.intensity = value)
+            .setSaveConsumer(light::setIntensity)
             .build()
         );
 

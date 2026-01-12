@@ -1,12 +1,13 @@
 package net.not_thefirst.story_mode_clouds.renderer.render_system.vertex;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
+
+import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.CompiledMesh;
 
 public final class VertexFormat {
 
@@ -125,12 +126,13 @@ public final class VertexFormat {
     public void putVertex(
         ByteBuffer buf,
         int vertexIndex,
-        float[] positions,
-        float[] normals,
-        float[] uvs,
-        int[] colors,
+        CompiledMesh mesh,
         float offX, float offY, float offZ
     ) {
+        float[] positions = mesh.positions();
+        float[] normals   = mesh.normals();
+        float[] uvs       = mesh.uvs();
+        int[]   colors    = mesh.colors();
         for (Element e : elements) {
             switch (e.attribute) {
                 case POSITION -> {
