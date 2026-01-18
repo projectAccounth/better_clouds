@@ -41,7 +41,7 @@ allprojects {
     apply plugin: 'java'
     apply plugin: 'architectury-plugin'
 
-    version = rootProject.mod_version
+    version = rootProject.mod_version + "+" + rootProject.minecraft_version
 
     base {
         archivesName = rootProject.mod_name + "+" + rootProject.minecraft_version
