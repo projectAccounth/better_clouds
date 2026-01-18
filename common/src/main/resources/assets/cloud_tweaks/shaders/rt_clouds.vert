@@ -64,7 +64,7 @@ void main() {
     vec3 pos = Position + ModelOffset.xyz;
     gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);
 
-    vWorldPos = pos;
+    vWorldPos = Position + vec3(0, ModelOffset.y + CameraPosition.y, 0);
     vDistance = fogEnabled() ? length(pos) : 0.0;
 
     float baseAlpha = usesCustomAlpha() ? BaseAlpha : Color.a;
@@ -76,7 +76,7 @@ void main() {
 
         float fadeBelow = lerp(1.0, FadeAlpha, ny);
         float fadeAbove = lerp(1.0, FadeAlpha, 1.0 - ny);
-        finalAlpha *= lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
+        finalAlpha *= 1 - lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
     }
 
     vec3 baseColor = Color.rgb * CloudColor.rgb;

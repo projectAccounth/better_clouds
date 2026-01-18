@@ -16,13 +16,16 @@ import net.not_thefirst.story_mode_clouds.renderer.render_system.state.ShaderRen
 import net.not_thefirst.story_mode_clouds.renderer.render_system.state.ShaderState;
 
 public class ModRenderPipelines {
+    private ModRenderPipelines() {}
+
     private static ProgramManager programManager;
     public static GLProgram CLOUDS_SHADER;
 
     public static ShaderRenderType CUSTOM_POSITION_COLOR;
     public static ShaderRenderType POSITION_COLOR_NO_DEPTH;
     public static ShaderRenderType POSITION_COLOR_DEPTH_ONLY;
-    public static RenderType CLOUDS_GENERAL = new RenderType(
+
+    public static final RenderType CLOUDS_GENERAL = new RenderType(
         "cloud_tweaks_clouds_general",
         new RenderStateBuilder()
             .blend(BlendState.TRANSLUCENT)
@@ -45,6 +48,9 @@ public class ModRenderPipelines {
 
     public static void postReload() {
         CLOUDS_SHADER = programManager.get(CLOUD_SHADER_ID);
+
+        if (CLOUDS_SHADER == null)
+            throw new IllegalStateException("Shader is null");
 
         CLOUDS_SHADER.bindUniformBlock("Transforms", 0);
         CLOUDS_SHADER.bindUniformBlock("CloudInfo", 1);

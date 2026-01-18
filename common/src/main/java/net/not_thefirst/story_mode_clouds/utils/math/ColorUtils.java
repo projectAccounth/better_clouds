@@ -7,7 +7,7 @@ public class ColorUtils {
     public static int recolor(int color, int currentLayer, int skyColor) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
-                CloudsConfiguration.INSTANCE.getLayer(currentLayer);
+                CloudsConfiguration.getInstance().getLayer(currentLayer);
 
         if (!layerConfiguration.IS_ENABLED) {
             return color;
@@ -43,7 +43,7 @@ public class ColorUtils {
     public static int recolor(int color, float vertexY, float relY, int currentLayer, int skyColor) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
-                CloudsConfiguration.INSTANCE.getLayer(currentLayer);
+                CloudsConfiguration.getInstance().getLayer(currentLayer);
 
         if (!layerConfiguration.IS_ENABLED) {
             return color;
@@ -84,7 +84,7 @@ public class ColorUtils {
 
     public static int getCloudShaderColor(int layer, int skyColor) {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
-                CloudsConfiguration.INSTANCE.getLayer(layer);
+                CloudsConfiguration.getInstance().getLayer(layer);
         int color = ARGB.WHITE;
 
         if (!layerConfiguration.IS_ENABLED) {

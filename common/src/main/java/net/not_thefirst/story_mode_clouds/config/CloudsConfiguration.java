@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -20,8 +20,8 @@ import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
-import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
+import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
 
 public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -29,15 +29,21 @@ public class CloudsConfiguration {
 
     public boolean CLOUDS_RENDERED = true;
 
-    public static CloudsConfiguration INSTANCE = new CloudsConfiguration();
+    private static CloudsConfiguration INSTANCE = new CloudsConfiguration();
 
     public enum ShadingMode {
         GOURAUD, PHONG
     }
+
+    public enum LightingType {
+        STATIC, DYNAMIC
+    }
+
     public static class LightingParameters {
         public float AMBIENT_LIGHTING_STRENGTH  = 0.7f;
         public float MAX_LIGHTING_SHADING       = 0.8f;
         public ShadingMode SHADING_MODE         = ShadingMode.GOURAUD;
+        public LightingType LIGHTING_TYPE       = LightingType.STATIC;
         public static final int MAX_LIGHT_COUNT = 32;
 
         public List<DiffuseLight> lights = new ArrayList<>(Arrays.asList(
@@ -162,7 +168,7 @@ public class CloudsConfiguration {
                 this.BEVEL_EDGE_SEGMENTS = other.BEVEL_EDGE_SEGMENTS;
                 this.BEVEL_CORNER_SEGMENTS = other.BEVEL_CORNER_SEGMENTS;
             }
-        };
+        }
 
         public static class PerformanceParameters {
             public int MESH_REBUILD_BUDGET_MS       = 2;
@@ -244,7 +250,7 @@ public class CloudsConfiguration {
 
         public String MODE = "NORMAL";
 
-        public int GetLayerIndex() { return LAYER_IDX; }
+        public int getLayerIndex() { return LAYER_IDX; }
 
         void copy(LayerConfiguration other) {
             this.NAME = other.NAME;
@@ -263,14 +269,14 @@ public class CloudsConfiguration {
 
     public static class LayerHolder {
 
-        public List<LayerConfiguration> layers = new ArrayList<>();
+        public final List<LayerConfiguration> layers = new ArrayList<>();
 
         public LayerHolder() {
         }
 
         public LayerHolder(int layer) {
             this();
-            addDefaultLayers(layer, (idx) -> { return new LayerConfiguration(idx != null ? idx : -1); });
+            addDefaultLayers(layer, idx -> new LayerConfiguration(idx >= 0 ? idx : -1));
         }
 
         public void addLayer(LayerConfiguration l) {
@@ -278,7 +284,7 @@ public class CloudsConfiguration {
         }
 
 
-        public void addDefaultLayers(int count, Function<Integer, LayerConfiguration> factory) {
+        public void addDefaultLayers(int count, IntFunction<LayerConfiguration> factory) {
             for (int i = 0; i < count; i++) {
                 layers.add(factory.apply(i));
             }
@@ -309,7 +315,7 @@ public class CloudsConfiguration {
             INSTANCE = GSON.fromJson(reader, CloudsConfiguration.class);
         } catch (IOException e) {
             e.printStackTrace();
-            return;
+            INSTANCE = null;
         }
 
         if (INSTANCE == null) {
@@ -376,4 +382,6 @@ public class CloudsConfiguration {
         }
         return null;
     }
+
+    public static CloudsConfiguration getInstance() { return INSTANCE; }
 }

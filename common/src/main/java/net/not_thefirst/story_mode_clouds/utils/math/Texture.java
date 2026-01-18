@@ -1,4 +1,4 @@
-package net.not_thefirst.story_mode_clouds.utils;
+package net.not_thefirst.story_mode_clouds.utils.math;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,12 +6,11 @@ import java.util.Optional;
 
 import com.mojang.blaze3d.platform.NativeImage;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.profiling.ProfilerFiller;
-import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
 public class Texture {
+
+    private Texture() {}
 
     public static int getColor(long cell) {
         return (int)((cell >> 4) & 0xFFFFFFFFL);
@@ -152,11 +151,10 @@ public class Texture {
             return true;
         }
 
-        if (count == 2) {
-            if (!(n && s) && !(e && w0)) {
-                return true;
-            }
+        if (count == 2 && !(n && s) && !(e && w0)) {
+            return true;
         }
+        
 
         if (count == 4) {
             return neighbors[idx(x, y, w, h)] < 8;
@@ -234,7 +232,7 @@ public class Texture {
             );
 
         } catch (IOException e) {
-            System.out.println("Failed to load cloud texture: " + e);
+            LoggerProvider.get().error("Failed to load cloud texture: " + e);
             return Optional.empty();
         }
     }

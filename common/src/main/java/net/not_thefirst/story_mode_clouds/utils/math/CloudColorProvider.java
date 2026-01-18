@@ -1,4 +1,4 @@
-package net.not_thefirst.story_mode_clouds.utils;
+package net.not_thefirst.story_mode_clouds.utils.math;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -7,10 +7,9 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.WeatherColorConfig;
 import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
-import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 
 public class CloudColorProvider {
-    public static int DAY_DURATION = 24000;
+    public static final int DAY_DURATION = 24000;
 
     public record WeatherState(float rain, float thunder) {
         public static WeatherState from(ClientLevel level, float partialTicks) {
@@ -98,14 +97,14 @@ public class CloudColorProvider {
 
     public static int getCloudColor(WeatherState weather) {
         CloudsConfiguration.CloudColorProviderMode mode =
-            CloudsConfiguration.INSTANCE.COLOR_MODE;
+            CloudsConfiguration.getInstance().COLOR_MODE;
 
         if (mode == CloudsConfiguration.CloudColorProviderMode.VANILLA) {
             return getVanillaSkyColor();
         }
 
         int baseColor = getCustomCloudColor();
-        WeatherColorConfig cfg = CloudsConfiguration.INSTANCE.WEATHER_COLOR;
+        WeatherColorConfig cfg = CloudsConfiguration.getInstance().WEATHER_COLOR;
 
         return applyWeatherTintCustom(
             baseColor,

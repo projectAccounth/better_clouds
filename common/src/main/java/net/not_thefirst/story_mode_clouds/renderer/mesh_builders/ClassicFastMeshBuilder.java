@@ -4,20 +4,20 @@ import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
-import net.not_thefirst.story_mode_clouds.renderer.utils.WrappedCoordinates;
-import net.not_thefirst.story_mode_clouds.renderer.utils.VertexBuilder;
-import net.not_thefirst.story_mode_clouds.utils.Texture;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
+import net.not_thefirst.story_mode_clouds.utils.math.Texture;
+import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
 
 public class ClassicFastMeshBuilder implements MeshTypeBuilder {
     
-    public BuildingMesh Build(
-        BuildingMesh bb, Texture.TextureData tex, 
+    public BuildingMesh build(
+        BuildingMesh bb,
         LayerState state,
         int cx, int cz, float relY, 
-        int currentLayer, int skyColor,
-        float chunkOffX, float chunkOffZ) {
+        int currentLayer, int skyColor) {
         
-        int range = CloudsConfiguration.INSTANCE.CLOUD_GRID_SIZE;
+        int range = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
+        Texture.TextureData tex = state.texture();
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;

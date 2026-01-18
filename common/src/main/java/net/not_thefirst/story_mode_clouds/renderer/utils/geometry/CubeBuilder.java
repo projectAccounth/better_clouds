@@ -1,9 +1,10 @@
-package net.not_thefirst.story_mode_clouds.renderer.utils;
+package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
-import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers.EdgeDir;
-import net.not_thefirst.story_mode_clouds.renderer.utils.BevelWrappers.Sign;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
+import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.EdgeDir;
+import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.Sign;
 
 public class CubeBuilder {
     public enum FaceDir {

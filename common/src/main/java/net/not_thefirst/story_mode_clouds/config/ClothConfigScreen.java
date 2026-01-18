@@ -6,19 +6,21 @@ import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.gui.entries.MultiElementListEntry;
 import me.shedaniel.clothconfig2.gui.entries.NestedListListEntry;
+import me.shedaniel.clothconfig2.impl.builders.DropdownMenuBuilder;
 import net.minecraft.client.gui.screens.Screen;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.CloudColorProviderMode;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.SkyColorKeypoint;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
-import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
+import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
-import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
+import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 public class ClothConfigScreen {
 
@@ -52,7 +54,7 @@ public class ClothConfigScreen {
             .setSavingRunnable(ClothConfigScreen::saveConfig);
 
         ConfigEntryBuilder entryBuilder = builder.entryBuilder();
-        CloudsConfiguration config = CloudsConfiguration.INSTANCE;
+        CloudsConfiguration config = CloudsConfiguration.getInstance();
 
         ConfigCategory globalCategory =
             builder.getOrCreateCategory(
@@ -120,9 +122,19 @@ public class ClothConfigScreen {
             entryBuilder.startEnumSelector(
                 ComponentWrapper.translatable("cloudtweaks.option.cloud_provider"),
                 CloudsConfiguration.CloudColorProviderMode.class,
-                CloudsConfiguration.INSTANCE.COLOR_MODE
+                config.COLOR_MODE
             )
-            .setSaveConsumer(value -> CloudsConfiguration.INSTANCE.COLOR_MODE = value)
+            .setSaveConsumer(value -> config.COLOR_MODE = value)
+            .build()
+        );
+
+        lightingCategory.addEntry(
+            entryBuilder.startEnumSelector(
+                ComponentWrapper.translatable("cloudtweaks.option.lighting_type"),
+                CloudsConfiguration.LightingType.class,
+                config.LIGHTING.LIGHTING_TYPE
+            )
+            .setSaveConsumer(value -> config.LIGHTING.LIGHTING_TYPE = value)
             .build()
         );
 
@@ -142,6 +154,7 @@ public class ClothConfigScreen {
                 config.WEATHER_COLOR.rainColor
             )
             .setSaveConsumer(value -> config.WEATHER_COLOR.rainColor = value)
+            .setDisplayRequirement(() -> config.COLOR_MODE == CloudColorProviderMode.CUSTOM)
             .build()
         );
 
@@ -151,6 +164,7 @@ public class ClothConfigScreen {
                 config.WEATHER_COLOR.thunderColor
             )
             .setSaveConsumer(value -> config.WEATHER_COLOR.thunderColor = value)
+            .setDisplayRequirement(() -> config.COLOR_MODE == CloudColorProviderMode.CUSTOM)
             .build()
         );
 
@@ -160,6 +174,7 @@ public class ClothConfigScreen {
                 config.WEATHER_COLOR.rainStrength
             )
             .setSaveConsumer(value -> config.WEATHER_COLOR.rainStrength = value)
+            .setDisplayRequirement(() -> config.COLOR_MODE == CloudColorProviderMode.CUSTOM)
             .setMin(0)
             .setMax(1)
             .build()
@@ -171,6 +186,7 @@ public class ClothConfigScreen {
                 config.WEATHER_COLOR.thunderStrength
             )
             .setSaveConsumer(value -> config.WEATHER_COLOR.thunderStrength = value)
+            .setDisplayRequirement(() -> config.COLOR_MODE == CloudColorProviderMode.CUSTOM)
             .setMin(0)
             .setMax(1)
             .build()
@@ -266,7 +282,7 @@ public class ClothConfigScreen {
         templateCategory.addEntry(
             buildLayerEntries(
                 entryBuilder,
-                CloudsConfiguration.INSTANCE.template
+                CloudsConfiguration.getInstance().template
             )
         );
 
@@ -336,37 +352,37 @@ public class ClothConfigScreen {
 
         entries.add(
             entryBuilder.startFloatField(
-                ComponentWrapper.translatable("cloudtweaks.option.position_x"),
-                light.location().x()
+                ComponentWrapper.translatable("cloudtweaks.option.direction_x"),
+                light.getXDirection()
             )
             .setDefaultValue(0.0f)
-            .setMin(-32767.0f)
-            .setMax(32767.0f)
-            .setSaveConsumer(light::setXLocation)
+            .setMin(-1.0f)
+            .setMax(1.0f)
+            .setSaveConsumer(light::setXDirection)
             .build()
         );
 
         entries.add(
             entryBuilder.startFloatField(
-                ComponentWrapper.translatable("cloudtweaks.option.position_y"),
-                light.location().y()
+                ComponentWrapper.translatable("cloudtweaks.option.direction_y"),
+                light.getYDirection()
             )
             .setDefaultValue(1.0f)
-            .setMin(-32767.0f)
-            .setMax(32767.0f)
-            .setSaveConsumer(light::setYLocation)
+            .setMin(-1.0f)
+            .setMax(1.0f)
+            .setSaveConsumer(light::setYDirection)
             .build()
         );
 
         entries.add(
             entryBuilder.startFloatField(
-                ComponentWrapper.translatable("cloudtweaks.option.position_z"),
-                light.location().z()
+                ComponentWrapper.translatable("cloudtweaks.option.direction_z"),
+                light.getZDirection()
             )
             .setDefaultValue(0.0f)
-            .setMin(-32767.0f)
-            .setMax(32767.0f)
-            .setSaveConsumer(light::setZLocation)
+            .setMin(-1.0f)
+            .setMax(1.0f)
+            .setSaveConsumer(light::setZDirection)
             .build()
         );
 
@@ -408,7 +424,7 @@ public class ClothConfigScreen {
     ) {
         if (layer == null) {
             layer = new CloudsConfiguration.LayerConfiguration();
-            layer.copy(CloudsConfiguration.INSTANCE.template);
+            layer.copy(CloudsConfiguration.getInstance().template);
         }
 
         List<AbstractConfigListEntry<?>> entries = new ArrayList<>();
@@ -445,7 +461,7 @@ public class ClothConfigScreen {
 
         return new MultiElementListEntry<>(
             ComponentWrapper.literal(
-                "Layer " + (layer.GetLayerIndex() + 1) + ": " + layer.NAME
+                "Layer " + (layer.getLayerIndex() + 1) + ": " + layer.NAME
             ),
             layer,
             entries,
@@ -504,12 +520,10 @@ public class ClothConfigScreen {
                 ComponentWrapper.translatable("cloudtweaks.option.cloud_mode"),
                 layer.MODE
             )
+            .setSuggestionMode(false)
             .setDefaultValue("NORMAL")
             .setSelections(
-                MeshBuilderRegistry.getInstance()
-                    .keys()
-                    .stream()
-                    .collect(Collectors.toCollection(LinkedHashSet::new))
+                MeshTypeRegistry.getInstance().keys()
             )
             .setSaveConsumer(value -> layer.MODE = value)
             .build()

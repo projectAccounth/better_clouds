@@ -7,7 +7,7 @@ import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.utils.Texture;
+import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 
 public class RendererHolder {
     private static CustomCloudRenderer renderer = new CustomCloudRenderer();
@@ -37,7 +37,7 @@ public class RendererHolder {
             renderer.apply(texture, client.getResourceManager(), client.getProfiler());
         }
 
-        if (!CloudsConfiguration.INSTANCE.CLOUDS_RENDERED) return;
+        if (!CloudsConfiguration.getInstance().CLOUDS_RENDERED) return;
 
         renderer.render(status, vec3, partialTicks, poseStack);
     }

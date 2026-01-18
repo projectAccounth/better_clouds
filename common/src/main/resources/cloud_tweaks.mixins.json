@@ -8,8 +8,6 @@
   ],
   "client": [
     "LevelRendererMixin",
-    "OptionsMixin",
-    "ClientMixin",
     "ClientWorldMixin",
     "GameRendererMixin"
   ],

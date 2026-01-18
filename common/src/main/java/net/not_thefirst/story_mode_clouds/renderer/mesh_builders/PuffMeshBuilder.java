@@ -9,12 +9,11 @@ import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder.PuffMode;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
-import net.not_thefirst.story_mode_clouds.renderer.utils.WrappedCoordinates;
-import net.not_thefirst.story_mode_clouds.renderer.utils.VertexBuilder;
-import net.not_thefirst.story_mode_clouds.utils.Texture;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
 import net.not_thefirst.story_mode_clouds.utils.MiscUtils.CacheKey;
+import net.not_thefirst.story_mode_clouds.utils.math.Texture;
+import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
 
-// TODO: Implement a Z-fighting fixing solution for the cells there
 public class PuffMeshBuilder implements MeshTypeBuilder {
     private static final long PHI = 0x9E3779B97F4A7C15L;
     private static final int SPLITMIX_TABLE_SIZE = 1 << 10;
@@ -69,7 +68,8 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
     // LayerCache holds cached PuffDesc[] for a texture cell
     @SuppressWarnings("unused")
     private static final class LayerCache {
-        final int texWidth, texHeight;
+        final int texWidth;
+        final int texHeight;
         final Object texCellsRef; // identity of tex.cells for fast change detection
         final int puffCount;
         final PuffDesc[][] puffByCell; // index = (tx + tz * texWidth) to PuffDesc[puffCount]
@@ -90,12 +90,14 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         CacheKey key = new CacheKey(System.identityHashCode(tex), currentLayer);
         LayerCache cache = LayerCaches.get(key);
         Object cellsRef = tex.cells; // use reference identity to detect if texture changes
-        if (cache != null) {
-            if (cache.texWidth == tex.width && cache.texHeight == tex.height && cache.texCellsRef == cellsRef) {
+        if (cache != null && 
+            cache.texWidth == tex.width && 
+            cache.texHeight == tex.height && 
+            cache.texCellsRef == cellsRef) {
                 return cache;
             }
             // else regenerate
-        }
+        
 
         // Build new cache
         final int PUFFS_PER_CELL = 6;
@@ -103,7 +105,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         final float PUFF_MAX_SIZE = 5.2f;
         final float PUFF_HEIGHT_FACTOR = 0.45f;
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
-            CloudsConfiguration.INSTANCE.getLayer(currentLayer);
+            CloudsConfiguration.getInstance().getLayer(currentLayer);
         final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0f);
 
         LayerCache pc = new LayerCache(tex.width, tex.height, cellsRef, PUFFS_PER_CELL, currentLayer);
@@ -122,8 +124,8 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                 }
                 PuffDesc[] arr = new PuffDesc[PUFFS_PER_CELL];
 
-                long cellSeed = (((long)tx & 0xFFFFL) << 32) |
-                                (((long)tz & 0xFFFFL) << 16) |
+                long cellSeed = ((tx & 0xFFFFL) << 32) |
+                                ((tz & 0xFFFFL) << 16) |
                                 (currentLayer & 0xFFFFL);
 
                 // precompute cluster centers
@@ -140,7 +142,8 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     float hr = Mth.lerp(rr0, PUFF_MIN_SIZE, PUFF_MAX_SIZE);
                     float vr = hr * PUFF_HEIGHT_FACTOR;                    
 
-                    float localX, localZ;
+                    float localX; 
+                    float localZ;
                     if (MeshBuilder.PUFF_MODE == PuffMode.COMPACT) {
                         // clusterCount 1..3, uses one per-cell rng but deterministic cluster centers should be consistent
                         int clusterCount = 1 + (int)(uint64ToFloat01(splitmix64(cellSeed)) * 3.0f);
@@ -165,9 +168,9 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                         localX = cxOffset + jitterX;
                         localZ = czOffset + jitterZ;
                     } else {
-                        float OVERLAP = hr * 1.25f;
-                        float localXRaw = rr1 * (MeshBuilder.CELL_SIZE_IN_BLOCKS + OVERLAP * 2f) - OVERLAP;
-                        float localZRaw = rr2 * (MeshBuilder.CELL_SIZE_IN_BLOCKS + OVERLAP * 2f) - OVERLAP;
+                        float overlap = hr * 1.25f;
+                        float localXRaw = rr1 * (MeshBuilder.CELL_SIZE_IN_BLOCKS + overlap * 2f) - overlap;
+                        float localZRaw = rr2 * (MeshBuilder.CELL_SIZE_IN_BLOCKS + overlap * 2f) - overlap;
                         localX = localXRaw;
                         localZ = localZRaw;
                     }
@@ -194,22 +197,22 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
     @SuppressWarnings("unused")
     @Override
-    public BuildingMesh Build(
-        BuildingMesh bb, Texture.TextureData tex, 
+    public BuildingMesh build(
+        BuildingMesh bb,
         LayerState state,
         int cx, int cz, float relY, 
-        int currentLayer, int skyColor,
-        float offX, float offZ) {
+        int currentLayer, int skyColor) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
-            CloudsConfiguration.INSTANCE.getLayer(currentLayer);
+            CloudsConfiguration.getInstance().getLayer(currentLayer);
         
-        final int RANGE = CloudsConfiguration.INSTANCE.CLOUD_GRID_SIZE;
+        final int RANGE = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
         final int PUFFS_PER_CELL = 6;
         final float PUFF_MIN_SIZE = 1.8f;
         final float PUFF_MAX_SIZE = 5.2f;
         final float PUFF_HEIGHT_FACTOR = 0.45f;
 
+        Texture.TextureData tex = state.texture();
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
@@ -224,32 +227,32 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
                 int cellIdx = wrapped.getCellIndex(dx, dz, RANGE);
                 long cell = cells[cellIdx];
-                if (cell == 0L) continue;
+
+                int alpha = (int) ((cell >> 36) & 0xFF);
+
+                PuffDesc[] puffs = pc.puffByCell[cellIdx];
+
+                if (alpha <= 3 || cell == 0L || puffs == null) continue;
 
                 float baseX = dx * cellSize;
                 float baseZ = dz * cellSize;
 
-                int alpha = (int) ((cell >> 36) & 0xFF);
-                if (alpha <= 3) continue;
-
-                PuffDesc[] puffs = pc.puffByCell[cellIdx];
-                if (puffs == null) continue;
-
                 for (int p = 0; p < PUFFS_PER_CELL; p++) {
-                    PuffDesc pd = puffs[p];
-                    if (pd == null) continue;
+                    PuffDesc description = puffs[p];
+                    if (description == null) continue;
 
                     // world-space puff center
-                    float px = baseX + pd.localX;
-                    float pz = baseZ + pd.localZ;
+                    float px = baseX + description.localX;
+                    float pz = baseZ + description.localZ;
 
-                    float hr = pd.hr;
-                    float vr = pd.vr;
-                    float py = pd.baseY + pd.yBias;
+                    float hr = description.hr;
+                    float vr = description.vr;
+                    float py = description.baseY + description.yBias;
 
                     CloudsConfiguration.LayerConfiguration lc = layerConfiguration;
-                    final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (lc.IS_ENABLED ? lc.APPEARANCE.CLOUD_Y_SCALE : 1.0f);
-                    py = Mth.clamp(py, 0.0f, PUFF_MAX_VERTICAL - vr);
+                    float maxVerticalHeight = MeshBuilder.HEIGHT_IN_BLOCKS;
+                    if (lc.IS_ENABLED) maxVerticalHeight *= lc.APPEARANCE.CLOUD_Y_SCALE;
+                    py = Mth.clamp(py, 0.0f, maxVerticalHeight - vr);
 
                     switch (MeshBuilder.SHAPE) {
                         case CROSS:
@@ -273,9 +276,12 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         float hr, float vr,
         int layer, float relY, int skyColor) {
 
-        float x0 = cx - hr, x1 = cx + hr;
-        float y0 = cy,      y1 = cy + vr;
-        float z0 = cz - hr, z1 = cz + hr;
+        float x0 = cx - hr; 
+        float x1 = cx + hr;
+        float y0 = cy     ; 
+        float y1 = cy + vr;
+        float z0 = cz - hr; 
+        float z1 = cz + hr;
 
         VertexBuilder.quad(
                 bb,

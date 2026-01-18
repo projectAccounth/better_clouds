@@ -3,26 +3,24 @@ package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
-import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder;
-import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceDir;
-import net.not_thefirst.story_mode_clouds.renderer.utils.CubeBuilder.FaceMask;
+import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder;
+import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder.FaceDir;
+import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder.FaceMask;
+import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
-import net.not_thefirst.story_mode_clouds.utils.Texture;
-import net.not_thefirst.story_mode_clouds.utils.Texture.TextureData;
 
 public class BeveledMeshBuilder implements MeshTypeBuilder {
 
     @Override
-    public BuildingMesh Build(
-        BuildingMesh bb, 
-        TextureData tex,
+    public BuildingMesh build(
+        BuildingMesh bb,
         LayerState state, 
         int cx, int cz, float relY,
         int currentLayer, 
-        int skyColor, 
-        float chunkOffX, float chunkOffZ) {
+        int skyColor) {
 
-        int range = CloudsConfiguration.INSTANCE.CLOUD_GRID_SIZE;
+        int range = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
+        Texture.TextureData tex = state.texture();
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
@@ -59,7 +57,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         float y1 = MeshBuilder.HEIGHT_IN_BLOCKS;
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
-                CloudsConfiguration.INSTANCE.getLayer(currentLayer);
+                CloudsConfiguration.getInstance().getLayer(currentLayer);
 
         float scaledY1 = y1 * (layerConfiguration.IS_ENABLED
                 ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE

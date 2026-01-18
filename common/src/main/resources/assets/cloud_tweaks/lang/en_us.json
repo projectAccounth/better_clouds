@@ -11,21 +11,27 @@
 
   "cloudtweaks.option.ambient_strength": "Ambient Strength",
   "cloudtweaks.option.max_shading": "Max Shading",
-  "cloudtweaks.option.cloud_provider": "Cloud Provider",
+  "cloudtweaks.option.cloud_provider": "Cloud Color Provider",
 
   "cloudtweaks.option.light_sources": "Light Sources",
   "cloudtweaks.option.sky_color": "Sky Color",
   "cloudtweaks.option.layers": "Layers",
   "cloudtweaks.option.parameters": "Parameters",
 
+  "cloudtweaks.option.rain_color": "Rain Clouds Color",
+  "cloudtweaks.option.thunder_color": "Thunder Clouds Color",
+  "cloudtweaks.option.rain_strength": "Rain Color Strength",
+  "cloudtweaks.option.thunder_strength": "Thunder Color Strength",
+  "cloudtweaks.option.shading_mode": "Shading Mode",
+
   "cloudtweaks.entry.light": "Light",
 
   "cloudtweaks.option.time_of_day": "Time of Day (0–24000)",
   "cloudtweaks.option.cloud_color": "Cloud Color",
 
-  "cloudtweaks.option.direction_x": "Direction X",
-  "cloudtweaks.option.direction_y": "Direction Y",
-  "cloudtweaks.option.direction_z": "Direction Z",
+  "cloudtweaks.option.position_x": "Position X",
+  "cloudtweaks.option.position_y": "Position Y",
+  "cloudtweaks.option.position_z": "Position Z",
   "cloudtweaks.option.intensity": "Intensity",
 
   "cloudtweaks.option.name": "Name",

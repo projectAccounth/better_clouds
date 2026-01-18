@@ -11,7 +11,7 @@ layout(std140) uniform CloudInfo {
 layout(std140) uniform Lighting {
     vec4 LightDefinitions[MAX_LIGHT]; // xyz = POSITION, w = intensity
     vec4 LightColors[MAX_LIGHT];
-    vec4 LightInformation; // x=count y=max z=ambient w=phongToggle
+    vec4 LightInformation; // x=count y=max z=ambient w=usePhong
 };
 
 layout(std140) uniform Camera {
@@ -45,7 +45,7 @@ void main() {
     vec4 color = vColor;
 
     if (UsePhong && shadingEnabled()) {
-        vec3 N = normalize(vNormal);
+        vec3 N = normalize(cross(dFdx(vWorldPos), dFdy(vWorldPos)));
         vec3 V = normalize(CameraPosition.xyz - vWorldPos);
 
         float lighting = AmbientFactor;
@@ -57,23 +57,15 @@ void main() {
 
             vec3 L = normalize(lightPos - vWorldPos);
 
-            // === Standard diffuse ===
             float ndl = max(dot(N, L), 0.0);
             lighting += ndl * intensity;
-
-            // === Silver lining ===
-            // 1. backlighting (sun behind cloud)
+            
             float backLight = max(dot(-L, V), 0.0);
-
-            // 2. edge factor (terminator region)
             float edge = 1.0 - ndl;
 
-            // 3. view grazing (rim only)
             float viewGrazing = pow(1.0 - max(dot(N, V), 0.0), 2.0);
 
             float silver = backLight * edge * viewGrazing;
-
-            // tint slightly warm
             vec3 silverColor = vec3(1.0, 0.95, 0.9);
 
             silverAccum += silver * silverColor * intensity * 0.75;

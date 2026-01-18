@@ -105,7 +105,6 @@ public final class GLProgram implements AutoCloseable {
         if (loc >= 0) {
             FloatBuffer fb = BufferUtils.createFloatBuffer(16);
             mat.store(fb);
-            // fb.flip();
             GL20.glUniformMatrix4fv(loc, false, fb);
         }
     }

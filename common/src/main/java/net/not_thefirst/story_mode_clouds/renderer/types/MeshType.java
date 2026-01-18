@@ -10,5 +10,6 @@ public class MeshType {
     }
 
     public String name() { return this.name; }
+    public String getName() { return name(); }
     public boolean doDepthWrite() { return doDepthWrite; }
 }

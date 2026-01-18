@@ -1,6 +1,5 @@
-package net.not_thefirst.story_mode_clouds.renderer.utils;
+package net.not_thefirst.story_mode_clouds.renderer.render_system.vertex;
 
-import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 

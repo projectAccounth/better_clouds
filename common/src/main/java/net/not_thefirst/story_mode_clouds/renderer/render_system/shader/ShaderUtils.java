@@ -5,12 +5,24 @@ import org.lwjgl.opengl.GL20;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
 public final class ShaderUtils {
 
     private ShaderUtils() {}
 
-    public static int compile(int type, String source) {
+    public static class CompilationFailException extends Exception {
+        public CompilationFailException(String message) {
+            super(message);
+        }
+
+        @Override
+        public void printStackTrace() {
+            LoggerProvider.get().error(this.getMessage());
+        }
+    }
+
+    public static int compile(int type, String source) throws CompilationFailException {
         int shader = GL20.glCreateShader(type);
         GL20.glShaderSource(shader, source);
         GL20.glCompileShader(shader);
@@ -18,15 +30,23 @@ public final class ShaderUtils {
         if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == GL11.GL_FALSE) {
             String log = GL20.glGetShaderInfoLog(shader);
             GL20.glDeleteShader(shader);
-            throw new RuntimeException("Shader compile failed:\n" + log);
+            throw new CompilationFailException("Shader compile failed:\n" + log);
         }
 
         return shader;
     }
 
-    public static GLProgram create(String vertexSrc, String fragmentSrc) {
-        int vert = compile(GL20.GL_VERTEX_SHADER, vertexSrc);
-        int frag = compile(GL20.GL_FRAGMENT_SHADER, fragmentSrc);
+    public static GLProgram create(String vertexSrc, String fragmentSrc) throws CompilationFailException {
+        int vert;
+        int frag;
+        try {
+            vert = compile(GL20.GL_VERTEX_SHADER, vertexSrc);
+            frag = compile(GL20.GL_FRAGMENT_SHADER, fragmentSrc);
+        }
+        catch (CompilationFailException exception) {
+            exception.printStackTrace();
+            return null;
+        }
 
         int program = GL20.glCreateProgram();
         GL20.glAttachShader(program, vert);
@@ -39,7 +59,7 @@ public final class ShaderUtils {
         if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
             String log = GL20.glGetProgramInfoLog(program);
             GL20.glDeleteProgram(program);
-            throw new RuntimeException("Program link failed:\n" + log);
+            throw new CompilationFailException("Program link failed:\n" + log);
         }
 
         return new GLProgram(program);
@@ -53,7 +73,13 @@ public final class ShaderUtils {
         String vertSrc = ShaderSourceLoader.load(rm, vertex);
         String fragSrc = ShaderSourceLoader.load(rm, fragment);
 
-        return create(vertSrc, fragSrc);
+        try {
+            return create(vertSrc, fragSrc);
+        }
+        catch (CompilationFailException exception) {
+            exception.printStackTrace();
+            return null;
+        }
     }
 
 }

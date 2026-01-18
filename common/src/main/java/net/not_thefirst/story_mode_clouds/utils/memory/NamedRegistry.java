@@ -1,14 +1,16 @@
 package net.not_thefirst.story_mode_clouds.utils.memory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
 public abstract class NamedRegistry<T> {
     protected Map<String, T> registry;
-    protected static boolean frozen = false;
+    protected boolean frozen = false;
 
     protected NamedRegistry(Map<String, T> initialRegistry) {
         this.registry = initialRegistry;
@@ -44,6 +46,13 @@ public abstract class NamedRegistry<T> {
     public Map<String, T> registry() {
         return new HashMap<>(this.registry);
     }
+
+    public List<T> values() {
+        return frozen
+            ? List.copyOf(registry.values())
+            : new ArrayList<>(registry.values());
+    }
+
 
     public T getObject(String name) {
         T builder = registry.get(name);
