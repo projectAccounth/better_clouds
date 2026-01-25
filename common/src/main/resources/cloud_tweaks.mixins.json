@@ -3,13 +3,11 @@
   "minVersion": "0.8",
   "package": "net.not_thefirst.story_mode_clouds.mixin",
   "refmap": "common-cloud_tweaks.refmap.json",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_8",
   "mixins": [
   ],
   "client": [
     "LevelRendererMixin",
-    "OptionsMixin",
-    "ClientMixin",
     "ClientWorldMixin"
   ],
   "injectors": {

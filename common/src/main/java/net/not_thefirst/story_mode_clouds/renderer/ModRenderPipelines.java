@@ -29,9 +29,12 @@ public class ModRenderPipelines {
             .withVertexShader(lc1)
             .withFragmentShader(lc1)
             .withBlend(BlendFunction.TRANSLUCENT)
-            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS)
+            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR_NORMAL, VertexFormat.Mode.QUADS)
             .withCull(true)
-            .withUniform("Model", UniformType.UNIFORM_BUFFER);
+            .withUniform("Transforms", UniformType.UNIFORM_BUFFER)
+            .withUniform("CloudInfo", UniformType.UNIFORM_BUFFER)
+            .withUniform("Lighting", UniformType.UNIFORM_BUFFER)
+            .withUniform("Camera", UniformType.UNIFORM_BUFFER);
         
         POSITION_COLOR_NO_DEPTH = builder.withColorWrite(true).withDepthWrite(false).build();
         CUSTOM_POSITION_COLOR = builder.withColorWrite(true).withDepthWrite(true).build();

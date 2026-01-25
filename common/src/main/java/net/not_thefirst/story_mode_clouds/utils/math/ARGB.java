@@ -3,8 +3,8 @@ package net.not_thefirst.story_mode_clouds.utils.math;
 public final class ARGB {
     private ARGB() {}
 
-    public static int WHITE = 0xFFFFFFFF;
-    public static int BLACK = 0xFF000000;
+    public static final int WHITE = 0xFFFFFFFF;
+    public static final int BLACK = 0xFF000000;
 
     public static int alpha(int color) { return (color >>> 24) & 0xFF; }
     public static int red(int color)   { return (color >>> 16) & 0xFF; }
@@ -67,6 +67,9 @@ public final class ARGB {
     }
     
     private static float clamp01(float v) {
-        return v < 0f ? 0f : (v > 1f ? 1f : v);
+        if (v < 0.0f) {
+            return 0.0f;
+        }
+        return v > 1f ? 1f : v;
     }
 }

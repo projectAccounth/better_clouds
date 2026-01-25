@@ -5,14 +5,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Function;
-
-import org.joml.Vector3f;
+import java.util.function.IntFunction;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.joml.Vector3f;
 
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
@@ -20,8 +20,8 @@ import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
-import net.not_thefirst.story_mode_clouds.utils.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
+import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
 
 public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -29,19 +29,44 @@ public class CloudsConfiguration {
 
     public boolean CLOUDS_RENDERED = true;
 
-    public static CloudsConfiguration INSTANCE = new CloudsConfiguration();
+    private static CloudsConfiguration INSTANCE = new CloudsConfiguration();
+
+    public enum ShadingMode {
+        GOURAUD, PHONG
+    }
+
+    public enum LightingType {
+        STATIC, DYNAMIC
+    }
 
     public static class LightingParameters {
         public float AMBIENT_LIGHTING_STRENGTH  = 0.7f;
         public float MAX_LIGHTING_SHADING       = 0.8f;
+        public ShadingMode SHADING_MODE         = ShadingMode.GOURAUD;
+        public LightingType LIGHTING_TYPE       = LightingType.STATIC;
+        
+        public int DAY_START             = 0;
+        public int DAY_END               = 13000;
+        public int DAY_NOON              = 6000;
 
-        public List<DiffuseLight> lights = new ArrayList<>(List.of(
-            new DiffuseLight(new Vector3f(0.5f, 0.8f, 1.0f), 0.6f),
-            new DiffuseLight(new Vector3f(-0.3f, 0.3f, 0.6f), 0.5f)
+        public static final int DAY_LENGTH      = 24000;
+        public static final int MAX_LIGHT_COUNT = 32;
+
+        public List<DiffuseLight> lights = new ArrayList<>(Arrays.asList(
+            new DiffuseLight(new Vector3f(0.5f, -0.8f, 1.0f), 0.6f),
+            new DiffuseLight(new Vector3f(-0.3f, -0.3f, 0.6f), 0.5f)
         ));
 
         public LightingParameters() {
         }
+    }
+
+    public static class WeatherColorConfig {
+        public int rainColor = 0xB0B0B0;      // gray
+        public int thunderColor = 0x808080;   // gray but darker
+
+        public float rainStrength = 0.3f;
+        public float thunderStrength = 0.4f;
     }
 
     public static class SkyColorKeypoint {
@@ -64,7 +89,7 @@ public class CloudsConfiguration {
     }
 
     // chatgpt generated color
-    public static final List<SkyColorKeypoint> DEFAULT_COLORS = List.of(
+    public static final List<SkyColorKeypoint> DEFAULT_COLORS = Arrays.asList(
         // Sunrise (6:00 AM)
         new SkyColorKeypoint(0, 0xFFD8A8),        // soft peach
 
@@ -96,7 +121,7 @@ public class CloudsConfiguration {
         new SkyColorKeypoint(23999, 0xFFD8A8)
     );
 
-    public List<SkyColorKeypoint> CLOUD_COLOR = new ArrayList<>(List.of(
+    public List<SkyColorKeypoint> CLOUD_COLOR = new ArrayList<>(Arrays.asList(
         new SkyColorKeypoint(0, 0xFFD8A8),
         new SkyColorKeypoint(3000, 0xFFFFFF),
         new SkyColorKeypoint(6000, 0xFFFFFF),
@@ -111,7 +136,10 @@ public class CloudsConfiguration {
   
     public CloudColorProviderMode COLOR_MODE = CloudColorProviderMode.VANILLA;
 
-    public LightingParameters LIGHTING = new LightingParameters();
+    public LightingParameters LIGHTING        = new LightingParameters();
+    public WeatherColorConfig WEATHER_COLOR   = new WeatherColorConfig();
+    public int                CLOUD_GRID_SIZE = 64;
+
     private LayerHolder LAYERS = new LayerHolder();
     public LayerHolder getHolder() { return LAYERS; }
 
@@ -146,7 +174,7 @@ public class CloudsConfiguration {
                 this.BEVEL_EDGE_SEGMENTS = other.BEVEL_EDGE_SEGMENTS;
                 this.BEVEL_CORNER_SEGMENTS = other.BEVEL_CORNER_SEGMENTS;
             }
-        };
+        }
 
         public static class PerformanceParameters {
             public int MESH_REBUILD_BUDGET_MS       = 2;
@@ -228,7 +256,7 @@ public class CloudsConfiguration {
 
         public String MODE = "NORMAL";
 
-        public int GetLayerIndex() { return LAYER_IDX; }
+        public int getLayerIndex() { return LAYER_IDX; }
 
         void copy(LayerConfiguration other) {
             this.NAME = other.NAME;
@@ -247,14 +275,14 @@ public class CloudsConfiguration {
 
     public static class LayerHolder {
 
-        public List<LayerConfiguration> layers = new ArrayList<>();
+        public final List<LayerConfiguration> layers = new ArrayList<>();
 
         public LayerHolder() {
         }
 
         public LayerHolder(int layer) {
             this();
-            addDefaultLayers(layer, (idx) -> { return new LayerConfiguration(idx != null ? idx : -1); });
+            addDefaultLayers(layer, idx -> new LayerConfiguration(idx >= 0 ? idx : -1));
         }
 
         public void addLayer(LayerConfiguration l) {
@@ -262,7 +290,7 @@ public class CloudsConfiguration {
         }
 
 
-        public void addDefaultLayers(int count, Function<Integer, LayerConfiguration> factory) {
+        public void addDefaultLayers(int count, IntFunction<LayerConfiguration> factory) {
             for (int i = 0; i < count; i++) {
                 layers.add(factory.apply(i));
             }
@@ -293,7 +321,7 @@ public class CloudsConfiguration {
             INSTANCE = GSON.fromJson(reader, CloudsConfiguration.class);
         } catch (IOException e) {
             e.printStackTrace();
-            return;
+            INSTANCE = null;
         }
 
         if (INSTANCE == null) {
@@ -360,4 +388,6 @@ public class CloudsConfiguration {
         }
         return null;
     }
+
+    public static CloudsConfiguration getInstance() { return INSTANCE; }
 }

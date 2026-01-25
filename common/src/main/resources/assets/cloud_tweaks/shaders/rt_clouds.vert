@@ -1,11 +1,8 @@
 #version 330 core
 
-#moj_import <minecraft:dynamictransforms.glsl>
-#moj_import <minecraft:projection.glsl>
-
-in vec3 Position;
-in vec4 Color;
-in vec3 Normal;
+layout(location = 0) in vec3 Position;
+layout(location = 1) in vec4 Color;
+layout(location = 2) in vec3 Normal;
 
 #define MAX_LIGHT 32
 
@@ -89,8 +86,8 @@ void main() {
         lighting = AmbientFactor;
 
         for (int i = 0; i < LightCount; i++) {
-            vec3 lightDir = LightDefinitions[i].xyz;
-            vec3 L = normalize(-lightDir);
+            vec3 lightPos = LightDefinitions[i].xyz;
+            vec3 L = normalize(lightPos - pos);
             lighting += max(dot(N, L), 0.0) * LightDefinitions[i].w;
         }
 
