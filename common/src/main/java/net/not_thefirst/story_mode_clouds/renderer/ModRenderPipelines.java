@@ -6,8 +6,8 @@ import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
-import net.minecraft.resources.Identifier;
 import net.not_thefirst.story_mode_clouds.Initializer;
+import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
 
 public class ModRenderPipelines {
     public static RenderPipeline POSITION_COLOR_NO_DEPTH;
@@ -22,12 +22,12 @@ public class ModRenderPipelines {
 	private static final RenderPipeline.Snippet MATRICES_FOG_SNIPPET = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET, FOG_SNIPPET).buildSnippet();
 
     public static void registerCloudPipelines() {
-        Identifier loc1 = Identifier.fromNamespaceAndPath(Initializer.MOD_ID, "pipeline/pos_tex_c");
-        Identifier lc1 = Identifier.fromNamespaceAndPath(Initializer.MOD_ID, "rt_clouds");
+        IdentifierWrapper loc1 = IdentifierWrapper.of(Initializer.MOD_ID, "pipeline/pos_tex_c");
+        IdentifierWrapper lc1 = IdentifierWrapper.of(Initializer.MOD_ID, "rt_clouds");
         var builder = RenderPipeline.builder(MATRICES_FOG_SNIPPET)
-            .withLocation(loc1)
-            .withVertexShader(lc1)
-            .withFragmentShader(lc1)
+            .withLocation(loc1.getDelegate())
+            .withVertexShader(lc1.getDelegate())
+            .withFragmentShader(lc1.getDelegate())
             .withBlend(BlendFunction.TRANSLUCENT)
             .withVertexFormat(DefaultVertexFormat.POSITION_COLOR_NORMAL, VertexFormat.Mode.QUADS)
             .withCull(true)

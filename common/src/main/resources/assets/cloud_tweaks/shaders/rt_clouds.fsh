@@ -6,6 +6,7 @@ layout(std140) uniform CloudInfo {
     ivec4 Info0;
     vec4  Info1;
     vec4  CloudColor;
+    vec4  FadeToColor;
 };
 
 layout(std140) uniform Lighting {

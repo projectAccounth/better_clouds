@@ -1,7 +1,6 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
 import java.util.Optional;
-import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
@@ -11,7 +10,7 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 
 public class RendererHolder {
-    private static CustomCloudRenderer renderer = new CustomCloudRenderer();
+    private static CustomCloudRenderer renderer;
 
     private RendererHolder() {}
 

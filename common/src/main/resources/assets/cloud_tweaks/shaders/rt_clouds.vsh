@@ -17,6 +17,7 @@ layout(std140) uniform CloudInfo {
     ivec4 Info0;   // x=Config, y=FogStart, z=FogEnd, w=BaseAlpha
     vec4  Info1;   // x=FadeAlpha, y=TransitionRange, z=CloudBlockHeight, w=relY
     vec4  CloudColor;
+    vec4  FadeToColor;
 };
 
 layout(std140) uniform Lighting {
@@ -47,6 +48,7 @@ bool usesCustomAlpha()   { return (Config & (1 << 2)) != 0; }
 bool customBrightness()  { return (Config & (1 << 3)) != 0; }
 bool usesCustomColor()   { return (Config & (1 << 4)) != 0; }
 bool fadeEnabled()       { return (Config & (1 << 5)) != 0; }
+bool colorFade()         { return (Config & (1 << 6)) != 0; }
 
 out float vDistance;
 out vec4  vColor;
@@ -95,6 +97,11 @@ void main() {
         }
 
         lighting = clamp(lighting, 0.0, MaxShading);
+    }
+
+    // bottom being the actual base color, top being the mixed color
+    if (fadeEnabled() && colorFade()) {
+        baseColor = mix(baseColor, FadeToColor.rgb, 1.0 - (finalAlpha / baseAlpha));
     }
 
     vNormal = N;

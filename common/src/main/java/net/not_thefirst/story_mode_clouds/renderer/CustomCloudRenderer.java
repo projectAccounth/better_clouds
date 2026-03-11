@@ -4,7 +4,6 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
-import com.mojang.blaze3d.opengl.GlCommandEncoder;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderPass;
@@ -21,14 +20,10 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MappableRingBuffer;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -36,6 +31,7 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LightingType;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.ShadingMode;
+import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshTypeBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
@@ -58,14 +54,13 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
-@Environment(EnvType.CLIENT)
 public class CustomCloudRenderer implements AutoCloseable {
 
     private Optional<Texture.TextureData> currentTexture = Optional.empty();
     private final List<LayerState> layers = new ArrayList<>();
     
-    protected static final Identifier TEXTURE_LOCATION = 
-        Identifier.fromNamespaceAndPath("minecraft", "textures/environment/clouds.png");
+    protected static final IdentifierWrapper TEXTURE_LOCATION = 
+        IdentifierWrapper.of("minecraft", "textures/environment/clouds.png");
 
     private final RenderSystem.AutoStorageIndexBuffer indices =
             RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
@@ -101,10 +96,10 @@ public class CustomCloudRenderer implements AutoCloseable {
     public Optional<Texture.TextureData> prepare(
         ResourceManager resourceManager,
         ProfilerFiller profilerFiller,
-        Identifier textureLocation
+        IdentifierWrapper textureLocation
     ) {
         try (InputStream inputStream = 
-            resourceManager.open(textureLocation)) {
+            resourceManager.open(textureLocation.getDelegate())) {
 
             this.currentTexture = Texture.buildTexture(inputStream);
             return this.currentTexture;
@@ -184,7 +179,6 @@ public class CustomCloudRenderer implements AutoCloseable {
 
         if (System.currentTimeMillis() - last > 1000) {
             last = System.currentTimeMillis();
-            LoggerProvider.get().info(dayTime);
         }
 
         for (int layer : order) {
@@ -357,6 +351,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         if (layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS) config |= 1 << 3;
         if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR) config |= 1 << 4;
         if (layerConfiguration.FADE.FADE_ENABLED)            config |= 1 << 5;
+        if (layerConfiguration.FADE.COLOR_FADE)              config |= 1 << 6;
 
         return config;
     }
@@ -432,6 +427,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             .putIVec4()
             .putVec4()
             .putVec4()
+            .putVec4()
             .get();
 
     private static final int LIGHTING_SIZE = 
@@ -503,8 +499,15 @@ public class CustomCloudRenderer implements AutoCloseable {
                     ARGB.greenFloat(skyColor),
                     ARGB.blueFloat(skyColor),
                     1.0f
-                );
+                )
 
+                // vec4 fadeToColor
+                .putVec4(
+                    ARGB.redFloat(layerConfiguration.FADE.FADE_TO_COLOR),
+                    ARGB.greenFloat(layerConfiguration.FADE.FADE_TO_COLOR),
+                    ARGB.blueFloat(layerConfiguration.FADE.FADE_TO_COLOR),
+                    1.0f
+                );
         }
 
         try (GpuBuffer.MappedView view =

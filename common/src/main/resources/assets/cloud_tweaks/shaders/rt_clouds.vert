@@ -14,6 +14,7 @@ layout(std140) uniform CloudInfo {
     ivec4 Info0;   // x=Config, y=FogStart, z=FogEnd, w=BaseAlpha
     vec4  Info1;   // x=FadeAlpha, y=TransitionRange, z=CloudBlockHeight, w=relY
     vec4  CloudColor;
+    vec4  FadeToColor;
 };
 
 layout(std140) uniform Lighting {
@@ -44,6 +45,7 @@ bool usesCustomAlpha()   { return (Config & (1 << 2)) != 0; }
 bool customBrightness()  { return (Config & (1 << 3)) != 0; }
 bool usesCustomColor()   { return (Config & (1 << 4)) != 0; }
 bool fadeEnabled()       { return (Config & (1 << 5)) != 0; }
+bool colorFade()         { return (Config & (1 << 6)) != 0; }
 
 out float vDistance;
 out vec4  vColor;
@@ -55,6 +57,10 @@ float fog_spherical_distance(vec3 pos) {
 }
 
 float lerp(float a, float b, float t) {
+    return a + t * (b - a);
+}
+
+float lerp(vec3 a, vec3 b, float t) {
     return a + t * (b - a);
 }
 
@@ -77,6 +83,7 @@ void main() {
         finalAlpha *= 1 - lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
     }
 
+    
     vec3 baseColor = Color.rgb * CloudColor.rgb;
     vec3 N = normalize(Normal);
 
@@ -92,6 +99,11 @@ void main() {
         }
 
         lighting = clamp(lighting, 0.0, MaxShading);
+    }
+
+    // interpolate baseColor towards FadeToColor (RGB only) if enabled)
+    if (fadeEnabled() && colorFade()) {
+        baseColor = mix(baseColor, FadeToColor.rgb, FadeAlpha);
     }
 
     vNormal = N;
