@@ -73,7 +73,7 @@ group = project.maven_group
 version = project.mod_version
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(rootProject.java_version))
     withSourcesJar()
 }
 
