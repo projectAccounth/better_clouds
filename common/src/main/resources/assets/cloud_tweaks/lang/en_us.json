@@ -1,10 +1,31 @@
 {
+  "__note": "Some may be unused",
+
   "cloudtweaks.title": "Cloud Tweaks",
 
   "cloudtweaks.category.global": "Global",
   "cloudtweaks.category.lighting": "Lighting",
   "cloudtweaks.category.layers": "Layers",
   "cloudtweaks.category.layer_template": "Layer Template",
+
+  "cloudtweaks.title.add_layer": "Add New Layer",
+  "cloudtweaks.desc.add_layer": "Add a new cloud layer with default settings",
+
+  "cloudtweaks.desc.rain_color": "Color for rain clouds, shown when raining",
+  "cloudtweaks.desc.thunder_color": "Color for thunder clouds, shown during thunderstorms",
+  "cloudtweaks.desc.global": "General cloud rendering settings",
+  "cloudtweaks.desc.lighting": "Settings related to cloud lighting and shading",
+  "cloudtweaks.desc.light.delete": "Delete this light source",
+  "cloudtweaks.desc.light": "Configure a directional light source that affects cloud shading. Can be used to simulate the sun or moon.",
+  "cloudtweaks.desc.layers": "Configure individual cloud layers, each with its own height, color, and movement settings.",
+
+  "cloudtweaks.tooltip.light": "Directional light configuration",
+
+  "cloudtweaks.message.keypoint_added": "Added keypoint at time: ",
+  "cloudtweaks.raw.keypoint": "Keypoint",
+  "cloudtweaks.raw.time": "Time",
+  "cloudtweaks.raw.color": "Color",
+  "cloudtweaks.raw.remove": "Remove",
 
   "cloudtweaks.option.clouds_rendered": "Clouds Rendered",
   "cloudtweaks.option.grid_size": "Grid Size",
@@ -33,7 +54,7 @@
   "cloudtweaks.option.position_x": "Position X",
   "cloudtweaks.option.position_y": "Position Y",
   "cloudtweaks.option.position_z": "Position Z",
-  "cloudtweaks.option.direction_x": "DirectionX",
+  "cloudtweaks.option.direction_x": "Direction X",
   "cloudtweaks.option.direction_y": "Direction Y",
   "cloudtweaks.option.direction_z": "Direction Z",
   "cloudtweaks.option.intensity": "Intensity",
@@ -42,7 +63,7 @@
   "cloudtweaks.option.enabled": "Enabled",
   "cloudtweaks.option.rendered": "Rendered",
   "cloudtweaks.option.height": "Height",
-  "cloudtweaks.option.cloud_mode": "Cloud Mode",
+  "cloudtweaks.option.cloud_mode": "Mode",
 
   "cloudtweaks.option.shading_enabled": "Shading Enabled",
   "cloudtweaks.option.use_custom_color": "Use Custom Color",
@@ -60,11 +81,15 @@
 
   "cloudtweaks.option.fade_enabled": "Fade Enabled",
   "cloudtweaks.option.fade_alpha": "Fade Alpha",
-  "cloudtweaks.option.transition_range": "Transition Range",
+  "cloudtweaks.option.transition_range": "Fade Transition Range",
+  "cloudtweaks.option.fade_to_color": "Fade Color",
+  "cloudtweaks.option.color_fade": "Color Fade",
+
+  "cloudtweaks.desc.fade_to_color": "Color that clouds will fade to when fade is enabled. Only applies if color fade is enabled.",
 
   "cloudtweaks.option.fog_enabled": "Fog Enabled",
-  "cloudtweaks.option.fog_start": "Fog Start",
-  "cloudtweaks.option.fog_end": "Fog End",
+  "cloudtweaks.option.fog_start": "Fog Start Distance",
+  "cloudtweaks.option.fog_end": "Fog End Distance",
 
   "cloudtweaks.option.bevel_size": "Bevel Size",
   "cloudtweaks.option.edge_segments": "Edge Segments",
@@ -83,5 +108,127 @@
   "cloudtweaks.group.fade": "Fade",
   "cloudtweaks.group.fog": "Fog",
   "cloudtweaks.group.bevel": "Bevel",
-  "cloudtweaks.group.performance": "Performance"
+  "cloudtweaks.group.performance": "Performance",
+
+  "cloudtweaks.category.presets": "Config Presets",
+
+  "cloudtweaks.section.load_presets": "Load Preset",
+  "cloudtweaks.tooltip.section.load_presets": "Select and load a saved cloud configuration preset",
+
+  "cloudtweaks.option.load_preset": "Quick Load",
+  "cloudtweaks.tooltip.load_preset": "Choose a preset from the dropdown and it will be loaded immediately when you close this screen",
+
+  "cloudtweaks.section.save_preset": "Save New Preset",
+  "cloudtweaks.tooltip.section.save_preset": "Save your current cloud configuration as a new preset for easy reuse",
+
+  "cloudtweaks.option.preset_id": "Preset ID",
+  "cloudtweaks.tooltip.preset_id": "Unique technical identifier (a-z, 0-9, -, _). Auto-generated if left blank. Used internally to reference this preset.",
+
+  "cloudtweaks.option.preset_name": "Preset Name",
+  "cloudtweaks.tooltip.preset_name": "User-friendly display name. This is what appears in dropdowns. Example: 'Sunset Sky', 'Fantasy Clouds', 'Storm Clouds'",
+
+  "cloudtweaks.option.preset_desc": "Description",
+  "cloudtweaks.tooltip.preset_desc": "Optional notes about this preset. Example: 'Orange and purple colors for fantasy biomes' or 'Dark stormy look'",
+
+  "cloudtweaks.option.save_preset_button": "Save Preset",
+  "cloudtweaks.tooltip.save_preset_button": "Creates a new preset with the current cloud settings. Fill in Name at minimum.",
+
+  "cloudtweaks.section.share_import": "Share & Import",
+  "cloudtweaks.tooltip.section.share_import": "Export your configuration for sharing, or import configs from others",
+
+  "cloudtweaks.option.export_config": "Export (Copy)",
+  "cloudtweaks.tooltip.export_config": "Encodes your current configuration as a shareable Base64 string. Click the field and copy the text to share with others.",
+
+  "cloudtweaks.option.import_config": "Paste Config String",
+  "cloudtweaks.tooltip.import_config": "Paste a Base64 or JSON configuration string here that you received from someone else. Can be from chat, forums, or files.",
+
+  "cloudtweaks.option.import_button": "Import Now",
+  "cloudtweaks.tooltip.import_button": "Applies the pasted configuration immediately. Your current settings will be backed up automatically.",
+
+  "cloudtweaks.section.manage_presets": "Manage Presets",
+  "cloudtweaks.tooltip.section.manage_presets": "View, load, edit, or delete your saved presets. Presets from resource packs can be imported as local copies.",
+
+  "cloudtweaks.option.presets_list": "Your Presets",
+  "cloudtweaks.tooltip.presets_list": "All your saved presets and available resource pack presets. Click Load to apply, Edit to change name/description, or Delete to remove.",
+
+  "cloudtweaks.option.delete_preset": "Delete",
+  "cloudtweaks.tooltip.delete_preset": "Removes this preset. A backup is saved automatically.",
+
+  "cloudtweaks.option.load_preset_action": "Load",
+  "cloudtweaks.tooltip.load_preset_action": "Load this preset and apply its cloud settings immediately. Enter anything to trigger.",
+
+  "cloudtweaks.option.delete_preset_action": "Delete",
+  "cloudtweaks.tooltip.delete_preset_action": "Remove this preset from your saved list. A backup is created automatically. Enter anything to trigger.",
+
+  "cloudtweaks.option.import_resource_preset_action": "Import to Local",
+  "cloudtweaks.tooltip.import_resource_preset_action": "Copy this resource pack preset to your local presets so you always have it available, even without the resource pack. Enter anything to trigger.",
+
+  "cloudtweaks.presets.navigation": "Navigation",
+  "cloudtweaks.presets.navigation.tooltip": "Navigate between screens",
+  "cloudtweaks.presets.back": "← Back",
+  "cloudtweaks.presets.back.tooltip": "Return to parent screen",
+  
+  "cloudtweaks.presets.quick_actions": "Quick Actions",
+  "cloudtweaks.presets.quick_actions.tooltip": "Quickly save or manage presets",
+  "cloudtweaks.presets.save_new": "Save Current as New Preset",
+  "cloudtweaks.presets.save_new.tooltip": "Save your current settings as a new preset",
+  
+  "cloudtweaks.presets.export": "Export Current Config",
+  "cloudtweaks.presets.export.tooltip": "Export your current configuration",
+  "cloudtweaks.presets.export_base64": "Base64 String",
+  "cloudtweaks.presets.export_base64.tooltip": "Copy this string to share your current config",
+  
+  "cloudtweaks.presets.import": "Import from Base64",
+  "cloudtweaks.presets.import.tooltip": "Import a configuration from Base64",
+  "cloudtweaks.presets.import_paste": "Paste Base64 String",
+  "cloudtweaks.presets.import_paste.tooltip": "Paste a Base64-encoded preset string to import",
+  "cloudtweaks.presets.import_button": "Import",
+  "cloudtweaks.presets.import_button.tooltip": "Import the preset from Base64 string",
+  
+  "cloudtweaks.presets.my_presets": "My Presets",
+  "cloudtweaks.presets.my_presets.tooltip": "Presets you have created",
+  "cloudtweaks.presets.imported": "Imported Presets",
+  "cloudtweaks.presets.imported.tooltip": "Presets imported from Base64 strings",
+  "cloudtweaks.presets.resourcepack": "Resource Pack Presets",
+  "cloudtweaks.presets.resourcepack.tooltip": "Presets from installed resource packs",
+  
+  "cloudtweaks.presets.name": "Preset Name",
+  "cloudtweaks.presets.name.tooltip": "Edit the display name of this preset",
+  "cloudtweaks.presets.load": "Load Preset",
+  "cloudtweaks.presets.load.tooltip": "Load this preset configuration",
+  "cloudtweaks.presets.preview": "Preview",
+  "cloudtweaks.presets.preview.tooltip": "Open full preview of this preset's configuration",
+  "cloudtweaks.presets.base64": "Base64 String",
+  "cloudtweaks.presets.base64.tooltip": "Copy this string to share the preset",
+  "cloudtweaks.presets.duplicate": "Duplicate",
+  "cloudtweaks.presets.duplicate.tooltip": "Create a copy of this preset",
+  "cloudtweaks.presets.delete": "Delete",
+  "cloudtweaks.presets.delete.tooltip": "Delete this preset permanently",
+  
+  "cloudtweaks.presets.no_presets": "No Presets Found",
+  "cloudtweaks.presets.no_presets.tooltip": "Create a new preset using Quick Actions or Import",
+  
+  "cloudtweaks.preview.title": "Preview: ",
+  "cloudtweaks.preview.config": "Configuration",
+  "cloudtweaks.preview.sharing": "Sharing",
+  "cloudtweaks.preview.actions": "Actions",
+  "cloudtweaks.preview.total_layers": "Total Layers",
+  "cloudtweaks.preview.total_layers.tooltip": "Number of cloud layers in this preset",
+  "cloudtweaks.preview.grid_size": "Cloud Grid Size",
+  "cloudtweaks.preview.grid_size.tooltip": "Resolution of the cloud mesh grid",
+  "cloudtweaks.preview.ambient": "Ambient Brightness",
+  "cloudtweaks.preview.ambient.tooltip": "Base global lighting level",
+  "cloudtweaks.preview.max_shading": "Max Lighting Shading",
+  "cloudtweaks.preview.max_shading.tooltip": "Maximum shading effect from lighting",
+  "cloudtweaks.preview.lights": "Active Lights",
+  "cloudtweaks.preview.lights.tooltip": "Number of diffuse lights configured",
+  "cloudtweaks.preview.export": "Base64 Export",
+  "cloudtweaks.preview.export.tooltip": "Complete preset data for sharing",
+  "cloudtweaks.preview.load": "Load This Preset",
+  "cloudtweaks.preview.load.tooltip": "Load this preset configuration",
+  "cloudtweaks.preview.delete": "Delete This Preset",
+  "cloudtweaks.preview.delete.tooltip": "Delete this preset permanently",
+
+  "cloudtweaks.option.remove_layer": "Remove Layer",
+  "cloudtweaks.desc.remove_layer": "Delete this layer permanently"
 }

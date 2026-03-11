@@ -1,0 +1,87 @@
+{
+  "cloudtweaks.title": "Cloud Tweaks",
+
+  "cloudtweaks.category.global": "Общие",
+  "cloudtweaks.category.lighting": "Освещение",
+  "cloudtweaks.category.layers": "Слои",
+  "cloudtweaks.category.layer_template": "Шаблон Слоя",
+
+  "cloudtweaks.option.clouds_rendered": "Отрисовка облаков",
+  "cloudtweaks.option.grid_size": "Размер сетки",
+
+  "cloudtweaks.option.ambient_strength": "Сила фонового света",
+  "cloudtweaks.option.max_shading": "Макс. затенение",
+  "cloudtweaks.option.cloud_provider": "Источник цвета облаков",
+
+  "cloudtweaks.option.light_sources": "Источники света",
+  "cloudtweaks.option.sky_color": "Цвет неба",
+  "cloudtweaks.option.layers": "Слои",
+  "cloudtweaks.option.parameters": "Параметры",
+
+  "cloudtweaks.option.rain_color": "Цвет дождевых облаков",
+  "cloudtweaks.option.thunder_color": "Цвет грозовых облаков",
+  "cloudtweaks.option.rain_strength": "Сила цвета дождя",
+  "cloudtweaks.option.thunder_strength": "Сила цвета грозы",
+  "cloudtweaks.option.shading_mode": "Режим затенения",
+  "cloudtweaks.option.lighting_type": "Тип освещения",
+
+  "cloudtweaks.entry.light": "Свет",
+
+  "cloudtweaks.option.time_of_day": "Время суток (0–24000)",
+  "cloudtweaks.option.cloud_color": "Цвет облаков",
+
+  "cloudtweaks.option.position_x": "Позиция X",
+  "cloudtweaks.option.position_y": "Позиция Y",
+  "cloudtweaks.option.position_z": "Позиция Z",
+  "cloudtweaks.option.direction_x": "Направление X",
+  "cloudtweaks.option.direction_y": "Направление Y",
+  "cloudtweaks.option.direction_z": "Направление Z",
+  "cloudtweaks.option.intensity": "Интенсивность",
+
+  "cloudtweaks.option.name": "Название",
+  "cloudtweaks.option.enabled": "Включено",
+  "cloudtweaks.option.rendered": "Отрисовывается",
+  "cloudtweaks.option.height": "Высота",
+  "cloudtweaks.option.cloud_mode": "Режим облаков",
+
+  "cloudtweaks.option.shading_enabled": "Затенение включено",
+  "cloudtweaks.option.use_custom_color": "Использовать свой цвет",
+  "cloudtweaks.option.color": "Цвет",
+  "cloudtweaks.option.y_scale": "Масштаб Y",
+  "cloudtweaks.option.offset_x": "Смещение X",
+  "cloudtweaks.option.offset_z": "Смещение Z",
+  "cloudtweaks.option.speed_x": "Скорость X",
+  "cloudtweaks.option.speed_z": "Скорость Z",
+
+  "cloudtweaks.option.use_custom_alpha": "Использовать свою альфу",
+  "cloudtweaks.option.base_alpha": "Базовая альфа",
+  "cloudtweaks.option.custom_brightness": "Своя яркость",
+  "cloudtweaks.option.brightness": "Яркость",
+
+  "cloudtweaks.option.fade_enabled": "Плавное исчезновение вкл.",
+  "cloudtweaks.option.fade_alpha": "Альфа затухания",
+  "cloudtweaks.option.transition_range": "Диапазон перехода",
+
+  "cloudtweaks.option.fog_enabled": "Туман включен",
+  "cloudtweaks.option.fog_start": "Начало тумана",
+  "cloudtweaks.option.fog_end": "Конец тумана",
+
+  "cloudtweaks.option.bevel_size": "Размер скоса",
+  "cloudtweaks.option.edge_segments": "Сегменты ребер",
+  "cloudtweaks.option.corner_segments": "Сегменты углов",
+
+  "cloudtweaks.option.mesh_rebuild_budget": "Бюджет пересборки сетки (мс)",
+
+  "cloudtweaks.tooltip.shading_enabled": "Включить затенение, когда солнце за облаками",
+  "cloudtweaks.tooltip.speed_warning": "Уничтожитель компьютера, не ставьте скорость на максимум",
+
+  "cloudtweaks.group.cloud_colors": "Цвета облаков",
+  "cloudtweaks.group.light": "Свет",
+  "cloudtweaks.group.basic": "Основные настройки",
+  "cloudtweaks.group.appearance": "Внешний вид",
+  "cloudtweaks.group.alpha_brightness": "Альфа и Яркость",
+  "cloudtweaks.group.fade": "Плавное исчезновение",
+  "cloudtweaks.group.fog": "Туман",
+  "cloudtweaks.group.bevel": "Скос",
+  "cloudtweaks.group.performance": "Производительность"
+}
