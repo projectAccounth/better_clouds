@@ -244,7 +244,7 @@ public class CloudsConfiguration {
         public static class AppearanceParameters {
             private static final boolean DEFAULT_SHADING_ENABLED = false;
             private static final boolean DEFAULT_USES_CUSTOM_ALPHA = true;
-            private static final boolean DEFAULT_CUSTOM_BRIGHTNESS = true;
+            private static final boolean DEFAULT_CUSTOM_BRIGHTNESS = false;
             private static final boolean DEFAULT_USES_CUSTOM_COLOR = false;
             private static final int DEFAULT_BASE_ALPHA = (int) (0.8f * 255);
             private static final float DEFAULT_BRIGHTNESS = 1.0f;
@@ -288,12 +288,14 @@ public class CloudsConfiguration {
             private static final float DEFAULT_TRANSITION_RANGE = 10.0f;
             private static final int DEFAULT_FADE_TO_COLOR = 0xFFFFFF;
             private static final boolean DEFAULT_COLOR_FADE = false;
+            private static final boolean DEFAULT_INVERTED_FADE = false;
 
             public boolean FADE_ENABLED = DEFAULT_FADE_ENABLED;
             public int FADE_ALPHA = DEFAULT_FADE_ALPHA;
             public float TRANSITION_RANGE = DEFAULT_TRANSITION_RANGE;
             public int FADE_TO_COLOR = DEFAULT_FADE_TO_COLOR;
             public boolean COLOR_FADE = DEFAULT_COLOR_FADE;
+            public boolean INVERTED_FADE = DEFAULT_INVERTED_FADE;
 
             void copy(FadeParameters other) {
                 this.FADE_ENABLED = other.FADE_ENABLED;
@@ -301,6 +303,7 @@ public class CloudsConfiguration {
                 this.TRANSITION_RANGE = other.TRANSITION_RANGE;
                 this.FADE_TO_COLOR = other.FADE_TO_COLOR;
                 this.COLOR_FADE = other.COLOR_FADE;
+                this.INVERTED_FADE = other.INVERTED_FADE;
             }
         }
 
