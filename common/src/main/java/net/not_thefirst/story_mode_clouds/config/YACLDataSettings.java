@@ -360,6 +360,12 @@ public class YACLDataSettings {
                     .binding(layer.FADE.FADE_ENABLED, () -> layer.FADE.FADE_ENABLED, v -> layer.FADE.FADE_ENABLED = v)
                     .controller(BooleanControllerBuilder::create)
                     .build())
+                
+                .option(Option.<Boolean>createBuilder()
+                    .name(ComponentWrapper.translatable("cloudtweaks.option.inverted_fade"))
+                    .binding(layer.FADE.INVERTED_FADE, () -> layer.FADE.INVERTED_FADE, v -> layer.FADE.INVERTED_FADE = v)
+                    .controller(BooleanControllerBuilder::create)
+                    .build())
 
                 .option(Option.<Boolean>createBuilder()
                     .name(ComponentWrapper.translatable("cloudtweaks.option.color_fade"))

@@ -80,6 +80,7 @@
   "cloudtweaks.option.brightness": "Brightness",
 
   "cloudtweaks.option.fade_enabled": "Fade Enabled",
+  "cloudtweaks.option.inverted_fade": "Inverted Fade",
   "cloudtweaks.option.fade_alpha": "Fade Alpha",
   "cloudtweaks.option.transition_range": "Fade Transition Range",
   "cloudtweaks.option.fade_to_color": "Fade Color",
