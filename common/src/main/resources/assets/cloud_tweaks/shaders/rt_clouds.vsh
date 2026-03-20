@@ -49,6 +49,7 @@ bool customBrightness()  { return (Config & (1 << 3)) != 0; }
 bool usesCustomColor()   { return (Config & (1 << 4)) != 0; }
 bool fadeEnabled()       { return (Config & (1 << 5)) != 0; }
 bool colorFade()         { return (Config & (1 << 6)) != 0; }
+bool invertedFade()      { return (Config & (1 << 7)) != 0; } // inverts both the fade color and alpha
 
 out float vDistance;
 out vec4  vColor;
@@ -79,7 +80,14 @@ void main() {
 
         float fadeBelow = lerp(1.0, FadeAlpha, ny);
         float fadeAbove = lerp(1.0, FadeAlpha, 1.0 - ny);
-        finalAlpha *= 1 - lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
+
+        float fadeFactor = lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
+
+        if (invertedFade()) {
+            fadeFactor = 1.0 - fadeFactor;
+        }
+
+        finalAlpha *= 1.0 - fadeFactor;
     }
 
     vec3 baseColor = Color.rgb * CloudColor.rgb;
@@ -101,7 +109,14 @@ void main() {
 
     // bottom being the actual base color, top being the mixed color
     if (fadeEnabled() && colorFade()) {
-        baseColor = mix(baseColor, FadeToColor.rgb, 1.0 - (finalAlpha / baseAlpha));
+        float ratio = (baseAlpha > 0.0) ? (finalAlpha / baseAlpha) : 0.0;
+        float colorFadeFactor = 1.0 - ratio;
+
+        if (invertedFade()) {
+            colorFadeFactor = 1.0 - colorFadeFactor;
+        }
+
+        baseColor = mix(baseColor, FadeToColor.rgb, colorFadeFactor);
     }
 
     vNormal = N;

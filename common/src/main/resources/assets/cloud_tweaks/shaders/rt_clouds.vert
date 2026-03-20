@@ -80,9 +80,15 @@ void main() {
 
         float fadeBelow = lerp(1.0, FadeAlpha, ny);
         float fadeAbove = lerp(1.0, FadeAlpha, 1.0 - ny);
-        finalAlpha *= 1 - lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
-    }
 
+        float fadeFactor = lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
+
+        if (invertedFade()) {
+            fadeFactor = 1.0 - fadeFactor;
+        }
+
+        finalAlpha *= 1.0 - fadeFactor;
+    }
     
     vec3 baseColor = Color.rgb * CloudColor.rgb;
     vec3 N = normalize(Normal);
@@ -103,7 +109,14 @@ void main() {
 
     // interpolate baseColor towards FadeToColor (RGB only) if enabled)
     if (fadeEnabled() && colorFade()) {
-        baseColor = mix(baseColor, FadeToColor.rgb, FadeAlpha);
+        float ratio = (baseAlpha > 0.0) ? (finalAlpha / baseAlpha) : 0.0;
+        float colorFadeFactor = 1.0 - ratio;
+
+        if (invertedFade()) {
+            colorFadeFactor = 1.0 - colorFadeFactor;
+        }
+
+        baseColor = mix(baseColor, FadeToColor.rgb, colorFadeFactor);
     }
 
     vNormal = N;
