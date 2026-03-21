@@ -173,6 +173,8 @@
   "cloudtweaks.presets.quick_actions.tooltip": "Quickly save or manage presets",
   "cloudtweaks.presets.save_new": "Save Current as New Preset",
   "cloudtweaks.presets.save_new.tooltip": "Save your current settings as a new preset",
+  "cloudtweaks.presets.reset_to_default": "Reset to Default Config",
+  "cloudtweaks.presets.reset_to_default.tooltip": "Reset all settings to the default configuration. Your presets will NOT be deleted.",
   
   "cloudtweaks.presets.export": "Export Current Config",
   "cloudtweaks.presets.export.tooltip": "Export your current configuration",
@@ -197,6 +199,8 @@
   "cloudtweaks.presets.name.tooltip": "Edit the display name of this preset",
   "cloudtweaks.presets.load": "Load Preset",
   "cloudtweaks.presets.load.tooltip": "Load this preset configuration",
+  "cloudtweaks.presets.copy_to_clipboard": "Copy to Clipboard",
+  "cloudtweaks.presets.copy_to_clipboard.tooltip": "Copy this preset to your clipboard as Base64",
   "cloudtweaks.presets.preview": "Preview",
   "cloudtweaks.presets.preview.tooltip": "Open full preview of this preset's configuration",
   "cloudtweaks.presets.base64": "Base64 String",

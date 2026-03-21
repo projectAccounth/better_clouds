@@ -6,11 +6,20 @@ import dev.isxander.yacl3.gui.YACLScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.awt.datatransfer.StringSelection;
 
 public class YACLPresetWidgets {
+    private static final Logger LOGGER = LoggerFactory.getLogger("CloudTweaks/Presets");
     private static String importBuffer = "";
-    private static String exportedBase64 = "";
     private static Screen parentScreen = null;
+
+    private static void copyToClipboard(String text) throws Exception {
+        java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+            new StringSelection(text), null);
+    }
 
     public static void setParentScreen(Screen screen) {
         parentScreen = screen;
@@ -98,15 +107,20 @@ public class YACLPresetWidgets {
             .category(ConfigCategory.createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.preview.sharing"))
                 
-                .option(Option.<String>createBuilder()
+                .option(ButtonOption.createBuilder()
                     .name(ComponentWrapper.translatable("cloudtweaks.preview.export"))
                     .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.preview.export.tooltip")))
-                    .binding(
-                        presetBase64 != null ? presetBase64 : "",
-                        () -> presetBase64 != null ? presetBase64 : "",
-                        v -> {}
-                    )
-                    .controller(opt -> StringControllerBuilder.create(opt))
+                    .action((yacl, btn) -> {
+                        String base64 = presetBase64 != null ? presetBase64 : "";
+                        if (!base64.isEmpty()) {
+                            try {
+                                copyToClipboard(base64);
+                                System.out.println("[CloudTweaks] Preview copied to clipboard");
+                            } catch (Exception e) {
+                                System.err.println("[CloudTweaks] ERROR: " + e.getMessage());
+                            }
+                        }
+                    })
                     .build())
                 
                 .build())
@@ -152,12 +166,6 @@ public class YACLPresetWidgets {
     }
 
     public static ConfigCategory createPresetsCategory() {
-        // Generate Base64 on initialization (how do I throttle this)
-        String base64 = ConfigPresets.exportCurrentConfigAsBase64();
-        if (base64 != null) {
-            exportedBase64 = base64;
-        }
-        
         var builder = ConfigCategory.createBuilder()
             .name(ComponentWrapper.translatable("cloudtweaks.category.presets"))
             .tooltip(ComponentWrapper.translatable("cloudtweaks.category.presets"));
@@ -187,19 +195,55 @@ public class YACLPresetWidgets {
                         }
                     }
                 })
+                .build())
+            
+            .option(ButtonOption.createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.presets.reset_to_default"))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.reset_to_default.tooltip")))
+                .action((yacl, btn) -> {
+                    if (ConfigPresets.resetToDefault()) {
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc != null && mc.player != null) {
+                            mc.player.displayClientMessage(
+                                ComponentWrapper.literal("§aReset to default configuration"),
+                                false
+                            );
+                        }
+                        if (mc != null) {
+                            mc.setScreen(parentScreen);
+                        }
+                    } else {
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc != null && mc.player != null) {
+                            mc.player.displayClientMessage(
+                                ComponentWrapper.literal("§cFailed to reset to default"),
+                                false
+                            );
+                        }
+                    }
+                })
                 .build());
 
         builder.group(quickActionsBuilder.build());
 
-        // current config export
+        // current config export - Copy to clipboard
         var exportBuilder = OptionGroup.createBuilder()
             .name(ComponentWrapper.translatable("cloudtweaks.presets.export"))
             .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.export.tooltip")))
-            .option(Option.<String>createBuilder()
+            .option(ButtonOption.createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.presets.export_base64"))
                 .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.export_base64.tooltip")))
-                .binding(exportedBase64, () -> exportedBase64, v -> {}) 
-                .controller(opt -> StringControllerBuilder.create(opt))
+                .action((yacl, btn) -> {
+                    String base64 = ConfigPresets.exportCurrentConfigAsBase64Cached();
+                    if (base64 != null && !base64.isEmpty()) {
+                        try {
+                            copyToClipboard(base64);
+                            System.out.println("[CloudTweaks] Config copied to clipboard");
+                        } catch (Exception e) {
+                            System.err.println("[CloudTweaks] ERROR: " + e.getMessage());
+                        }
+                    }
+                })
                 .build());
 
         builder.group(exportBuilder.build());
@@ -222,33 +266,11 @@ public class YACLPresetWidgets {
                 .action((yacl, btn) -> {
                     if (importBuffer != null && !importBuffer.trim().isEmpty()) {
                         if (ConfigPresets.importPresetFromBase64WithAutoName(importBuffer)) {
-                            Minecraft mc = Minecraft.getInstance();
-                            if (mc != null && mc.player != null) {
-                                mc.player.displayClientMessage(
-                                    ComponentWrapper.literal("§aPreset imported successfully"),
-                                    false
-                                );
-                            }
                             importBuffer = "";
+                            Minecraft mc = Minecraft.getInstance();
                             if (mc != null) {
                                 mc.setScreen(parentScreen);
                             }
-                        } else {
-                            Minecraft mc = Minecraft.getInstance();
-                            if (mc != null && mc.player != null) {
-                                mc.player.displayClientMessage(
-                                    ComponentWrapper.literal("§cFailed to import preset"),
-                                    false
-                                );
-                            }
-                        }
-                    } else {
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.player != null) {
-                            mc.player.displayClientMessage(
-                                ComponentWrapper.literal("§cPlease paste a Base64 string first"),
-                                false
-                            );
                         }
                     }
                 })
@@ -361,6 +383,23 @@ public class YACLPresetWidgets {
             })
             .build());
 
+        // Copy preset to clipboard button
+        presetGroup.option(ButtonOption.createBuilder()
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.copy_to_clipboard"))
+            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.copy_to_clipboard.tooltip")))
+            .action((yacl, btn) -> {
+                String presetBase64 = ConfigPresets.exportPresetAsBase64(presetId);
+                if (presetBase64 != null && !presetBase64.isEmpty()) {
+                    try {
+                        copyToClipboard(presetBase64);
+                        System.out.println("[CloudTweaks] Preset copied to clipboard");
+                    } catch (Exception e) {
+                        System.err.println("[CloudTweaks] ERROR: " + e.getMessage());
+                    }
+                }
+            })
+            .build());
+
         // Preview button
         presetGroup.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.translatable("cloudtweaks.presets.preview"))
@@ -374,18 +413,6 @@ public class YACLPresetWidgets {
                     }
                 }
             })
-            .build());
-
-        // Base64 String field
-        presetGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.base64"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.base64.tooltip")))
-            .binding(
-                ConfigPresets.exportPresetAsBase64(presetId) != null ? ConfigPresets.exportPresetAsBase64(presetId) : "",
-                () -> ConfigPresets.exportPresetAsBase64(presetId) != null ? ConfigPresets.exportPresetAsBase64(presetId) : "",
-                v -> {} 
-            )
-            .controller(opt -> StringControllerBuilder.create(opt))
             .build());
 
         // Duplicate preset

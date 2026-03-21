@@ -36,6 +36,13 @@ public class ConfigPresets {
     private static final Map<String, java.io.File> RESOURCEPACK_PRESET_FILES = new HashMap<>();
     private static boolean INITIALIZED = false;
     private static int IMPORTED_COUNT = 0;
+    
+    private static final Map<String, Long> LAST_BACKUP_TIME = new HashMap<>();
+    private static final long BACKUP_THROTTLE_MS = 5000; // Minimum 5s
+    
+    // Base64 caching to prevent expensive serialization on every frame
+    private static String cachedBase64 = null;
+    private static long lastConfigModifiedTime = 0;
 
     /**
      * Metadata about a preset configuration.
@@ -69,6 +76,7 @@ public class ConfigPresets {
         BACKUPS_DIR.mkdirs();
         loadPresetsIndex();
         scanResourcePacks();
+        createDefaultPreset();
         INITIALIZED = true;
     }
 
@@ -413,6 +421,35 @@ public class ConfigPresets {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * Get the current config as Base64 with caching to prevent expensive serialization.
+     * Only regenerates if the config's last modified time has changed.
+     * 
+     * @return Cached or freshly generated Base64 string
+     */
+    public static String exportCurrentConfigAsBase64Cached() {
+        CloudsConfiguration current = CloudsConfiguration.getInstance();
+        if (current == null) {
+            return null;
+        }
+        
+        // Check if config has been modified since last cache
+        long currentModifiedTime = current.getLastModifiedTime();
+        if (currentModifiedTime > lastConfigModifiedTime || cachedBase64 == null) {
+            // Config changed or cache is empty, regenerate Base64
+            try {
+                cachedBase64 = ConfigSerializer.toBase64(current);
+                lastConfigModifiedTime = currentModifiedTime;
+            } catch (Exception e) {
+                LoggerProvider.get().error("Failed to export current config as Base64");
+                e.printStackTrace();
+                return null;
+            }
+        }
+        
+        return cachedBase64;
     }
 
     /**     
@@ -885,14 +922,71 @@ public class ConfigPresets {
     }
 
     /**
-     * Backup a file with timestamp.
+     * Creates the hardcoded default preset if it doesn't exist.
+     * The default preset is a fresh CloudsConfiguration with vanilla-like settings.
+     */
+    private static void createDefaultPreset() {
+        String presetId = "default";
+        if (PRESETS.containsKey(presetId)) {
+            LoggerProvider.get().info("Default preset already exists");
+            return;
+        }
+        
+        try {
+            CloudsConfiguration defaultConfig = new CloudsConfiguration();
+            // The CloudsConfiguration constructor creates it with sensible defaults
+            File configFile = new File(PRESETS_DIR, presetId + ".json");
+            try (FileWriter writer = new FileWriter(configFile)) {
+                String json = ConfigSerializer.toJson(defaultConfig);
+                writer.write(json);
+            }
+            
+            PresetMetadata metadata = new PresetMetadata(presetId, "Default", "Hardcoded default configuration - Will NOT delete presets");
+            PRESETS.put(presetId, metadata);
+            savePresetsIndex();
+            LoggerProvider.get().info("Created default preset");
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to create default preset");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Reset the current configuration to the default preset.
+     * This will load the default preset without deleting any presets.
+     * 
+     * @return true if successful, false otherwise
+     */
+    public static boolean resetToDefault() {
+        initialize();
+        
+        // Ensure default preset exists
+        if (!PRESETS.containsKey("default")) {
+            createDefaultPreset();
+        }
+        
+        return loadPreset("default");
+    }
+
+    /**
+     * Backup a file with timestamp. Includes throttling to prevent backup spam.
      */
     private static void backupFile(File source, String prefix) throws IOException {
         if (!source.exists()) return;
+        
+        // Check throttling: only backup if enough time has passed since last backup of this type
+        Long lastBackupTime = LAST_BACKUP_TIME.getOrDefault(prefix, 0L);
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastBackupTime < BACKUP_THROTTLE_MS) {
+            LoggerProvider.get().debug("Backup skipped for '" + prefix + "' - throttled (< " + BACKUP_THROTTLE_MS + "ms)");
+            return;
+        }
+        
         String timestamp = BACKUP_DATE_FORMAT.format(new Date());
         String backupName = prefix + "_" + timestamp + ".json";
         File backupFile = new File(BACKUPS_DIR, backupName);
         Files.copy(source.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        LAST_BACKUP_TIME.put(prefix, currentTime);
         LoggerProvider.get().info("Created backup: " + backupFile.getName());
     }
 

@@ -27,9 +27,16 @@ public class CloudsConfiguration {
     private static final String CONFIG_DIR = "config";
     private static final String CONFIG_FILENAME = "cloud_configs.json";
     private static final File CONFIG_FILE = new File(CONFIG_DIR + "/" + CONFIG_FILENAME);
+    
+    // Backup throttlinf
+    private static long lastBackupTime = 0;
+    private static final long BACKUP_THROTTLE_MS = 5000; // Minimum 5 seconds between main config backups
 
     public boolean CLOUDS_RENDERED = true;
     private static CloudsConfiguration INSTANCE = new CloudsConfiguration();
+    
+    // Track when config was last modified for caching purposes
+    private long lastModificationTime = System.currentTimeMillis();
 
     public enum ShadingMode {
         GOURAUD, PHONG
@@ -437,6 +444,8 @@ public class CloudsConfiguration {
     }
 
     public static void save() {
+        INSTANCE.markModified();
+        
         try {
             saveSafely();
         } catch (IOException ex) {
@@ -502,15 +511,23 @@ public class CloudsConfiguration {
     }
 
     /**
-     * Create a timestamped backup of the config file.
+     * Create a timestamped backup of the config file. Includes throttling to prevent backup spam.
      */
     private static void createTimestampedBackup(File source) throws IOException {
+        // Check throttling: only backup if enough time has passed since last backup
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastBackupTime < BACKUP_THROTTLE_MS) {
+            LoggerProvider.get().debug("Main config backup skipped - throttled (< " + BACKUP_THROTTLE_MS + "ms)");
+            return;
+        }
+        
         File backupDir = new File(CONFIG_DIR, "cloud_tweaks/backups");
         backupDir.mkdirs();
         String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new java.util.Date());
         File backupFile = new File(backupDir, "cloud_configs_" + timestamp + ".json");
         Files.copy(source.toPath(), backupFile.toPath(), 
             StandardCopyOption.REPLACE_EXISTING);
+        lastBackupTime = currentTime;
     }
 
     /**
@@ -546,6 +563,21 @@ public class CloudsConfiguration {
     }
 
     public static CloudsConfiguration getInstance() { return INSTANCE; }
+
+    /**
+     * Get the last modification time of this configuration.
+     * Used for caching purposes to avoid regenerating expensive exports.
+     */
+    public long getLastModifiedTime() {
+        return lastModificationTime;
+    }
+
+    /**
+     * Mark this configuration as modified. Called when any setting changes.
+     */
+    public void markModified() {
+        lastModificationTime = System.currentTimeMillis();
+    }
 
     // Getters and setters for YACL binding
     public boolean getCloudsRendered() { return CLOUDS_RENDERED; }
