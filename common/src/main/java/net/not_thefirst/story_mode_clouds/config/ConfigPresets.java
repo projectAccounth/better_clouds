@@ -509,10 +509,6 @@ public class ConfigPresets {
                 if (layer.BEVEL.BEVEL_EDGE_SEGMENTS < 1 || layer.BEVEL.BEVEL_EDGE_SEGMENTS > 32) {
                     layer.BEVEL.BEVEL_EDGE_SEGMENTS = Math.max(32, Math.min(1, layer.BEVEL.BEVEL_EDGE_SEGMENTS));
                 }
-
-                if (layer.PERFORMANCE.MESH_REBUILD_BUDGET_MS < 1 || layer.PERFORMANCE.MESH_REBUILD_BUDGET_MS > 100) {
-                    layer.PERFORMANCE.MESH_REBUILD_BUDGET_MS = Math.max(100, Math.min(1, layer.PERFORMANCE.MESH_REBUILD_BUDGET_MS));
-                }
             }
 
             if (config.LIGHTING.AMBIENT_LIGHTING_STRENGTH < 0 || config.LIGHTING.AMBIENT_LIGHTING_STRENGTH > 2f) {

@@ -31,6 +31,7 @@ import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LightingType;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.ShadingMode;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.FadeType;
 import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshTypeBuilder;
@@ -345,14 +346,15 @@ public class CustomCloudRenderer implements AutoCloseable {
         
         int config = 0;
 
-        if (layerConfiguration.FOG_ENABLED) config |= 1 << 0;
-        if (layerConfiguration.APPEARANCE.SHADING_ENABLED) config |= 1 << 1;
-        if (layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA) config |= 1 << 2;
-        if (layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS) config |= 1 << 3;
-        if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR) config |= 1 << 4;
-        if (layerConfiguration.FADE.FADE_ENABLED)            config |= 1 << 5;
-        if (layerConfiguration.FADE.COLOR_FADE)              config |= 1 << 6;
-        if (layerConfiguration.FADE.INVERTED_FADE)           config |= 1 << 7;
+        if (layerConfiguration.FOG_ENABLED)                       config |= 1 << 0;
+        if (layerConfiguration.APPEARANCE.SHADING_ENABLED)        config |= 1 << 1;
+        if (layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA)      config |= 1 << 2;
+        if (layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS)      config |= 1 << 3;
+        if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR)      config |= 1 << 4;
+        if (layerConfiguration.FADE.FADE_ENABLED)                 config |= 1 << 5;
+        if (layerConfiguration.FADE.COLOR_FADE)                   config |= 1 << 6;
+        if (layerConfiguration.FADE.INVERTED_FADE)                config |= 1 << 7;
+        if (layerConfiguration.FADE.FADE_TYPE == FadeType.STATIC) config |= 1 << 8;
 
         return config;
     }
@@ -426,6 +428,7 @@ public class CustomCloudRenderer implements AutoCloseable {
     private static final int CLOUDS_INFO_SIZE =
         new Std140SizeCalculator()
             .putIVec4()
+            .putVec4()
             .putVec4()
             .putVec4()
             .putVec4()
@@ -508,6 +511,14 @@ public class CustomCloudRenderer implements AutoCloseable {
                     ARGB.greenFloat(layerConfiguration.FADE.FADE_TO_COLOR),
                     ARGB.blueFloat(layerConfiguration.FADE.FADE_TO_COLOR),
                     1.0f
+                )
+                
+                // vec4 fadeInfo (for static fade relative Y)
+                .putVec4(
+                    layerConfiguration.FADE.STATIC_FADE_REL_Y,
+                    0.0f, // unused
+                    0.0f, // unused
+                    0.0f  // unused
                 );
         }
 

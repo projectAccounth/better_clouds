@@ -4,6 +4,7 @@ import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import net.minecraft.client.Minecraft;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.*;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.FadeType;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 
@@ -367,6 +368,12 @@ public class YACLDataSettings {
                     .controller(BooleanControllerBuilder::create)
                     .build())
 
+                .option(Option.<FadeType>createBuilder()
+                    .name(ComponentWrapper.translatable("cloudtweaks.option.fade_mode"))
+                    .binding(layer.FADE.FADE_TYPE, () -> layer.FADE.FADE_TYPE, v -> layer.FADE.FADE_TYPE = v)
+                    .controller(opt -> EnumControllerBuilder.create(opt).enumClass(FadeType.class))
+                    .build())
+
                 .option(Option.<Boolean>createBuilder()
                     .name(ComponentWrapper.translatable("cloudtweaks.option.color_fade"))
                     .binding(layer.FADE.COLOR_FADE, () -> layer.FADE.COLOR_FADE, v -> layer.FADE.COLOR_FADE = v)
@@ -389,6 +396,13 @@ public class YACLDataSettings {
                     .name(ComponentWrapper.translatable("cloudtweaks.option.transition_range"))
                     .binding(layer.FADE.TRANSITION_RANGE, () -> layer.FADE.TRANSITION_RANGE, v -> layer.FADE.TRANSITION_RANGE = v)
                     .controller(opt -> FloatSliderControllerBuilder.create(opt).range(0.1f, 100.0f).step(0.5f))
+                    .build())
+
+                .option(Option.<Float>createBuilder()
+                    .name(ComponentWrapper.translatable("cloudtweaks.option.static_fade_rel_y"))
+                    .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc.static_fade_rel_y")))
+                    .binding(layer.FADE.STATIC_FADE_REL_Y, () -> layer.FADE.STATIC_FADE_REL_Y, v -> layer.FADE.STATIC_FADE_REL_Y = v)
+                    .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-50.0f, 50.0f).step(0.5f))
                     .build())
                 
                 .option(ButtonOption.createBuilder()

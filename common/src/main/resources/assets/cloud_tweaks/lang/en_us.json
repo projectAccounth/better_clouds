@@ -85,8 +85,11 @@
   "cloudtweaks.option.transition_range": "Fade Transition Range",
   "cloudtweaks.option.fade_to_color": "Fade Color",
   "cloudtweaks.option.color_fade": "Color Fade",
+  "cloudtweaks.option.fade_mode": "Fade Mode",
+  "cloudtweaks.option.static_fade_rel_y": "Static Fade Reference Height",
 
   "cloudtweaks.desc.fade_to_color": "Color that clouds will fade to when fade is enabled. Only applies if color fade is enabled.",
+  "cloudtweaks.desc.static_fade_rel_y": "Reference Y position (in blocks) for static fade mode. Determines the vertical position the fade effect is calculated from. Typically set to 0 for ground level.",
 
   "cloudtweaks.option.fog_enabled": "Fog Enabled",
   "cloudtweaks.option.fog_start": "Fog Start Distance",

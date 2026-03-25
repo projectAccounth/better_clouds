@@ -28,7 +28,7 @@ public class CloudsConfiguration {
     private static final String CONFIG_FILENAME = "cloud_configs.json";
     private static final File CONFIG_FILE = new File(CONFIG_DIR + "/" + CONFIG_FILENAME);
     
-    // Backup throttlinf
+    // Backup throttling
     private static long lastBackupTime = 0;
     private static final long BACKUP_THROTTLE_MS = 5000; // Minimum 5 seconds between main config backups
 
@@ -40,11 +40,15 @@ public class CloudsConfiguration {
 
     public enum ShadingMode {
         GOURAUD, PHONG
-    }
+    };
 
     public enum LightingType {
         STATIC, DYNAMIC
-    }
+    };
+
+    public enum ConfigBackend {
+        YACL
+    };
 
     public static class LightingParameters {
         private static final float DEFAULT_AMBIENT_LIGHTING = 0.7f;
@@ -214,20 +218,6 @@ public class CloudsConfiguration {
         }
 
         /**
-         * Performance tuning parameters for mesh building.
-         * Controls how much CPU budget is allocated to rebuilding cloud meshes each frame.
-         */
-        public static class PerformanceParameters {
-            private static final int DEFAULT_REBUILD_BUDGET_MS = 2;
-
-            public int MESH_REBUILD_BUDGET_MS = DEFAULT_REBUILD_BUDGET_MS;
-
-            void copy(PerformanceParameters other) {
-                this.MESH_REBUILD_BUDGET_MS = other.MESH_REBUILD_BUDGET_MS;
-            }
-        };
-
-        /**
          * Fog effect parameters for this cloud layer.
          * Controls when fog starts and ends relative to the camera.
          */
@@ -289,6 +279,11 @@ public class CloudsConfiguration {
             }
         }
 
+        public enum FadeType {
+            STATIC,               // Constant fade with vertical gradient from STATIC_FADE_REL_Y
+            DYNAMIC_POSITIONAL    // Fade based on camera position relative to layer
+        }
+
         public static class FadeParameters {
             private static final boolean DEFAULT_FADE_ENABLED = true;
             private static final int DEFAULT_FADE_ALPHA = (int) (0.2f * 255);
@@ -296,6 +291,8 @@ public class CloudsConfiguration {
             private static final int DEFAULT_FADE_TO_COLOR = 0xFFFFFF;
             private static final boolean DEFAULT_COLOR_FADE = false;
             private static final boolean DEFAULT_INVERTED_FADE = false;
+            private static final FadeType DEFAULT_FADE_TYPE = FadeType.DYNAMIC_POSITIONAL;
+            private static final float DEFAULT_STATIC_FADE_REL_Y = 20.0f;
 
             public boolean FADE_ENABLED = DEFAULT_FADE_ENABLED;
             public int FADE_ALPHA = DEFAULT_FADE_ALPHA;
@@ -303,6 +300,8 @@ public class CloudsConfiguration {
             public int FADE_TO_COLOR = DEFAULT_FADE_TO_COLOR;
             public boolean COLOR_FADE = DEFAULT_COLOR_FADE;
             public boolean INVERTED_FADE = DEFAULT_INVERTED_FADE;
+            public FadeType FADE_TYPE = DEFAULT_FADE_TYPE;
+            public float STATIC_FADE_REL_Y = DEFAULT_STATIC_FADE_REL_Y; // Reference Y for static fade
 
             void copy(FadeParameters other) {
                 this.FADE_ENABLED = other.FADE_ENABLED;
@@ -311,11 +310,12 @@ public class CloudsConfiguration {
                 this.FADE_TO_COLOR = other.FADE_TO_COLOR;
                 this.COLOR_FADE = other.COLOR_FADE;
                 this.INVERTED_FADE = other.INVERTED_FADE;
+                this.FADE_TYPE = other.FADE_TYPE;
+                this.STATIC_FADE_REL_Y = other.STATIC_FADE_REL_Y;
             }
         }
 
         public BevelParameters       BEVEL       = new BevelParameters();
-        public PerformanceParameters PERFORMANCE = new PerformanceParameters();
         public AppearanceParameters  APPEARANCE  = new AppearanceParameters();
         public FadeParameters        FADE        = new FadeParameters();
         public FogParameters         FOG         = new FogParameters();
@@ -341,7 +341,6 @@ public class CloudsConfiguration {
             this.LAYER_HEIGHT = other.LAYER_HEIGHT;
             this.MODE = other.MODE;
             this.BEVEL.copy(other.BEVEL);
-            this.PERFORMANCE.copy(other.PERFORMANCE);
             this.APPEARANCE.copy(other.APPEARANCE);
             this.FADE.copy(other.FADE);
             this.FOG.copy(other.FOG);
@@ -579,7 +578,7 @@ public class CloudsConfiguration {
         lastModificationTime = System.currentTimeMillis();
     }
 
-    // Getters and setters for YACL binding
+    // Getters and setters for config binding (planning to also use other backends)
     public boolean getCloudsRendered() { return CLOUDS_RENDERED; }
     public void setCloudsRendered(boolean value) { CLOUDS_RENDERED = value; }
 

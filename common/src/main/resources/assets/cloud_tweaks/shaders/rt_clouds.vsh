@@ -18,6 +18,7 @@ layout(std140) uniform CloudInfo {
     vec4  Info1;   // x=FadeAlpha, y=TransitionRange, z=CloudBlockHeight, w=relY
     vec4  CloudColor;
     vec4  FadeToColor;
+    vec4  FadeInfo; // x=StaticFadeRelY
 };
 
 layout(std140) uniform Lighting {
@@ -50,6 +51,7 @@ bool usesCustomColor()   { return (Config & (1 << 4)) != 0; }
 bool fadeEnabled()       { return (Config & (1 << 5)) != 0; }
 bool colorFade()         { return (Config & (1 << 6)) != 0; }
 bool invertedFade()      { return (Config & (1 << 7)) != 0; } // inverts both the fade color and alpha
+bool useStaticFade()     { return (Config & (1 << 8)) != 0; } // static fade instead of dynamic positional fade
 
 out float vDistance;
 out vec4  vColor;
@@ -75,19 +77,39 @@ void main() {
     float finalAlpha = baseAlpha;
 
     if (FadeAlpha > 0.0) {
-        float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
-        float dir = clamp(relY / TransitionRange, -1.0, 1.0);
+        if (useStaticFade()) {
+            // Static fade: uses a fixed reference Y position (typically ground level)
+            // This maintains vertical gradient without being camera-dependent
+            float staticRelY = FadeInfo.x;
+            float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
+            float dir = clamp(staticRelY / TransitionRange, -1.0, 1.0);
 
-        float fadeBelow = lerp(1.0, FadeAlpha, ny);
-        float fadeAbove = lerp(1.0, FadeAlpha, 1.0 - ny);
+            float fadeBelow = lerp(1.0, FadeAlpha, ny);
+            float fadeAbove = lerp(1.0, FadeAlpha, 1.0 - ny);
 
-        float fadeFactor = lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
+            float fadeFactor = lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
 
-        if (invertedFade()) {
-            fadeFactor = 1.0 - fadeFactor;
+            if (invertedFade()) {
+                fadeFactor = 1.0 - fadeFactor;
+            }
+
+            finalAlpha *= 1.0 - fadeFactor;
+        } else {
+            // Dynamic positional fade: based on camera position relative to layer
+            float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
+            float dir = clamp(relY / TransitionRange, -1.0, 1.0);
+
+            float fadeBelow = lerp(1.0, FadeAlpha, ny);
+            float fadeAbove = lerp(1.0, FadeAlpha, 1.0 - ny);
+
+            float fadeFactor = lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
+
+            if (invertedFade()) {
+                fadeFactor = 1.0 - fadeFactor;
+            }
+
+            finalAlpha *= 1.0 - fadeFactor;
         }
-
-        finalAlpha *= 1.0 - fadeFactor;
     }
 
     vec3 baseColor = Color.rgb * CloudColor.rgb;
