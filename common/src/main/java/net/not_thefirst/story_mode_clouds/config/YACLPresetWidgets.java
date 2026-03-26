@@ -146,9 +146,8 @@ public class YACLPresetWidgets {
                         if (ConfigPresets.loadPreset(presetId)) {
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null && mc.player != null) {
-                                mc.player.displayClientMessage(
-                                    ComponentWrapper.literal("§aLoaded preset: " + displayName),
-                                    false
+                                mc.player.sendSystemMessage(
+                                    ComponentWrapper.literal("§aLoaded preset: " + displayName)
                                 );
                             }
                             if (mc != null) {
@@ -185,9 +184,8 @@ public class YACLPresetWidgets {
                         CloudsConfiguration.save();
                         Minecraft mc = Minecraft.getInstance();
                         if (mc != null && mc.player != null) {
-                            mc.player.displayClientMessage(
-                                ComponentWrapper.literal("§aSaved preset: " + presetName),
-                                false
+                            mc.player.sendSystemMessage(
+                                ComponentWrapper.literal("§aSaved preset: " + presetName)
                             );
                         }
                         if (mc != null) {
@@ -204,9 +202,8 @@ public class YACLPresetWidgets {
                     if (ConfigPresets.resetToDefault()) {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc != null && mc.player != null) {
-                            mc.player.displayClientMessage(
-                                ComponentWrapper.literal("§aReset to default configuration"),
-                                false
+                            mc.player.sendSystemMessage(
+                                ComponentWrapper.literal("§aReset to default configuration")
                             );
                         }
                         if (mc != null) {
@@ -215,9 +212,8 @@ public class YACLPresetWidgets {
                     } else {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc != null && mc.player != null) {
-                            mc.player.displayClientMessage(
-                                ComponentWrapper.literal("§cFailed to reset to default"),
-                                false
+                            mc.player.sendSystemMessage(
+                                ComponentWrapper.literal("§cFailed to reset to default")
                             );
                         }
                     }
@@ -344,9 +340,8 @@ public class YACLPresetWidgets {
                         if (ConfigPresets.renamePreset(presetId, newName)) {
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null && mc.player != null) {
-                                mc.player.displayClientMessage(
-                                    ComponentWrapper.literal("§aRenamed to: " + newName),
-                                    false
+                                mc.player.sendSystemMessage(
+                                    ComponentWrapper.literal("§aRenamed to: " + newName)
                                 );
                             }
                             if (mc != null) {
@@ -367,9 +362,8 @@ public class YACLPresetWidgets {
                 if (ConfigPresets.loadPreset(presetId)) {
                     Minecraft mc = Minecraft.getInstance();
                     if (mc != null && mc.player != null) {
-                        mc.player.displayClientMessage(
-                            ComponentWrapper.literal("§aLoaded preset: " + displayName),
-                            false
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("§aLoaded preset: " + displayName)
                         );
                     }
                     if (mc != null) {
@@ -425,9 +419,8 @@ public class YACLPresetWidgets {
                 if (ConfigPresets.copyPreset(presetId, newPresetId, newPresetName)) {
                     Minecraft mc = Minecraft.getInstance();
                     if (mc != null && mc.player != null) {
-                        mc.player.displayClientMessage(
-                            ComponentWrapper.literal("Copied preset: " + newPresetName),
-                            false
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("Copied preset: " + newPresetName)
                         );
                     }
                     if (mc != null) {
@@ -445,9 +438,8 @@ public class YACLPresetWidgets {
                 if (ConfigPresets.deletePreset(presetId)) {
                     Minecraft mc = Minecraft.getInstance();
                     if (mc != null && mc.player != null) {
-                        mc.player.displayClientMessage(
-                            ComponentWrapper.literal("Deleted preset: " + metadata.displayName),
-                            false
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("Deleted preset: " + metadata.displayName)
                         );
                     }
                     if (mc != null) {

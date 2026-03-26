@@ -1,12 +1,7 @@
 plugins {
+    id "java"
+    id "net.fabricmc.fabric-loom" version "1.15.5"
     id "maven-publish"
-    id "fabric-loom" version "1.14-SNAPSHOT"
-    id "com.gradleup.shadow" version "9.2.2"
-}
-
-architectury {
-    platformSetupLoomIde()
-    fabric()
 }
 
 repositories {
@@ -14,38 +9,33 @@ repositories {
     maven { url "https://maven.terraformersmc.com/releases" }
 }
 
-configurations {
-    common
-    shadowCommon
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentFabric.extendsFrom common
-}
-
 version = project.mod_version
 group = project.maven_group
 
 
 dependencies {
-    common(project(path: ":common", configuration: "namedElements")) { transitive false }
-    shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
-
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    modApi "com.terraformersmc:modmenu:${project.modmenu_version}"
-    modApi "dev.isxander:yet-another-config-lib:${project.yacl_version}"
-
-    include fabricApi.module("fabric-api-base", project.fabric_version)
-    include fabricApi.module("fabric-resource-loader-v1", project.fabric_version)
-    include fabricApi.module("fabric-resource-loader-v0", project.fabric_version)
+    implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+    implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 }
 
 loom {
     mods {
         "story_mode_clouds" {
             sourceSet sourceSets.main
+        }
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("../common/src/main/java")
+        }
+        resources {
+            srcDir("../common/src/main/resources")
         }
     }
 }
@@ -66,17 +56,6 @@ processResources {
     }
 }
 
-shadowJar {
-    configurations = [project.configurations.shadowCommon]
-    archiveClassifier = "shadow"
-}
-
-remapJar {
-    input.set(shadowJar.archiveFile)
-    dependsOn(shadowJar)
-    archiveClassifier = "fabric"
-}
-
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(rootProject.java_version))
     withSourcesJar()
@@ -84,11 +63,11 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
-    it.options.release.set(21)
+    it.options.release.set(25)
 }
 
 jar {
     from("LICENSE") {
-        rename { "fabric_${it}_${project.archiveNames}" }
+        rename { "LICENSE-${project.archivesName}" }
     }
 }

@@ -1,8 +1,6 @@
 plugins {
     id 'java'
     id 'maven-publish'
-    id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "1.13-SNAPSHOT" apply false
 }
 
 group = rootProject.maven_group
@@ -21,12 +19,6 @@ publishing {
 }
 
 subprojects {
-    apply plugin: "dev.architectury.loom"
-
-    loom {
-        silentMojangMappingsLicense()
-    }
-
     repositories {
         maven { url "https://maven.neoforged.net/releases/" }
         maven { url 'https://jitpack.io' }
@@ -35,7 +27,6 @@ subprojects {
 
 allprojects {
     apply plugin: 'java'
-    apply plugin: 'architectury-plugin'
 
     version = rootProject.mod_version + "+" + rootProject.minecraft_version
 
@@ -47,7 +38,7 @@ allprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = "UTF-8"
-        options.release = 21
+        options.release = 25
     }
 
     tasks.withType(JavaExec).configureEach {

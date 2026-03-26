@@ -1,6 +1,5 @@
 plugins {
     id "java"
-    id "fabric-loom" version "1.14-SNAPSHOT"
     id "com.gradleup.shadow" version "9.2.2"
 }
 
@@ -17,28 +16,12 @@ repositories {
     maven { url "https://maven.isxander.dev/releases" }
 }
 
-loom {
-}
-
-remapJar {
-    dependsOn(shadowJar)
-    input.set(shadowJar.archiveFile)
-    archiveClassifier = null
-
-    from rootProject.file("LICENSE.md")
-}
-
 dependencies {
-    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+    implementation "com.mojang:minecraft:${rootProject.minecraft_version}"
     implementation "org.spongepowered:mixin:0.8.5"
-    mappings loom.officialMojangMappings()
 
     implementation 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
 
     // compile only, has no Fabric-specific mappings here
-    modCompileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
-}
-
-architectury {
-    common("fabric", "forge", "neoforge")
+    compileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 }

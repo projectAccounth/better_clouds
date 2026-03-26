@@ -29,9 +29,11 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
     outputs.dir("$buildDir/resources_${safeMc}")
 }
 
+def buildAllOutput = "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
+
 def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
     group = "build"
-    archiveClassifier.set("shadow_${mc}")
+    archiveFileName.set(buildAllOutput)
 
     configurations = [project.configurations.shadowCommon]
     from sourceSets.main.output
@@ -40,29 +42,9 @@ def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.grad
     manifest.attributes(
         "MixinConfigs": "cloud_tweaks.mixins.json"
     )
-}
 
-def remapTask = tasks.register("remapJar_${safeMc}", net.fabricmc.loom.task.RemapJarTask) {
-    group = "build"
-    dependsOn(shadowTask)
-
-    input.set(shadowTask.flatMap { it.archiveFile })
-    archiveClassifier.set("")
-
-    archiveFileName.set(
-        "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
-    )
-
-    manifest.attributes(
-        "MixinConfigs": "cloud_tweaks.mixins.json"
-    )
-}
-
-tasks.register("buildAll") {
-    group = "build"
-    description = "Builds JAR for ${mc}."
-
-    dependsOn(remapTask)
+    exclude "fabric.mod.json"
+    exclude "**/*-refmap.json"
 }
 
 architectury {
@@ -96,7 +78,6 @@ dependencies {
     shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive false }
 
     minecraft "com.mojang:minecraft:${project.neoforge_minecraft_version}"
-    mappings loom.officialMojangMappings()
 
     neoForge "net.neoforged:neoforge:${project.neoforge_version}"
 
@@ -116,25 +97,11 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
-    options.release.set(21)
-}
-
-shadowJar {
-    exclude "fabric.mod.json"
-    exclude "**/*-refmap.json"
-
-    configurations = [project.configurations.shadowCommon]
-    archiveClassifier = "shadow"
+    options.release.set(25)
 }
 
 tasks.named("build").configure {
-    dependsOn("buildAll")
-}
-
-remapJar {
-    input.set(shadowJar.archiveFile)
-    dependsOn(shadowJar)
-    archiveClassifier = "neoforge"
+    dependsOn(shadowTask)
 }
 
 jar {

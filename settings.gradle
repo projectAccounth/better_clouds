@@ -13,5 +13,3 @@ rootProject.name = "cloud_tweaks"
 
 include("common")
 include("fabric")
-include("forge")
-include("neoforge")

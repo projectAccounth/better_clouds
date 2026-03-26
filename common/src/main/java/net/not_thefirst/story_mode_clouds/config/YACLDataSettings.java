@@ -34,9 +34,8 @@ public class YACLDataSettings {
                     CloudsConfiguration.save();
                     Minecraft mc = Minecraft.getInstance();
                     if (mc != null && mc.player != null) {
-                        mc.player.displayClientMessage(
-                            ComponentWrapper.literal("Added keypoint at time " + newKeypoint.time),
-                            true
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("Added keypoint at time " + newKeypoint.time)
                         );
                     }
                     if (mc != null) {
@@ -77,9 +76,8 @@ public class YACLDataSettings {
                             CloudsConfiguration.save();
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null && mc.player != null) {
-                                mc.player.displayClientMessage(
-                                    ComponentWrapper.literal("Removed keypoint"),
-                                    true
+                                mc.player.sendSystemMessage(
+                                    ComponentWrapper.literal("Removed keypoint")
                                 );
                             }
                             if (mc != null) {
@@ -111,9 +109,8 @@ public class YACLDataSettings {
                 CloudsConfiguration.save();
                 Minecraft mc = Minecraft.getInstance();
                 if (mc != null && mc.player != null) {
-                    mc.player.displayClientMessage(
-                        ComponentWrapper.literal("Added light source"),
-                        true
+                    mc.player.sendSystemMessage(
+                        ComponentWrapper.literal("Added light source")
                     );
                 }
                 if (mc != null) {
@@ -159,9 +156,8 @@ public class YACLDataSettings {
                             CloudsConfiguration.save();
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null && mc.player != null) {
-                                mc.player.displayClientMessage(
-                                    ComponentWrapper.literal("Removed light source"),
-                                    true
+                                mc.player.sendSystemMessage(
+                                    ComponentWrapper.literal("Removed light source")
                                 );
                             }
                             if (mc != null) {
@@ -191,9 +187,8 @@ public class YACLDataSettings {
                 CloudsConfiguration.save();
                 Minecraft mc = Minecraft.getInstance();
                 if (mc != null && mc.player != null) {
-                    mc.player.displayClientMessage(
-                        ComponentWrapper.literal("Added layer " + config.getLayerCount()),
-                        true
+                    mc.player.sendSystemMessage(
+                        ComponentWrapper.literal("Added layer " + config.getLayerCount())
                     );
                 }
                 if (mc != null) {
@@ -414,9 +409,8 @@ public class YACLDataSettings {
                             CloudsConfiguration.save();
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null && mc.player != null) {
-                                mc.player.displayClientMessage(
-                                    ComponentWrapper.literal("Removed layer"),
-                                    true
+                                mc.player.sendSystemMessage(
+                                    ComponentWrapper.literal("Removed layer")
                                 );
                             }
                             if (mc != null) {
