@@ -144,6 +144,7 @@ public class YACLPresetWidgets {
                     .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.preview.load.tooltip")))
                     .action((screen, btn) -> {
                         if (ConfigPresets.loadPreset(presetId)) {
+                            CloudsConfiguration.save();
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null && mc.player != null) {
                                 mc.player.sendSystemMessage(
@@ -360,6 +361,7 @@ public class YACLPresetWidgets {
             .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.load.tooltip")))
             .action((yacl, btn) -> {
                 if (ConfigPresets.loadPreset(presetId)) {
+                    CloudsConfiguration.save();
                     Minecraft mc = Minecraft.getInstance();
                     if (mc != null && mc.player != null) {
                         mc.player.sendSystemMessage(
