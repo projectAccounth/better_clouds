@@ -97,13 +97,13 @@ def registerLoaderTask(String loader) {
 }
 
 registerLoaderTask("fabric");
-registerLoaderTask("forge");
+// registerLoaderTask("forge");
 registerLoaderTask("neoforge");
 
 tasks.register("collectAllReleaseJars") {
     dependsOn(
         "collectFabricReleaseJar",
-        "collectForgeReleaseJar",
+        // "collectForgeReleaseJar",
         "collectNeoforgeReleaseJar"
     );
 }

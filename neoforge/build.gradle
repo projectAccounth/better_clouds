@@ -1,117 +1,85 @@
 plugins {
+    id "java"
+    id 'net.neoforged.moddev' version '2.0.134'
     id "maven-publish"
-    id "com.gradleup.shadow" version "9.2.2"
 }
 
-def mc = rootProject.minecraft_version
-def safeMc = mc.replace('.', '_')
-def loaderName = "neoforge"
-
-def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
-    doFirst {
-        delete "$buildDir/resources_${safeMc}"
-    }
-    
-    from(sourceSets.main.resources.srcDirs)
-    into("$buildDir/resources_${safeMc}")
-
-    filteringCharset = "UTF-8"
-    filesMatching("META-INF/neoforge.mods.toml") {
-        expand(
-            "version": rootProject.version,
-            "forge_loader_version": project.neoforge_version
-        )
-    }
-
-    exclude "fabric.mod.json"
-    exclude "mods.toml"
-    
-    outputs.dir("$buildDir/resources_${safeMc}")
-}
-
-def buildAllOutput = "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
-
-def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
-    group = "build"
-    archiveFileName.set(buildAllOutput)
-
-    configurations = [project.configurations.shadowCommon]
-    from sourceSets.main.output
-    from(processResourcesTask.map { it.destinationDir })
-
-    manifest.attributes(
-        "MixinConfigs": "cloud_tweaks.mixins.json"
-    )
-
-    exclude "fabric.mod.json"
-    exclude "**/*-refmap.json"
-}
-
-architectury {
-    platformSetupLoomIde()
-    neoForge()
-}
-
-group = project.maven_group
 version = project.mod_version
+group = project.maven_group
+
+repositories {
+    maven { url "https://maven.neoforged.net/releases/" }
+    maven { url "https://maven.isxander.dev/releases" }
+}
+
+neoForge {
+    version = project.neoforge_version
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', "cloud_tweaks"
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+    }
+
+    mods {
+        "cloud_tweaks" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+dependencies {
+    implementation "org.spongepowered:mixin:0.8.5"
+    implementation 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
+    compileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDir("../common/src/main/java")
+        }
+        resources {
+            srcDir("../common/src/main/resources")
+        }
+    }
+}
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(rootProject.java_version))
     withSourcesJar()
 }
 
-configurations {
-    common
-    shadowCommon
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentNeoForge.extendsFrom common
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = 'include'
 }
 
-repositories {
-    maven { url "https://maven.minecraftforge.net/" }
-    maven { url "https://maven.architectury.dev/" }
-}
-
-dependencies {
-    common(project(path: ":common", configuration: "namedElements")) { transitive false }
-    shadowCommon(project(path: ":common", configuration: "transformProductionNeoForge")) { transitive false }
-
-    minecraft "com.mojang:minecraft:${project.neoforge_minecraft_version}"
-
-    neoForge "net.neoforged:neoforge:${project.neoforge_version}"
-
-    modApi "me.shedaniel.cloth:cloth-config-neoforge:12.0.137"
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release.set(25)
 }
 
 processResources {
-    filteringCharset = "UTF-8"
+    inputs.property "version", rootProject.version
+    duplicatesStrategy = 'include'
     
     filesMatching("META-INF/neoforge.mods.toml") {
         expand(
             "version": rootProject.version,
-            "forge_loader_version": project.neoforge_version
+            "minecraft_version": rootProject.minecraft_version
         )
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = "UTF-8"
-    options.release.set(25)
-}
-
-tasks.named("build").configure {
-    dependsOn(shadowTask)
-}
-
 jar {
+    archiveClassifier = "neoforge"
     from("LICENSE") {
-        rename { "neoforge_${it}_${project.archivesName}" }
+        rename { "LICENSE-${project.archivesName}" }
     }
-    
-    exclude "**/*-refmap.json"
-
-    manifest.attributes(
-        "MixinConfigs": "cloud_tweaks.mixins.json"
-    )
 }

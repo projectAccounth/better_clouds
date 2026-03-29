@@ -1,118 +1,72 @@
 plugins {
+    id "java"
     id "maven-publish"
-    id "com.gradleup.shadow" version "9.2.2"
 }
 
-def mc = rootProject.minecraft_version
-def safeMc = mc.replace('.', '_')
-def loaderName = "forge"
-
-def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
-    doFirst {
-        delete "$buildDir/resources_${safeMc}"
-    }
-    
-    from(sourceSets.main.resources.srcDirs)
-    into("$buildDir/resources_${safeMc}")
-
-    filteringCharset = "UTF-8"
-    filesMatching("META-INF/mods.toml") {
-        expand(
-            "version": rootProject.version,
-            "forge_loader_version": project.forge_version
-        )
-    }
-
-    exclude "fabric.mod.json"
-    
-    outputs.dir("$buildDir/resources_${safeMc}")
-}
-
-def buildAllOutput = "${project.mod_name}+${mc}-${project.mod_version}-${loaderName}.jar"
-
-def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
-    group = "build"
-    archiveFileName.set(buildAllOutput)
-
-    configurations = [project.configurations.shadowCommon]
-    from sourceSets.main.output
-    from(processResourcesTask.map { it.destinationDir })
-
-    manifest.attributes(
-        "MixinConfigs": "cloud_tweaks.mixins.json"
-    )
-
-    exclude "fabric.mod.json"
-}
-
-architectury {
-    platformSetupLoomIde()
-    forge()
-}
-
-group = project.maven_group
 version = project.mod_version
+group = project.maven_group
+
+repositories {
+    maven { url "https://maven.minecraftforge.net/" }
+    maven { url "https://maven.isxander.dev/releases" }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${rootProject.minecraft_version}-${project.forge_version}"
+    
+    implementation "org.spongepowered:mixin:0.8.5"
+    implementation 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
+    compileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+
+}
+
+mixin {
+    add sourceSets.main, "cloud_tweaks.mixins.json"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("../common/src/main/java")
+        }
+        resources {
+            srcDir("../common/src/main/resources")
+        }
+    }
+}
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(rootProject.java_version))
     withSourcesJar()
 }
 
-configurations {
-    common
-    shadowCommon
-    compileClasspath.extendsFrom common
-    runtimeClasspath.extendsFrom common
-    developmentForge.extendsFrom common
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release.set(25)
 }
 
-repositories {
-    maven { url "https://maven.minecraftforge.net/" }
-    maven { url "https://maven.architectury.dev/" }
-    maven { url "https://files.minecraftforge.net/maven/" }
-}
-
-dependencies {
-    common(project(path: ":common", configuration: "namedElements")) { transitive false }
-    shadowCommon(project(path: ":common", configuration: "transformProductionForge")) { transitive false }
-
-    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-
-    forge "net.minecraftforge:forge:${rootProject.minecraft_version}-${project.forge_version}"
-
-    modApi "me.shedaniel.cloth:cloth-config-forge:11.1.136"
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = 'include'
 }
 
 processResources {
-    filteringCharset = "UTF-8"
+    inputs.property "version", rootProject.version
+    duplicatesStrategy = 'include'
     
     filesMatching("META-INF/mods.toml") {
         expand(
             "version": rootProject.version,
-            "forge_loader_version": project.forge_version
+            "minecraft_version": rootProject.minecraft_version
         )
     }
-    
-    exclude "**/*-refmap.json"
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = "UTF-8"
-    options.release.set(25)
-}
-
-tasks.named("build").configure {
-    dependsOn(shadowTask)
+jars {
+    from("LICENSE") {
+        rename { "LICENSE-${project.archivesName}" }
+    }
 }
 
 jar {
-    from("LICENSE") {
-        rename { "forge_${it}_${project.archivesName}" }
-    }
-    
-    exclude "**/*-refmap.json"
-
-    manifest.attributes(
-        "MixinConfigs": "cloud_tweaks.mixins.json"
-    )
+    archiveClassifier = "forge"
 }

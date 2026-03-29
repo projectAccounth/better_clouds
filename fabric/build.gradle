@@ -44,6 +44,7 @@ processResources {
     inputs.property "version", rootProject.version
     inputs.property "minecraft_version", project.minecraft_version
     inputs.property "loader_version", project.loader_version
+    duplicatesStrategy = 'include'
 
     filteringCharset = "UTF-8"
 
@@ -61,12 +62,17 @@ java {
     withSourcesJar()
 }
 
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = 'include'
+}
+
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
     it.options.release.set(25)
 }
 
 jar {
+    archiveClassifier = "fabric"
     from("LICENSE") {
         rename { "LICENSE-${project.archivesName}" }
     }
