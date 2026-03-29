@@ -43,8 +43,8 @@ public class ModRenderPipelines {
             .withUniform("Lighting", UniformType.UNIFORM_BUFFER)
             .withUniform("Camera", UniformType.UNIFORM_BUFFER);
         
-        POSITION_COLOR_NO_DEPTH = builder.withColorTargetState(TRANSLUCENT_BLEND_COLOR_TARGET).withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false)).build();
-        CUSTOM_POSITION_COLOR = builder.withColorTargetState(TRANSLUCENT_BLEND_COLOR_TARGET).withDepthStencilState(DepthStencilState.DEFAULT).build();
-        POSITION_COLOR_DEPTH = builder.withColorTargetState(NONE).withDepthStencilState(DepthStencilState.DEFAULT).build();
+        POSITION_COLOR_NO_DEPTH = builder.withColorTargetState(TRANSLUCENT_BLEND_COLOR_TARGET).withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false)).build();
+        CUSTOM_POSITION_COLOR = builder.withColorTargetState(TRANSLUCENT_BLEND_COLOR_TARGET).withDepthStencilState(new DepthStencilState(CompareOp.EQUAL, true)).build();
+        POSITION_COLOR_DEPTH = builder.withColorTargetState(NONE).withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, true)).build();
     }
 }
