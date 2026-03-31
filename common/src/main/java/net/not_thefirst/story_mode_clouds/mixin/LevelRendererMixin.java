@@ -1,6 +1,7 @@
 package net.not_thefirst.story_mode_clouds.mixin;
 
 import net.minecraft.client.CloudStatus;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.world.phys.Vec3;
 
@@ -24,18 +25,19 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
 
     // Fabric
     @Dynamic
-    @Inject(method = "method_62205", at = @At("INVOKE"), cancellable = true, require = 0)
+    @Inject(method = { 
+        CloudRenderInjection.MODERN_FABRIC_RENDER, 
+        CloudRenderInjection.MODERN_FORGE_RENDER }, at = @At("INVOKE"), cancellable = true, require = 0)
     private void interceptCloudRender(
-        int cloudColor,
-        CloudStatus status,
-        float cloudHeight,
-        Vec3 vec3,
-        long l,
-        float partialTicks,
         CallbackInfo ci
     ) {
         ci.cancel();
 
-        RendererHolder.renderCloud(cloudColor, status, cloudHeight, vec3, partialTicks);
+        Minecraft client = Minecraft.getInstance();
+        CloudStatus cloudStatus = client.options.getCloudStatus();
+        float partialTicks = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        Vec3 camPos = client.gameRenderer.getMainCamera().position();
+
+        RendererHolder.renderCloud(cloudStatus, camPos, partialTicks);
     }
 }

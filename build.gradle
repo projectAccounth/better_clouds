@@ -1,8 +1,6 @@
 plugins {
     id 'java'
     id 'maven-publish'
-    id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "1.13-SNAPSHOT" apply false
 }
 
 group = rootProject.maven_group
@@ -21,22 +19,16 @@ publishing {
 }
 
 subprojects {
-    apply plugin: "dev.architectury.loom"
-
-    loom {
-        silentMojangMappingsLicense()
-    }
-
     repositories {
         maven { url "https://maven.neoforged.net/releases/" }
+        maven { url 'https://jitpack.io' }
     }
 }
 
 allprojects {
     apply plugin: 'java'
-    apply plugin: 'architectury-plugin'
 
-    version = rootProject.mod_version
+    version = rootProject.mod_version + "+" + rootProject.minecraft_version
 
     base {
         archivesName = rootProject.mod_name + "+" + rootProject.minecraft_version
@@ -46,7 +38,7 @@ allprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = "UTF-8"
-        options.release = 21
+        options.release = 25
     }
 
     tasks.withType(JavaExec).configureEach {
@@ -86,7 +78,7 @@ def registerLoaderTask(String loader) {
             }
 
             def expectedPattern =
-                    ~/^${project.name}\+.+-${version}-${loader}\.jar$/;
+                    ~/^${project.name}\+.+-${rootProject.mod_version}-${loader}\.jar$/;
 
             fileTree(libsDir) {
                 include("*.jar");
@@ -105,13 +97,13 @@ def registerLoaderTask(String loader) {
 }
 
 registerLoaderTask("fabric");
-registerLoaderTask("forge");
+// registerLoaderTask("forge");
 registerLoaderTask("neoforge");
 
 tasks.register("collectAllReleaseJars") {
     dependsOn(
         "collectFabricReleaseJar",
-        "collectForgeReleaseJar",
+        // "collectForgeReleaseJar",
         "collectNeoforgeReleaseJar"
     );
 }
