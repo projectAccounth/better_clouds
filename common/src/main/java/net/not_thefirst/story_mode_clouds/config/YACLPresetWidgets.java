@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
 import java.awt.datatransfer.StringSelection;
 
@@ -115,9 +116,9 @@ public class YACLPresetWidgets {
                         if (!base64.isEmpty()) {
                             try {
                                 copyToClipboard(base64);
-                                System.out.println("[CloudTweaks] Preview copied to clipboard");
+                                LoggerProvider.get().info("Preview copied to clipboard");
                             } catch (Exception e) {
-                                System.err.println("[CloudTweaks] ERROR: " + e.getMessage());
+                                LoggerProvider.get().error("ERROR: " + e.getMessage());
                             }
                         }
                     })
