@@ -25,6 +25,8 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
 
     exclude "fabric.mod.json"
     exclude "mods.toml"
+    
+    outputs.dir("$buildDir/resources_${safeMc}")
 }
 
 def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
@@ -72,7 +74,7 @@ group = project.maven_group
 version = project.mod_version
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(rootProject.java_version))
     withSourcesJar()
 }
 

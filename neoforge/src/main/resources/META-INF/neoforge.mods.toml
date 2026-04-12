@@ -18,7 +18,7 @@ logoFile="assets/cloud_tweaks/icon.png"
     side = "CLIENT"
 
 [[dependencies.cloud_tweaks]]
-    modId="cloth_config"
+    modId="yacl3"
     versionRange="[1,)"
     type = "optional"
     ordering="AFTER"

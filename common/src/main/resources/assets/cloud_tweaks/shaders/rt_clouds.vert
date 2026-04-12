@@ -1,11 +1,8 @@
 #version 330 core
 
-#moj_import <minecraft:dynamictransforms.glsl>
-#moj_import <minecraft:projection.glsl>
-
-in vec3 Position;
-in vec4 Color;
-in vec3 Normal;
+layout(location = 0) in vec3 Position;
+layout(location = 1) in vec4 Color;
+layout(location = 2) in vec3 Normal;
 
 #define MAX_LIGHT 32
 
@@ -50,8 +47,8 @@ bool customBrightness()  { return (Config & (1 << 3)) != 0; }
 bool usesCustomColor()   { return (Config & (1 << 4)) != 0; }
 bool fadeEnabled()       { return (Config & (1 << 5)) != 0; }
 bool colorFade()         { return (Config & (1 << 6)) != 0; }
-bool invertedFade()      { return (Config & (1 << 7)) != 0; } // inverts both the fade color and alpha
-bool useStaticFade()     { return (Config & (1 << 8)) != 0; } // static fade instead of dynamic positional fade
+bool invertedFade()      { return (Config & (1 << 7)) != 0; }
+bool useStaticFade()     { return (Config & (1 << 8)) != 0; }
 
 out float vDistance;
 out vec4  vColor;
@@ -63,6 +60,10 @@ float fog_spherical_distance(vec3 pos) {
 }
 
 float lerp(float a, float b, float t) {
+    return a + t * (b - a);
+}
+
+float lerp(vec3 a, vec3 b, float t) {
     return a + t * (b - a);
 }
 
@@ -78,7 +79,7 @@ void main() {
 
     if (FadeAlpha > 0.0) {
         if (useStaticFade()) {
-            // Static fade: uses a fixed reference Y position (typically ground level)
+            // Static fade
             // This maintains vertical gradient without being camera-dependent
             float staticRelY = FadeInfo.x;
             float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
@@ -95,7 +96,7 @@ void main() {
 
             finalAlpha *= 1.0 - fadeFactor;
         } else {
-            // Dynamic positional fade: based on camera position relative to layer
+            // Dynamic positional fade
             float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
             float dir = clamp(relY / TransitionRange, -1.0, 1.0);
 
@@ -111,7 +112,7 @@ void main() {
             finalAlpha *= 1.0 - fadeFactor;
         }
     }
-
+    
     vec3 baseColor = Color.rgb * CloudColor.rgb;
     vec3 N = normalize(Normal);
 
@@ -121,15 +122,15 @@ void main() {
         lighting = AmbientFactor;
 
         for (int i = 0; i < LightCount; i++) {
-            vec3 lightDir = LightDefinitions[i].xyz;
-            vec3 L = normalize(-lightDir);
+            vec3 lightPos = LightDefinitions[i].xyz;
+            vec3 L = normalize(lightPos - pos);
             lighting += max(dot(N, L), 0.0) * LightDefinitions[i].w;
         }
 
         lighting = clamp(lighting, 0.0, MaxShading);
     }
 
-    // bottom being the actual base color, top being the mixed color
+    // interpolate baseColor towards FadeToColor (RGB only) if enabled)
     if (fadeEnabled() && colorFade()) {
         float ratio = (baseAlpha > 0.0) ? (finalAlpha / baseAlpha) : 0.0;
         float colorFadeFactor = 1.0 - ratio;

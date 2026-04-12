@@ -5,13 +5,15 @@ import net.not_thefirst.story_mode_clouds.renderer.ModRenderPipelines;
 
 public class Initializer {
     public static final String MOD_ID = "cloud_tweaks";
+    
+    private Initializer() {}
 
     public static void initialize() {
         CloudsConfiguration.load();
         ModRenderPipelines.registerCloudPipelines();
     }
 
-    public static String j() {
-        return "j";
+    public static String j(String s) {
+        return "j" + s;
     }
-};
+}

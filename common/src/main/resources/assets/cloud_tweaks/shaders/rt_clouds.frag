@@ -54,10 +54,10 @@ void main() {
         vec3  silverAccum = vec3(0.0);
 
         for (int i = 0; i < LightCount; i++) {
-            vec3 lightDir = LightDefinitions[i].xyz;
+            vec3 lightPos = LightDefinitions[i].xyz;
             float intensity = LightDefinitions[i].w;
 
-            vec3 L = normalize(-lightDir);
+            vec3 L = normalize(lightPos - vWorldPos);
 
             float ndl = max(dot(N, L), 0.0);
             lighting += ndl * intensity;

@@ -2,13 +2,12 @@ package net.not_thefirst.story_mode_clouds.utils.math;
 
 import net.minecraft.util.Mth;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
 
 public class ColorUtils {
     public static int recolor(int color, int currentLayer, int skyColor) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
-                CloudsConfiguration.INSTANCE.getLayer(currentLayer);
+                CloudsConfiguration.getInstance().getLayer(currentLayer);
 
         if (!layerConfiguration.IS_ENABLED) {
             return color;
@@ -41,41 +40,26 @@ public class ColorUtils {
         return ARGB.colorFromFloat(baseAlpha, r, g, b);
     }
 
-    public static int recolor(int color, float vertexY, RelativeCameraPos pos, float relY, int currentLayer, int skyColor) {
+    public static int recolor(int color, float vertexY, float relY, int currentLayer, int skyColor) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
-                CloudsConfiguration.INSTANCE.getLayer(currentLayer);
+                CloudsConfiguration.getInstance().getLayer(currentLayer);
 
         if (!layerConfiguration.IS_ENABLED) {
             return color;
         }
 
-        boolean shaded   = layerConfiguration.APPEARANCE.SHADING_ENABLED;
         boolean useAlpha = layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA;
-        boolean useColor = layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR;
 
         float baseAlpha = useAlpha
                 ? layerConfiguration.APPEARANCE.BASE_ALPHA / 255.0f
                 : ARGB.alphaFloat(color);
 
         float fadeAlpha = layerConfiguration.FADE.FADE_ALPHA / 255.0f;
-        int customColor = layerConfiguration.APPEARANCE.LAYER_COLOR;
 
-        float r = ARGB.redFloat(color);
-        float g = ARGB.greenFloat(color);
-        float b = ARGB.blueFloat(color);
-
-        if (!shaded && useColor) {
-            r = ARGB.redFloat(customColor);
-            g = ARGB.greenFloat(customColor);
-            b = ARGB.blueFloat(customColor);
-        } else if (useColor) {
-            r *= ARGB.redFloat(customColor);
-            g *= ARGB.greenFloat(customColor);
-            b *= ARGB.blueFloat(customColor);
-        } else if (!shaded) {
-            r = g = b = 1.0f;
-        }
+        float r = 1;
+        float g = 1;
+        float b = 1;
 
         if (!layerConfiguration.FADE.FADE_ENABLED) {
             return ARGB.colorFromFloat(baseAlpha, r, g, b);
@@ -100,7 +84,7 @@ public class ColorUtils {
 
     public static int getCloudShaderColor(int layer, int skyColor) {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
-                CloudsConfiguration.INSTANCE.getLayer(layer);
+                CloudsConfiguration.getInstance().getLayer(layer);
         int color = ARGB.WHITE;
 
         if (!layerConfiguration.IS_ENABLED) {
