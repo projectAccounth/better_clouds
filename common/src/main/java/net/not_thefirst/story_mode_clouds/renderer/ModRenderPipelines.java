@@ -1,64 +1,128 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.shaders.UniformType;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import java.io.IOException;
+import java.io.InputStream;
 
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.ResourceLocation;
+import net.not_thefirst.lib.gl_render_system.shader.GLProgram;
+import net.not_thefirst.lib.gl_render_system.shader.ProgramManager;
+import net.not_thefirst.lib.gl_render_system.shader.ToStreamProvider;
+import net.not_thefirst.lib.gl_render_system.state.BlendState;
+import net.not_thefirst.lib.gl_render_system.state.CullState;
+import net.not_thefirst.lib.gl_render_system.state.DepthTestState;
+import net.not_thefirst.lib.gl_render_system.state.MaskState;
+import net.not_thefirst.lib.gl_render_system.state.RenderStateBuilder;
+import net.not_thefirst.lib.gl_render_system.state.RenderType;
+import net.not_thefirst.lib.gl_render_system.state.ShaderRenderType;
+import net.not_thefirst.lib.gl_render_system.state.ShaderState;
 import net.not_thefirst.story_mode_clouds.Initializer;
+import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 public class ModRenderPipelines {
-    public static RenderPipeline POSITION_COLOR_NO_DEPTH;
-    public static RenderPipeline CUSTOM_POSITION_COLOR;
-    public static RenderPipeline POSITION_COLOR_DEPTH;
+    private ModRenderPipelines() {}
 
-    public static RenderPipeline.Snippet MATRICES_SNIPPET = 
-        RenderPipeline.builder(new RenderPipeline.Snippet[0])
-            .withUniform("ModelViewMat", UniformType.MATRIX4X4)
-            .withUniform("ProjMat", UniformType.MATRIX4X4)
-            .buildSnippet();
+    private static ProgramManager<ResourceLocation> programManager;
+    public static GLProgram CLOUDS_SHADER;
 
-    public static RenderPipeline.Snippet FOG_NO_COLOR_SNIPPET = 
-        RenderPipeline.builder(new RenderPipeline.Snippet[0])
-            .withUniform("FogStart", UniformType.FLOAT)
-            .withUniform("FogEnd", UniformType.FLOAT)
-            .withUniform("FogShape", UniformType.INT)
-            .buildSnippet();
+    public static ShaderRenderType CUSTOM_POSITION_COLOR;
+    public static ShaderRenderType POSITION_COLOR_NO_DEPTH;
+    public static ShaderRenderType POSITION_COLOR_DEPTH_ONLY;
 
-    public static RenderPipeline.Snippet FOG_SNIPPET = 
-        RenderPipeline.builder(new RenderPipeline.Snippet[]{FOG_NO_COLOR_SNIPPET})
-            .withUniform("FogColor", UniformType.VEC4)
-            .buildSnippet();
+    public static final RenderType CLOUDS_GENERAL = new RenderType(
+        "cloud_tweaks_clouds_general",
+        new RenderStateBuilder()
+            .blend(BlendState.TRANSLUCENT)
+            .cull(CullState.CULL)
+            .mask(MaskState.COLOR_DEPTH)
+            .depthTest(DepthTestState.LEQUAL)
+            .build()
+    );
 
-    public static RenderPipeline.Snippet MATRICES_COLOR_SNIPPET = RenderPipeline
-        .builder(new RenderPipeline.Snippet[]{MATRICES_SNIPPET})
-        .withUniform("ColorModulator", UniformType.VEC4)
-        .buildSnippet();
+    public static final IdentifierWrapper CLOUD_SHADER_VERT = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/rt_clouds.vert");
+    public static final IdentifierWrapper CLOUD_SHADER_FRAG = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/rt_clouds.frag");
 
-    public static RenderPipeline.Snippet MATRICES_COLOR_FOG_SNIPPET = 
-        RenderPipeline.builder(new RenderPipeline.Snippet[]{MATRICES_COLOR_SNIPPET, FOG_SNIPPET})
-        .buildSnippet();
+    public static final IdentifierWrapper CLOUD_SHADER_ID = IdentifierWrapper.of(Initializer.MOD_ID, "clouds");
+    public static ProgramManager<ResourceLocation> getProgramManager() {
+        return programManager;
+    }
+
+    public static void postReload() {
+        CLOUDS_SHADER = programManager.get(CLOUD_SHADER_ID.getDelegate());
+
+        if (CLOUDS_SHADER == null)
+            throw new IllegalStateException("Shader is null");
+
+        CLOUDS_SHADER.bindUniformBlock("Transforms", 0);
+        CLOUDS_SHADER.bindUniformBlock("CloudInfo", 1);
+        CLOUDS_SHADER.bindUniformBlock("Lighting", 2);
+        CLOUDS_SHADER.bindUniformBlock("Camera", 3);
+
+        POSITION_COLOR_DEPTH_ONLY = new ShaderRenderType(
+            "cloud_tweaks_rt_clouds_cdo",
+            new ShaderState(CLOUDS_SHADER),
+            new RenderStateBuilder()
+                .blend(BlendState.TRANSLUCENT)
+                .cull(CullState.CULL)
+                .mask(MaskState.DEPTH_ONLY)
+                .build()
+        );
+
+        POSITION_COLOR_NO_DEPTH = new ShaderRenderType(
+            "cloud_tweaks_rt_clouds_nd",
+            new ShaderState(CLOUDS_SHADER),
+            new RenderStateBuilder()
+                .blend(BlendState.TRANSLUCENT)
+                .cull(CullState.CULL)
+                .mask(MaskState.COLOR_NO_DEPTH)
+                .build()
+        );
+
+        CUSTOM_POSITION_COLOR = new ShaderRenderType(
+            "cloud_tweaks_rt_clouds_cpc",
+            new ShaderState(CLOUDS_SHADER),
+            new RenderStateBuilder()
+                .blend(BlendState.TRANSLUCENT)
+                .cull(CullState.CULL)
+                .mask(MaskState.COLOR_DEPTH)
+                .build()
+        );
+    }
+
+    static class ShaderSourceProvider implements ToStreamProvider {
+        private ResourceManager manager;
+
+        public ShaderSourceProvider(ResourceManager manager) {
+            this.manager = manager;
+        }
+
+        @Override
+        public InputStream toStream(String path) {
+            IdentifierWrapper loc = IdentifierWrapper.tryParse(path);
+            try {
+                return manager.getResource(loc.getDelegate()).orElseThrow(() -> 
+                    new IllegalStateException("Failed to find shader resource: " + loc)
+                ).open();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        
+    }
 
     public static void registerCloudPipelines() {
-        ResourceLocation loc1 = ResourceLocation.fromNamespaceAndPath(Initializer.MOD_ID, "pipeline/pos_tex_c");
-        ResourceLocation lc1 = ResourceLocation.fromNamespaceAndPath(Initializer.MOD_ID, "rt_clouds");
-        RenderPipeline.Builder builder = RenderPipeline.builder(MATRICES_COLOR_FOG_SNIPPET)
-            .withLocation(loc1)
-            .withVertexShader(lc1)
-            .withFragmentShader(lc1)
-            .withBlend(BlendFunction.TRANSLUCENT)
-            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS)
-            .withCull(true)
-            .withUniform("CloudColor", UniformType.VEC4)
-            .withUniform("Config", UniformType.INT)
-            .withUniform("CloudFogStart", UniformType.INT)
-            .withUniform("CloudFogEnd", UniformType.INT);
-        
-        POSITION_COLOR_NO_DEPTH = builder.withColorWrite(true).withDepthWrite(false).build();
-        CUSTOM_POSITION_COLOR = builder.withColorWrite(true).withDepthWrite(true).build();
-        POSITION_COLOR_DEPTH = builder.withColorWrite(false).withDepthWrite(true).build();
+        if (programManager == null) {
+            programManager = new ProgramManager<>(
+                new ShaderSourceProvider(Minecraft.getInstance().getResourceManager()));
+        }
+
+        programManager.register(
+            CLOUD_SHADER_ID.getDelegate(),
+            CLOUD_SHADER_VERT.getDelegate().toString(),
+            CLOUD_SHADER_FRAG.getDelegate().toString()
+        );
     }
 }

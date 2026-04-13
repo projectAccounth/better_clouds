@@ -4,7 +4,7 @@ import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.compat.ForgeModChecker;
-import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.config.YACLConfigScreen;
 
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
@@ -15,7 +15,7 @@ public class StoryModeClouds {
         StoryModeClouds.initialize();
         
         ctx.getActiveContainer().registerExtensionPoint(IConfigScreenFactory.class, (container, parent) -> {
-            return CloudsConfiguration.createConfigScreen(parent);
+            return YACLConfigScreen.createConfigScreen(parent);
         });
     }
 

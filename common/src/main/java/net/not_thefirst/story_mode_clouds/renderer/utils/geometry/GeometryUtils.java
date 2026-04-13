@@ -1,8 +1,7 @@
-package net.not_thefirst.story_mode_clouds.renderer.utils;
+package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
-
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
+import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
 
 public final class GeometryUtils {
 
@@ -13,7 +12,7 @@ public final class GeometryUtils {
      * The strip is extruded along edgeDir.
      */
     public static void buildCylindricalStrip(
-            BufferBuilder bb,
+            BuildingMesh bb,
             float edgeStartX, float edgeStartY, float edgeStartZ,
             float edgeEndX,   float edgeEndY,   float edgeEndZ,
             float normalX, float normalY, float normalZ,
@@ -21,7 +20,7 @@ public final class GeometryUtils {
             float radius,
             int segments,
             boolean flip,
-            int layer, RelativeCameraPos pos, float relY, int skyColor
+            int layer, float relY, int skyColor
     ) {
         final float HALF_PI = 1.57079632679f;
         final float invSeg = 1.0f / segments;
@@ -64,7 +63,7 @@ public final class GeometryUtils {
                     ax1, ay1, az1,
                     bx1, by1, bz1,
                     bx0, by0, bz0,
-                    layer, pos, relY, skyColor
+                    layer, relY, skyColor
                 );
             } else {
                 VertexBuilder.quad(
@@ -73,7 +72,7 @@ public final class GeometryUtils {
                     bx1, by1, bz1,
                     ax1, ay1, az1,
                     ax0, ay0, az0,
-                    layer, pos, relY, skyColor
+                    layer, relY, skyColor
                 );
             }
 
@@ -107,7 +106,7 @@ public final class GeometryUtils {
     }
 
     public static void buildSphericalCorner(
-            BufferBuilder bb,
+            BuildingMesh bb,
             float cx, float cy, float cz,
 
             float axx, float axy, float axz,
@@ -118,7 +117,7 @@ public final class GeometryUtils {
             int segments,
             boolean flip,
 
-            int layer, RelativeCameraPos pos, float relY, int skyColor
+            int layer, float relY, int skyColor
     ) {
         final float invSeg = 1.0f / segments;
 
@@ -179,7 +178,7 @@ public final class GeometryUtils {
                                 v10x, v10y, v10z,
                                 v11x, v11y, v11z,
                                 v01x, v01y, v01z,
-                                layer, pos, relY, skyColor
+                                layer, relY, skyColor
                             );
                         } else {
                             VertexBuilder.quad(
@@ -188,7 +187,7 @@ public final class GeometryUtils {
                                 v11x, v11y, v11z,
                                 v10x, v10y, v10z,
                                 v00x, v00y, v00z,
-                                layer, pos, relY, skyColor
+                                layer, relY, skyColor
                             );
                         }
                     } else {
@@ -198,7 +197,7 @@ public final class GeometryUtils {
                                 v00x, v00y, v00z,
                                 v10x, v10y, v10z,
                                 v01x, v01y, v01z,
-                                layer, pos, relY, skyColor
+                                layer, relY, skyColor
                             );
                         } else {
                             VertexBuilder.triangle(
@@ -206,7 +205,7 @@ public final class GeometryUtils {
                                 v01x, v01y, v01z,
                                 v10x, v10y, v10z,
                                 v00x, v00y, v00z,
-                                layer, pos, relY, skyColor
+                                layer, relY, skyColor
                             );
                         }
                     }
