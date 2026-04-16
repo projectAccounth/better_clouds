@@ -2,32 +2,31 @@
 
 #define MAX_LIGHT 32
 
-layout(std140) uniform CloudInfo {
-    ivec4 Info0;
-    vec4  Info1;
-    vec4  CloudColor;
-    vec4  FadeToColor;
-    vec4  FadeInfo; // x=StaticFadeRelY
-};
+uniform mat4 u_ProjMat;
+uniform mat4 u_ModelViewMat;
+uniform vec4 u_ModelOffset;
 
-layout(std140) uniform Lighting {
-    vec4 LightDefinitions[MAX_LIGHT]; // xyz = POSITION, w = intensity
-    vec4 LightColors[MAX_LIGHT];
-    vec4 LightInformation; // x=count y=max z=ambient w=usePhong
-};
+uniform vec4 u_CloudsInfo0; // Info0
+uniform vec4 u_CloudsInfo1; // Info1
+uniform vec4 u_CloudColor;
+uniform vec4 u_FadeToColor;
+uniform vec4 u_FadeInfo;
 
-layout(std140) uniform Camera {
-    vec4 CameraPosition;
-};
+uniform vec4 u_LightPos[MAX_LIGHT];
+uniform vec4 u_LightColor[MAX_LIGHT];
+uniform vec4 u_LightMeta;
 
-int   LightCount    = int(min(LightInformation.x, float(MAX_LIGHT)));
-float MaxShading    = LightInformation.y;
-float AmbientFactor = LightInformation.z;
-bool  UsePhong      = (LightInformation.w > 0.5);
+uniform vec4 u_CameraPos;
+uniform vec2 u_CloudHeight;
 
-int Config   = Info0.x;
-int FogStart = Info0.y;
-int FogEnd   = Info0.z;
+int   LightCount    = int(min(u_LightMeta.x, float(MAX_LIGHT)));
+float MaxShading    = u_LightMeta.y;
+float AmbientFactor = u_LightMeta.z;
+bool  UsePhong      = (u_LightMeta.w > 0.5);
+
+int Config   = int(u_CloudsInfo0.x);
+int FogStart = int(u_CloudsInfo0.y);
+int FogEnd   = int(u_CloudsInfo0.z);
 
 bool fogEnabled()     { return (Config & (1 << 0)) != 0; }
 bool shadingEnabled() { return (Config & (1 << 1)) != 0; }
@@ -48,14 +47,14 @@ void main() {
 
     if (UsePhong && shadingEnabled()) {
         vec3 N = normalize(cross(dFdx(vWorldPos), dFdy(vWorldPos)));
-        vec3 V = normalize(CameraPosition.xyz - vWorldPos);
+        vec3 V = normalize(u_CameraPos.xyz - vWorldPos);
 
         float lighting = AmbientFactor;
         vec3  silverAccum = vec3(0.0);
 
         for (int i = 0; i < LightCount; i++) {
-            vec3 lightDir = LightDefinitions[i].xyz;
-            float intensity = LightDefinitions[i].w;
+            vec3 lightDir = u_LightPos[i].xyz;
+            float intensity = u_LightColor[i].w;
 
             vec3 L = normalize(-lightDir);
 

@@ -1,13 +1,14 @@
 package net.not_thefirst.story_mode_clouds.renderer.render_system.vertex;
 
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+
 import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 
 public class VertexBuilder {
 
     private VertexBuilder() {}
     
-    public static void quad(BuildingMesh bb, float x0, float y0, float z0,
+    public static void quad(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, float r, float g, float b, float a) {
         
@@ -17,7 +18,7 @@ public class VertexBuilder {
         bb.addVertex(x3, y3, z3).setColor(r, g, b, a);
     }
 
-    public static void triangle(BuildingMesh bb, float x0, float y0, float z0,
+    public static void triangle(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float r, float g, float b, float a) {
 
@@ -40,7 +41,7 @@ public class VertexBuilder {
         return new int[]{r, g, b, a};
     }
 
-    public static void quadColored(BuildingMesh bb, float x0, float y0, float z0,
+    public static void quadColored(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int c0, int c1, int c2, int c3) {
 
@@ -50,13 +51,13 @@ public class VertexBuilder {
         bb.addVertex(x3, y3, z3).setColor(c3);
     }
 
-    public static void triangleColored(BuildingMesh bb, float x0, float y0, float z0,
+    public static void triangleColored(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         int c0, int c1, int c2) {
         quadColored(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
     }
 
-    public static void quadNormal(BuildingMesh bb, float x0, float y0, float z0,
+    public static void quadNormal(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int c0, int c1, int c2, int c3) {
         float[][] normals = computeNormals(x0, y0, z0, x1, y1, z1, x2, y2, z2, x3, y3, z3);
@@ -71,7 +72,7 @@ public class VertexBuilder {
         }
     }
 
-    public static void triangleNormal(BuildingMesh bb, float x0, float y0, float z0,
+    public static void triangleNormal(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         int c0, int c1, int c2) {
         quadNormal(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, c0, c1, c2, c2);
@@ -150,7 +151,7 @@ public class VertexBuilder {
         }
     }
 
-    public static void quad(BuildingMesh bb, float x0, float y0, float z0,
+    public static void quad(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         float x3, float y3, float z3, int layer, float relY, int skyColor) {
         quadNormal(
@@ -163,7 +164,7 @@ public class VertexBuilder {
         );
     }
 
-    public static void triangle(BuildingMesh bb, float x0, float y0, float z0,
+    public static void triangle(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
         int layer, float relY, int skyColor) {
 

@@ -1,47 +1,38 @@
 #version 330 core
 
-#moj_import <minecraft:dynamictransforms.glsl>
-#moj_import <minecraft:projection.glsl>
-
 in vec3 Position;
 in vec4 Color;
 in vec3 Normal;
 
 #define MAX_LIGHT 32
 
-layout(std140) uniform Transforms {
-    vec4 MOffset;
-};
+uniform mat4 u_ProjMat;
+uniform mat4 u_ModelViewMat;
+uniform vec4 u_ModelOffset;
 
-layout(std140) uniform CloudInfo {
-    ivec4 Info0;   // x=Config, y=FogStart, z=FogEnd, w=BaseAlpha
-    vec4  Info1;   // x=FadeAlpha, y=TransitionRange, z=CloudBlockHeight, w=relY
-    vec4  CloudColor;
-    vec4  FadeToColor;
-    vec4  FadeInfo; // x=StaticFadeRelY
-};
+uniform vec4 u_CloudsInfo0; // Info0
+uniform vec4 u_CloudsInfo1; // Info1
+uniform vec4 u_CloudColor;
+uniform vec4 u_FadeToColor;
 
-layout(std140) uniform Lighting {
-    vec4 LightDefinitions[MAX_LIGHT]; // xyz = direction, w = intensity
-    vec4 LightColors[MAX_LIGHT]; // rgb, alpha unused
-    vec4 LightInformation; // x=LightCount, y=MaxShading, z=Ambient, w=ShadingMode
-};
+uniform vec4 u_LightPos[MAX_LIGHT];
+uniform vec4 u_LightColor[MAX_LIGHT];
+uniform vec4 u_LightMeta;
 
-layout(std140) uniform Camera {
-    vec4 CameraPosition;
-};
+uniform vec4 u_CameraPos;
+uniform vec2 u_CloudHeight;
 
-int   LightCount         = int(min(LightInformation.x, float(MAX_LIGHT)));
-float MaxShading         = LightInformation.y;
-float AmbientFactor      = LightInformation.z;
-bool  UsePhong           = (LightInformation.w > 0.5);
+int   LightCount    = int(min(u_LightMeta.x, float(MAX_LIGHT)));
+float MaxShading    = u_LightMeta.y;
+float AmbientFactor = u_LightMeta.z;
+bool  UsePhong      = (u_LightMeta.w > 0.5);
 
-int   Config             = Info0.x;
-float BaseAlpha          = float(Info0.w) / 255.0f;
-float FadeAlpha          = Info1.x / 255.0f;
-float TransitionRange    = Info1.y;
-float CloudBlockHeight   = Info1.z;
-float relY               = Info1.w;
+int   Config             = int(u_CloudsInfo0.x);
+float BaseAlpha          = u_CloudsInfo0.w / 255.0;
+float FadeAlpha          = u_CloudsInfo1.x / 255.0;
+float TransitionRange    = u_CloudsInfo1.y;
+float CloudBlockHeight   = u_CloudsInfo1.z;
+float relY               = u_CloudsInfo1.w;
 
 bool fogEnabled()        { return (Config & (1 << 0)) != 0; }
 bool shadingEnabled()    { return (Config & (1 << 1)) != 0; }
@@ -67,10 +58,10 @@ float lerp(float a, float b, float t) {
 }
 
 void main() {
-    vec3 pos = Position + MOffset.xyz;
-    gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);
+    vec3 pos = Position + u_ModelOffset.xyz;
+    gl_Position = u_ProjMat * u_ModelViewMat * vec4(pos, 1.0);
 
-    vWorldPos = Position + vec3(0, MOffset.y + CameraPosition.y, 0);
+    vWorldPos = Position + vec3(0, u_ModelOffset.y + u_CameraPos.y, 0);
     vDistance = fogEnabled() ? length(pos) : 0.0;
 
     float baseAlpha = usesCustomAlpha() ? BaseAlpha : Color.a;
@@ -78,9 +69,7 @@ void main() {
 
     if (FadeAlpha > 0.0) {
         if (useStaticFade()) {
-            // Static fade: uses a fixed reference Y position (typically ground level)
-            // This maintains vertical gradient without being camera-dependent
-            float staticRelY = FadeInfo.x;
+            float staticRelY = u_CloudsInfo1.x;
             float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
             float dir = clamp(staticRelY / TransitionRange, -1.0, 1.0);
 
@@ -112,7 +101,7 @@ void main() {
         }
     }
 
-    vec3 baseColor = Color.rgb * CloudColor.rgb;
+    vec3 baseColor = Color.rgb * u_CloudColor.rgb;
     vec3 N = normalize(Normal);
 
     float lighting = 1.0;
@@ -121,9 +110,9 @@ void main() {
         lighting = AmbientFactor;
 
         for (int i = 0; i < LightCount; i++) {
-            vec3 lightDir = LightDefinitions[i].xyz;
+            vec3 lightDir = u_LightPos[i].xyz;
             vec3 L = normalize(-lightDir);
-            lighting += max(dot(N, L), 0.0) * LightDefinitions[i].w;
+            lighting += max(dot(N, L), 0.0) * u_LightColor[i].w;
         }
 
         lighting = clamp(lighting, 0.0, MaxShading);
@@ -138,7 +127,7 @@ void main() {
             colorFadeFactor = 1.0 - colorFadeFactor;
         }
 
-        baseColor = mix(baseColor, FadeToColor.rgb, colorFadeFactor);
+        baseColor = mix(baseColor, u_FadeToColor.rgb, colorFadeFactor);
     }
 
     vNormal = N;

@@ -7,6 +7,8 @@ layout(location = 2) in vec3 Normal;
 #define MAX_LIGHT 32
 
 layout(std140) uniform Transforms {
+    mat4 ProjMat;
+    mat4 ModelViewMat;
     vec4 MOffset;
 };
 
@@ -59,11 +61,11 @@ float fog_spherical_distance(vec3 pos) {
     return length(pos);
 }
 
-float lerp(float a, float b, float t) {
+float lerpf(float a, float b, float t) {
     return a + t * (b - a);
 }
 
-float lerp(vec3 a, vec3 b, float t) {
+vec3 lerpv3(vec3 a, vec3 b, float t) {
     return a + t * (b - a);
 }
 
@@ -79,16 +81,14 @@ void main() {
 
     if (FadeAlpha > 0.0) {
         if (useStaticFade()) {
-            // Static fade
-            // This maintains vertical gradient without being camera-dependent
             float staticRelY = FadeInfo.x;
             float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
             float dir = clamp(staticRelY / TransitionRange, -1.0, 1.0);
 
-            float fadeBelow = lerp(1.0, FadeAlpha, ny);
-            float fadeAbove = lerp(1.0, FadeAlpha, 1.0 - ny);
+            float fadeBelow = lerpf(1.0, FadeAlpha, ny);
+            float fadeAbove = lerpf(1.0, FadeAlpha, 1.0 - ny);
 
-            float fadeFactor = lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
+            float fadeFactor = lerpf(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
 
             if (invertedFade()) {
                 fadeFactor = 1.0 - fadeFactor;
@@ -100,10 +100,10 @@ void main() {
             float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
             float dir = clamp(relY / TransitionRange, -1.0, 1.0);
 
-            float fadeBelow = lerp(1.0, FadeAlpha, ny);
-            float fadeAbove = lerp(1.0, FadeAlpha, 1.0 - ny);
+            float fadeBelow = lerpf(1.0, FadeAlpha, ny);
+            float fadeAbove = lerpf(1.0, FadeAlpha, 1.0 - ny);
 
-            float fadeFactor = lerp(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
+            float fadeFactor = lerpf(fadeBelow, fadeAbove, (dir + 1.0) * 0.5);
 
             if (invertedFade()) {
                 fadeFactor = 1.0 - fadeFactor;

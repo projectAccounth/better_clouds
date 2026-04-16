@@ -103,6 +103,8 @@ dependencies {
     forge "net.minecraftforge:forge:${rootProject.minecraft_version}-${project.forge_version}"
 
     modApi "me.shedaniel.cloth:cloth-config-forge:11.1.136"
+
+    include 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
 }
 
 processResources {

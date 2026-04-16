@@ -1,7 +1,8 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
+import com.mojang.blaze3d.vertex.BufferBuilder;
+
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.EdgeDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.Sign;
@@ -110,7 +111,7 @@ public class CubeBuilder {
 
 
     public static void emitCorner(
-        BuildingMesh bb,
+        BufferBuilder bb,
         float x, float y, float z,
         Sign sx, Sign sy, Sign sz,
         float radius,
@@ -138,7 +139,7 @@ public class CubeBuilder {
     }
 
     public static void emitTopAndBottomEdges(
-        BuildingMesh bb,
+        BufferBuilder bb,
         float minX, float maxX,
         float minZ, float maxZ,
         float yTop, float yBot,
@@ -262,7 +263,7 @@ public class CubeBuilder {
     }
 
     private static void emitHorizontalCornerCaps(
-        BuildingMesh bb,
+        BufferBuilder bb,
         float minX, float maxX,
         float minZ, float maxZ,
         float yTop, float yBot,
@@ -326,7 +327,7 @@ public class CubeBuilder {
     };
 
     public static void emitInsetFaces(
-        BuildingMesh bb,
+        BufferBuilder bb,
         float minX, float maxX,
         float minY, float maxY,
         float minZ, float maxZ,
@@ -457,7 +458,7 @@ public class CubeBuilder {
     };
 
     private static void emitVerticalEdges(
-        BuildingMesh bb,
+        BufferBuilder bb,
         float minX, float maxX,
         float minZ, float maxZ,
         float yBot, float yTop,
@@ -490,7 +491,7 @@ public class CubeBuilder {
     }
 
     private static void emitCorners(
-        BuildingMesh bb,
+        BufferBuilder bb,
         float minX, float maxX,
         float minY, float maxY,
         float minZ, float maxZ,
@@ -525,7 +526,7 @@ public class CubeBuilder {
     }
 
     public static void buildBeveledCube(
-        BuildingMesh bb,
+        BufferBuilder bb,
         float minX, float maxX,
         float minY, float maxY,
         float minZ, float maxZ,
@@ -611,7 +612,7 @@ public class CubeBuilder {
             layer, relY, skyColor
         );
 
-        if (state.texture().neighbors[idxX + idxY * state.texture().width] < 8) {
+        if (state.texture.neighbors[idxX + idxY * state.texture.width] < 8) {
             emitHorizontalCornerCaps(
                 bb, 
                 minX, maxX, 

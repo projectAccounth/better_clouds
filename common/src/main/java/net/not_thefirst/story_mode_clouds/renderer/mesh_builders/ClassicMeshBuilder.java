@@ -1,5 +1,7 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
+import com.mojang.blaze3d.vertex.BufferBuilder;
+
 import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
 
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -11,14 +13,14 @@ import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
 
 public class ClassicMeshBuilder implements MeshTypeBuilder {
     
-    public BuildingMesh build(
-        BuildingMesh bb,
+    public BufferBuilder build(
+        BufferBuilder bb,
         LayerState state,
         int cx, int cz, float relY, 
         int currentLayer, int skyColor) {
         
         int range = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
-        Texture.TextureData tex = state.texture();
+        Texture.TextureData tex = state.texture;
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
@@ -38,7 +40,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
 
-    private static void buildExtrudedCell(BuildingMesh bb,
+    private static void buildExtrudedCell(BufferBuilder bb,
                                    int cx, int cz, long cell, float relY, int currentLayer, int skyColor) {
         float x0 = cx * MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;

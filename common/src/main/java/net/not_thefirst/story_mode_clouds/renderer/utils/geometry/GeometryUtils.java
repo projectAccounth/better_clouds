@@ -1,6 +1,7 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+
 import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
 
 public final class GeometryUtils {
@@ -12,7 +13,7 @@ public final class GeometryUtils {
      * The strip is extruded along edgeDir.
      */
     public static void buildCylindricalStrip(
-            BuildingMesh bb,
+            BufferBuilder bb,
             float edgeStartX, float edgeStartY, float edgeStartZ,
             float edgeEndX,   float edgeEndY,   float edgeEndZ,
             float normalX, float normalY, float normalZ,
@@ -106,7 +107,7 @@ public final class GeometryUtils {
     }
 
     public static void buildSphericalCorner(
-            BuildingMesh bb,
+            BufferBuilder bb,
             float cx, float cy, float cz,
 
             float axx, float axy, float axz,

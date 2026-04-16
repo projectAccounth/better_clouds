@@ -1,6 +1,6 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 
 public final class BevelWrappers {
 
@@ -38,7 +38,7 @@ public final class BevelWrappers {
     }
 
     public static void topEdge(
-        BuildingMesh bb,
+        BufferBuilder bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
@@ -78,7 +78,7 @@ public final class BevelWrappers {
     };
 
     public static void bottomEdge(
-        BuildingMesh bb,
+        BufferBuilder bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
@@ -118,7 +118,7 @@ public final class BevelWrappers {
     }
 
     public static void verticalEdge(
-        BuildingMesh bb,
+        BufferBuilder bb,
 
         Sign dirX,
         Sign dirZ,

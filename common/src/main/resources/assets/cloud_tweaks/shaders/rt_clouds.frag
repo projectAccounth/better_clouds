@@ -2,6 +2,12 @@
 
 #define MAX_LIGHT 32
 
+layout(std140) uniform Transforms {
+    mat4 ProjMat;
+    mat4 ModelViewMat;
+    vec4 MOffset;
+};
+
 layout(std140) uniform CloudInfo {
     ivec4 Info0;
     vec4  Info1;

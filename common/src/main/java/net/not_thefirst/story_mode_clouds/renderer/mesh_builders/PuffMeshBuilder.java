@@ -3,6 +3,8 @@ package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.mojang.blaze3d.vertex.BufferBuilder;
+
 import net.minecraft.util.Mth;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
@@ -197,8 +199,8 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
     @SuppressWarnings("unused")
     @Override
-    public BuildingMesh build(
-        BuildingMesh bb,
+    public BufferBuilder build(
+        BufferBuilder bb,
         LayerState state,
         int cx, int cz, float relY, 
         int currentLayer, int skyColor) {
@@ -212,7 +214,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         final float PUFF_MAX_SIZE = 5.2f;
         final float PUFF_HEIGHT_FACTOR = 0.45f;
 
-        Texture.TextureData tex = state.texture();
+        Texture.TextureData tex = state.texture;
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
@@ -271,7 +273,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
     }
 
     private static void drawCube(
-        BuildingMesh bb,
+        BufferBuilder bb,
         float cx, float cy, float cz,
         float hr, float vr,
         int layer, float relY, int skyColor) {
@@ -339,7 +341,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
     }
 
     private static void drawCross(
-        BuildingMesh bb,
+        BufferBuilder bb,
         float cx, float cy, float cz,
         float hr, float vr,
         int layer, float relY, int skyColor) {

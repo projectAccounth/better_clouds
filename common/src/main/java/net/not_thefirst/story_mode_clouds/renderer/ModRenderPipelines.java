@@ -3,6 +3,14 @@ package net.not_thefirst.story_mode_clouds.renderer;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.mojang.blaze3d.opengl.GlCommandEncoder;
+import com.mojang.blaze3d.opengl.Uniform;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormat;
+
 import net.not_thefirst.lib.gl_render_system.shader.GLProgram;
 import net.not_thefirst.lib.gl_render_system.shader.ProgramManager;
 import net.not_thefirst.lib.gl_render_system.shader.ToStreamProvider;
@@ -15,9 +23,15 @@ import net.not_thefirst.lib.gl_render_system.state.RenderType;
 import net.not_thefirst.lib.gl_render_system.state.ShaderRenderType;
 import net.not_thefirst.lib.gl_render_system.state.ShaderState;
 import net.not_thefirst.story_mode_clouds.Initializer;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.ShaderDefines;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 public class ModRenderPipelines {
@@ -26,26 +40,71 @@ public class ModRenderPipelines {
     private static ProgramManager<ResourceLocation> programManager;
     public static GLProgram CLOUDS_SHADER;
 
-    public static ShaderRenderType CUSTOM_POSITION_COLOR;
-    public static ShaderRenderType POSITION_COLOR_NO_DEPTH;
-    public static ShaderRenderType POSITION_COLOR_DEPTH_ONLY;
-
-    public static final RenderType CLOUDS_GENERAL = new RenderType(
-        "cloud_tweaks_clouds_general",
-        new RenderStateBuilder()
-            .blend(BlendState.TRANSLUCENT)
-            .cull(CullState.CULL)
-            .mask(MaskState.COLOR_DEPTH)
-            .depthTest(DepthTestState.LEQUAL)
-            .build()
-    );
+    @SuppressWarnings("unused")
+    private static ShaderRenderType POSITION_COLOR_DEPTH_ONLY;
+    private static ShaderRenderType POSITION_COLOR_NO_DEPTH;
+    private static ShaderRenderType CUSTOM_POSITION_COLOR;
 
     public static final IdentifierWrapper CLOUD_SHADER_VERT = 
-        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/rt_clouds.vert");
+        IdentifierWrapper.of(Initializer.MOD_ID, "core/rt_clouds");
     public static final IdentifierWrapper CLOUD_SHADER_FRAG = 
-        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/rt_clouds.frag");
+        IdentifierWrapper.of(Initializer.MOD_ID, "core/rt_clouds");
 
     public static final IdentifierWrapper CLOUD_SHADER_ID = IdentifierWrapper.of(Initializer.MOD_ID, "clouds");
+    public static final IdentifierWrapper CLOUD_DEPTH_SHADER_ID = IdentifierWrapper.of(Initializer.MOD_ID, "clouds_depth");
+    public static final IdentifierWrapper CLOUD_COLOR_SHADER_ID = IdentifierWrapper.of(Initializer.MOD_ID, "clouds_color");
+
+    private static RenderPipeline.Builder applyCloudDefaults(RenderPipeline.Builder builder) {
+        builder.withUniform("u_ProjMat", UniformType.MATRIX4X4)
+            .withUniform("u_ModelViewMat", UniformType.MATRIX4X4)
+            .withUniform("u_ModelOffset", UniformType.VEC4)
+            .withUniform("u_CloudsInfo0", UniformType.VEC4)
+            .withUniform("u_CloudsInfo1", UniformType.VEC4)
+            .withUniform("u_CloudColor", UniformType.VEC4)
+            .withUniform("u_CameraPos", UniformType.VEC4)
+            .withUniform("u_LightMeta", UniformType.VEC4)
+            .withUniform("u_FadeToColor", UniformType.VEC4)
+            .withUniform("u_CloudHeight", UniformType.VEC2);
+
+        for (int i = 0; i < CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT; i++) {
+            builder.withUniform("u_LightPos[" + i + "]", UniformType.VEC4);
+            builder.withUniform("u_LightColor[" + i + "]", UniformType.VEC4);
+        }
+        return builder;
+    }
+
+    static final RenderPipeline.Snippet CUSTOM_CLOUDS = applyCloudDefaults(
+        RenderPipeline.builder()
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withVertexShader(CLOUD_SHADER_VERT.getDelegate())
+            .withFragmentShader(CLOUD_SHADER_FRAG.getDelegate())
+            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR_NORMAL, VertexFormat.Mode.QUADS)
+            .withCull(true)
+    ).buildSnippet();
+
+    public static final RenderPipeline NORMAL_CLOUDS = 
+        RenderPipeline.builder(CUSTOM_CLOUDS)
+            .withLocation(CLOUD_SHADER_ID.getDelegate())
+            .withColorWrite(true)
+            .withDepthWrite(true)
+            .build();
+
+    public static final RenderPipeline DEPTH_ONLY_CLOUDS =
+        RenderPipeline.builder(CUSTOM_CLOUDS)
+            .withLocation(CLOUD_DEPTH_SHADER_ID.getDelegate())
+            .withColorWrite(false)
+            .withDepthWrite(true)
+            .build();
+
+    public static final RenderPipeline COLOR_ONLY_CLOUDS =
+        RenderPipeline.builder(CUSTOM_CLOUDS)
+            .withLocation(CLOUD_COLOR_SHADER_ID.getDelegate())
+            .withDepthWrite(false)
+            .withColorWrite(true)
+            .build();
+
+
+    // reserved for older versions of Minecraft while backporting
     public static ProgramManager<ResourceLocation> getProgramManager() {
         return programManager;
     }
@@ -107,13 +166,14 @@ public class ModRenderPipelines {
                     new IllegalStateException("Failed to find shader resource: " + loc)
                 ).open();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         }
         
     }
 
     public static void registerCloudPipelines() {
+        LoggerProvider.get().info("Reloading cloud render pipelines");
         if (programManager == null) {
             programManager = new ProgramManager<>(
                 new ShaderSourceProvider(Minecraft.getInstance().getResourceManager()));

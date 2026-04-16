@@ -22,6 +22,12 @@ configurations {
     developmentFabric.extendsFrom common
 }
 
+configurations.all {
+    resolutionStrategy {
+        force "net.fabricmc:fabric-loader:${project.loader_version}"
+    }
+}
+
 version = project.mod_version
 group = project.maven_group
 
@@ -36,6 +42,9 @@ dependencies {
 
     modApi "com.terraformersmc:modmenu:${project.modmenu_version}"
     modApi "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+
+    implementation 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
+    include 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
 }
 
 loom {

@@ -1,5 +1,7 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
+import com.mojang.blaze3d.vertex.BufferBuilder;
+
 import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
@@ -12,15 +14,15 @@ import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 public class BeveledMeshBuilder implements MeshTypeBuilder {
 
     @Override
-    public BuildingMesh build(
-        BuildingMesh bb,
+    public BufferBuilder build(
+        BufferBuilder bb,
         LayerState state, 
         int cx, int cz, float relY,
         int currentLayer, 
         int skyColor) {
 
         int range = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
-        Texture.TextureData tex = state.texture();
+        Texture.TextureData tex = state.texture;
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
@@ -42,7 +44,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
     
-    private static void buildCell(BuildingMesh bb,
+    private static void buildCell(BufferBuilder bb,
                             int cx, int cz, long cell, float relY,
                             int currentLayer, int skyColor, int cellIdxX, int cellIdxZ, LayerState state) {
 
