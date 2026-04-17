@@ -7,9 +7,8 @@
   "mixins": [
   ],
   "client": [
-    "LevelRendererMixin",
-    "ClientWorldMixin",
-    "CoreShadersMixin"
+    "CloudRendererMixin",
+    "ClientWorldMixin"
   ],
   "injectors": {
     "defaultRequire": 1

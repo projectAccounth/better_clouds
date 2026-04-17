@@ -1,8 +1,6 @@
-package net.not_thefirst.story_mode_clouds.renderer.utils;
+package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
-
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.RelativeCameraPos;
+import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
 
 public final class BevelWrappers {
 
@@ -40,7 +38,7 @@ public final class BevelWrappers {
     }
 
     public static void topEdge(
-        BufferBuilder bb,
+        BuildingMesh bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
@@ -48,7 +46,7 @@ public final class BevelWrappers {
         float radius,
         int segments,
         int layer,
-        RelativeCameraPos pos, float relY, int skyColor
+        float relY, int skyColor
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -75,12 +73,12 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.SOUTH || dir == EdgeDir.WEST),
-            layer, pos, relY, skyColor
+            layer, relY, skyColor
         );
     };
 
     public static void bottomEdge(
-        BufferBuilder bb,
+        BuildingMesh bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
@@ -88,7 +86,7 @@ public final class BevelWrappers {
         float radius,
         int segments,
         int layer,
-        RelativeCameraPos pos, float relY, int skyColor
+        float relY, int skyColor
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -115,12 +113,12 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.EAST || dir == EdgeDir.NORTH),
-            layer, pos, relY, skyColor
+            layer, relY, skyColor
         );
     }
 
     public static void verticalEdge(
-        BufferBuilder bb,
+        BuildingMesh bb,
 
         Sign dirX,
         Sign dirZ,
@@ -134,7 +132,7 @@ public final class BevelWrappers {
         int segments,
 
         int layer,
-        RelativeCameraPos pos, float relY, int skyColor
+        float relY, int skyColor
     ) {
         float sx = (float) dirX.value;
         float sz = (float) dirZ.value;
@@ -166,7 +164,7 @@ public final class BevelWrappers {
             radius,
             segments,
             flip,
-            layer, pos, relY, skyColor
+            layer, relY, skyColor
         );
     }
 }
