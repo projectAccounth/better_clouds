@@ -1,114 +1,131 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
 import java.io.IOException;
+import java.io.InputStream;
 
-import com.mojang.blaze3d.platform.GlStateManager.DestFactor;
-import com.mojang.blaze3d.platform.GlStateManager.SourceFactor;
-import com.mojang.blaze3d.shaders.Uniform;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.RenderStateShard.TransparencyStateShard;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.RenderType.CompositeRenderType;
-import net.minecraft.client.renderer.ShaderInstance;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceProvider;
-import net.minecraft.resources.ResourceLocation;
+import net.not_thefirst.lib.gl_render_system.shader.GLProgram;
+import net.not_thefirst.lib.gl_render_system.shader.ProgramManager;
+import net.not_thefirst.lib.gl_render_system.shader.ToStreamProvider;
+import net.not_thefirst.lib.gl_render_system.state.BlendState;
+import net.not_thefirst.lib.gl_render_system.state.CullState;
+import net.not_thefirst.lib.gl_render_system.state.DepthTestState;
+import net.not_thefirst.lib.gl_render_system.state.MaskState;
+import net.not_thefirst.lib.gl_render_system.state.RenderState;
+import net.not_thefirst.lib.gl_render_system.state.RenderStateBuilder;
+import net.not_thefirst.lib.gl_render_system.state.RenderType;
+import net.not_thefirst.lib.gl_render_system.state.ShaderRenderType;
+import net.not_thefirst.lib.gl_render_system.state.ShaderState;
 import net.not_thefirst.story_mode_clouds.Initializer;
+import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 public class ModRenderPipelines {
-    public static final ResourceLocation SHADER_LOCATION = 
-        ResourceLocation.fromNamespaceAndPath(Initializer.MOD_ID, "rt_clouds");
+    private ModRenderPipelines() {}
 
-    public static ShaderInstance CLOUD_SHADER;
+    private static ProgramManager<ResourceLocation> programManager;
+    public static GLProgram CLOUDS_SHADER;
 
-    public static void reloadShaders(ResourceProvider provider) throws IOException {
-        CLOUD_SHADER = new ShaderInstance(provider, "rt_clouds", DefaultVertexFormat.POSITION_COLOR);
+    public static ShaderRenderType CUSTOM_POSITION_COLOR;
+    public static ShaderRenderType POSITION_COLOR_NO_DEPTH;
+    public static ShaderRenderType POSITION_COLOR_DEPTH_ONLY;
+
+    // enabled on render end to reset 
+    public static final RenderState DEFAULT_RESET_STATE = new RenderStateBuilder()
+        .blend(BlendState.TRANSLUCENT)
+        .cull(CullState.CULL)
+        .depthTest(DepthTestState.LEQUAL)
+        .mask(MaskState.COLOR_DEPTH)
+        .build();
+    
+    public static final IdentifierWrapper CLOUD_SHADER_VERT = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/rt_clouds.vert");
+    public static final IdentifierWrapper CLOUD_SHADER_FRAG = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/rt_clouds.frag");
+
+    public static final IdentifierWrapper CLOUD_SHADER_ID = IdentifierWrapper.of(Initializer.MOD_ID, "clouds");
+    public static ProgramManager<ResourceLocation> getProgramManager() {
+        return programManager;
     }
 
-    public static final RenderStateShard.CullStateShard CULL = 
-        new RenderStateShard.CullStateShard(true);
+    public static void postReload() {
+        CLOUDS_SHADER = programManager.get(CLOUD_SHADER_ID.getDelegate());
 
-    public static final RenderStateShard.WriteMaskStateShard COLOR_NO_DEPTH = 
-        new RenderStateShard.WriteMaskStateShard(true, false);
+        if (CLOUDS_SHADER == null)
+            throw new IllegalStateException("Shader is null");
 
-    public static final RenderStateShard.WriteMaskStateShard COLOR_DEPTH = 
-        new RenderStateShard.WriteMaskStateShard(true, true);
+        CLOUDS_SHADER.bindUniformBlock("Transforms", 0);
+        CLOUDS_SHADER.bindUniformBlock("CloudInfo", 1);
+        CLOUDS_SHADER.bindUniformBlock("Lighting", 2);
+        CLOUDS_SHADER.bindUniformBlock("Camera", 3);
 
-    public static final RenderStateShard.WriteMaskStateShard DEPTH_ONLY = 
-        new RenderStateShard.WriteMaskStateShard(false, true);
+        POSITION_COLOR_DEPTH_ONLY = new ShaderRenderType(
+            "cloud_tweaks_rt_clouds_cdo",
+            new ShaderState(CLOUDS_SHADER),
+            new RenderStateBuilder()
+                .blend(BlendState.TRANSLUCENT)
+                .cull(CullState.CULL)
+                .mask(MaskState.DEPTH_ONLY)
+                .build()
+        );
 
-    public static final RenderStateShard.DepthTestStateShard DEPTH_LEQUAL =
-        new RenderStateShard.DepthTestStateShard("lequal", 515);
+        POSITION_COLOR_NO_DEPTH = new ShaderRenderType(
+            "cloud_tweaks_rt_clouds_nd",
+            new ShaderState(CLOUDS_SHADER),
+            new RenderStateBuilder()
+                .blend(BlendState.TRANSLUCENT)
+                .cull(CullState.CULL)
+                .mask(MaskState.COLOR_NO_DEPTH)
+                .build()
+        );
 
-    public static final RenderStateShard.DepthTestStateShard DEPTH_ALWAYS =
-        new RenderStateShard.DepthTestStateShard("always", 519);
+        CUSTOM_POSITION_COLOR = new ShaderRenderType(
+            "cloud_tweaks_rt_clouds_cpc",
+            new ShaderState(CLOUDS_SHADER),
+            new RenderStateBuilder()
+                .blend(BlendState.TRANSLUCENT)
+                .cull(CullState.CULL)
+                .mask(MaskState.COLOR_DEPTH)
+                .build()
+        );
 
-    public static final TransparencyStateShard TRANSLUCENT_TRANSPARENCY = new TransparencyStateShard("translucent_transparency", () -> {
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(SourceFactor.SRC_ALPHA, DestFactor.ONE_MINUS_SRC_ALPHA, SourceFactor.ONE, DestFactor.ONE_MINUS_SRC_ALPHA);
-    }, () -> {
-        RenderSystem.disableBlend();
-        RenderSystem.defaultBlendFunc();
-    });
+        LoggerProvider.get().info("Cloud render pipelines reloaded");
+    }
 
-    public static CompositeRenderType CUSTOM_POSITION_COLOR;
-    public static CompositeRenderType POSITION_COLOR_NO_DEPTH;
-    public static CompositeRenderType POSITION_COLOR_DEPTH_ONLY;
+    static class ShaderSourceProvider implements ToStreamProvider {
+        private ResourceManager manager;
+
+        public ShaderSourceProvider(ResourceManager manager) {
+            this.manager = manager;
+        }
+
+        @Override
+        public InputStream toStream(String path) {
+            IdentifierWrapper loc = IdentifierWrapper.tryParse(path);
+            try {
+                return manager.getResource(loc.getDelegate()).orElseThrow(() -> 
+                    new IllegalStateException("Failed to find shader resource: " + loc)
+                ).open();
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        
+    }
 
     public static void registerCloudPipelines() {
-        POSITION_COLOR_DEPTH_ONLY = RenderType.create(
-            "cloud_tweaks_rt_clouds_cdo",
-            DefaultVertexFormat.POSITION_COLOR,
-            VertexFormat.Mode.QUADS,
-            2097152, // custom 2MB
-            false,
-            false,
-            RenderType.CompositeState.builder()
-                .setShaderState(new RenderStateShard.ShaderStateShard(() -> CLOUD_SHADER))
-                .setCullState(CULL)
-                .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
-                .setOutputState(RenderStateShard.CLOUDS_TARGET)
-                .setDepthTestState(DEPTH_LEQUAL)
-                .setWriteMaskState(DEPTH_ONLY)
-                .createCompositeState(true)
-        );
+        LoggerProvider.get().info("Reloading cloud render pipelines");
+        if (programManager == null) {
+            programManager = new ProgramManager<>(
+                new ShaderSourceProvider(Minecraft.getInstance().getResourceManager()));
+        }
 
-        POSITION_COLOR_NO_DEPTH = RenderType.create(
-            "cloud_tweaks_rt_clouds_nd",
-            DefaultVertexFormat.POSITION_COLOR,
-            VertexFormat.Mode.QUADS,
-            2097152,
-            false,
-            false,
-            RenderType.CompositeState.builder()
-                .setShaderState(new RenderStateShard.ShaderStateShard(() -> CLOUD_SHADER))
-                .setCullState(CULL)
-                .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
-                .setOutputState(RenderStateShard.CLOUDS_TARGET)
-                .setWriteMaskState(COLOR_NO_DEPTH)
-                .createCompositeState(true)
-        );
-
-        CUSTOM_POSITION_COLOR = RenderType.create(
-            "cloud_tweaks_rt_clouds_cpc",
-            DefaultVertexFormat.POSITION_COLOR,
-            VertexFormat.Mode.QUADS,
-            2097152,
-            false,
-            false,
-            RenderType.CompositeState.builder()
-                .setShaderState(new RenderStateShard.ShaderStateShard(() -> CLOUD_SHADER))
-                .setCullState(CULL)
-                .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
-                .setOutputState(RenderStateShard.CLOUDS_TARGET)
-                .setDepthTestState(DEPTH_LEQUAL)
-                .setWriteMaskState(COLOR_DEPTH)
-                .createCompositeState(true)
+        programManager.register(
+            CLOUD_SHADER_ID.getDelegate(),
+            CLOUD_SHADER_VERT.getDelegate().toString(),
+            CLOUD_SHADER_FRAG.getDelegate().toString()
         );
     }
 }

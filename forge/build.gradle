@@ -11,8 +11,6 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
     doFirst {
         delete "$buildDir/resources_${safeMc}"
     }
-
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     
     from(sourceSets.main.resources.srcDirs)
     into("$buildDir/resources_${safeMc}")
@@ -26,7 +24,8 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
     }
 
     exclude "fabric.mod.json"
-    exclude "cloud_tweaks.accesswidener"
+    
+    outputs.dir("$buildDir/resources_${safeMc}")
 }
 
 def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
@@ -76,7 +75,7 @@ group = project.maven_group
 version = project.mod_version
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(rootProject.java_version))
     withSourcesJar()
 }
 
@@ -104,18 +103,11 @@ dependencies {
     forge "net.minecraftforge:forge:${rootProject.minecraft_version}-${project.forge_version}"
 
     modApi "me.shedaniel.cloth:cloth-config-forge:11.1.136"
+
+    include 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
 }
 
 processResources {
-    doFirst {
-        delete "$buildDir/resources"
-    }
-
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-
-    from(sourceSets.main.resources.srcDirs)
-    into("$buildDir/resources")
-
     filteringCharset = "UTF-8"
     
     filesMatching("META-INF/mods.toml") {
@@ -135,7 +127,6 @@ tasks.withType(JavaCompile).configureEach {
 
 shadowJar {
     exclude "fabric.mod.json"
-    exclude "cloud_tweaks.accesswidener"
     exclude "**/*-refmap.json"
 
     configurations = [project.configurations.shadowCommon]
@@ -158,7 +149,6 @@ jar {
     }
     
     exclude "**/*-refmap.json"
-    exclude "cloud_tweaks.accesswidener"
 
     manifest.attributes(
         "MixinConfigs": "cloud_tweaks.mixins.json"

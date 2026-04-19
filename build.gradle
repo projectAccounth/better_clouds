@@ -29,6 +29,7 @@ subprojects {
 
     repositories {
         maven { url "https://maven.neoforged.net/releases/" }
+        maven { url 'https://jitpack.io' }
     }
 }
 
@@ -36,7 +37,7 @@ allprojects {
     apply plugin: 'java'
     apply plugin: 'architectury-plugin'
 
-    version = rootProject.mod_version
+    version = rootProject.mod_version + "+" + rootProject.minecraft_version
 
     base {
         archivesName = rootProject.mod_name + "+" + rootProject.minecraft_version
@@ -86,7 +87,7 @@ def registerLoaderTask(String loader) {
             }
 
             def expectedPattern =
-                    ~/^${project.name}\+.+-${version}-${loader}\.jar$/;
+                    ~/^${project.name}\+.+-${rootProject.mod_version}-${loader}\.jar$/;
 
             fileTree(libsDir) {
                 include("*.jar");
