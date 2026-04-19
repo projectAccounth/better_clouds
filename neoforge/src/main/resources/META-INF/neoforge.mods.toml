@@ -13,12 +13,12 @@ logoFile="assets/cloud_tweaks/icon.png"
 [[dependencies.cloud_tweaks]]
     modId = "neoforge"
     type = "required"
-    versionRange = "[2,)"
+    versionRange = "[21,)"
     ordering = "NONE"
     side = "CLIENT"
 
 [[dependencies.cloud_tweaks]]
-    modId="cloth_config"
+    modId="yacl3"
     versionRange="[1,)"
     type = "optional"
     ordering="AFTER"

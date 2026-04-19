@@ -1,25 +1,24 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
-import org.joml.Matrix4f;
+import java.util.Optional;
 
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 
 public class RendererHolder {
-    private static CustomCloudRenderer renderer = new CustomCloudRenderer();
+    private static CustomCloudRenderer renderer;
+
+    private RendererHolder() {}
 
     public static CustomCloudRenderer get() {
         return RendererHolder.renderer;
     }
 
     public static void renderCloud(
-        int cloudColor,
         CloudStatus status,
-        float cloudHeight,
-        Matrix4f projMatrix,
-        Matrix4f modelViewMatrix,
         Vec3 vec3,
         float partialTicks
     ) {
@@ -30,14 +29,14 @@ public class RendererHolder {
             renderer = new CustomCloudRenderer();
         }
 
-        if (renderer.currentTexture.isEmpty()) {
-            var texture = renderer.prepare(client.getResourceManager(), 
+        if (!renderer.getCurrentTexture().isPresent()) {
+            Optional<Texture.TextureData> texture = renderer.prepare(client.getResourceManager(), 
                 client.getProfiler(), CustomCloudRenderer.TEXTURE_LOCATION);
             renderer.apply(texture, client.getResourceManager(), client.getProfiler());
         }
 
-        if (!CloudsConfiguration.INSTANCE.CLOUDS_RENDERED) return;
+        if (!CloudsConfiguration.getInstance().CLOUDS_RENDERED) return;
 
-        renderer.render(cloudColor, status, cloudHeight, projMatrix, modelViewMatrix, vec3, partialTicks);;
+        renderer.render(status, vec3, partialTicks);
     }
 }

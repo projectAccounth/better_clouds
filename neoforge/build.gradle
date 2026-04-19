@@ -24,8 +24,9 @@ def processResourcesTask = tasks.register("processResources_${safeMc}", Copy) {
     }
 
     exclude "fabric.mod.json"
-    exclude "cloud_tweaks.accesswidener"
     exclude "mods.toml"
+    
+    outputs.dir("$buildDir/resources_${safeMc}")
 }
 
 def shadowTask = tasks.register("shadowJar_${safeMc}", com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
@@ -73,7 +74,7 @@ group = project.maven_group
 version = project.mod_version
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(Integer.parseInt(rootProject.java_version))
     withSourcesJar()
 }
 
@@ -100,18 +101,11 @@ dependencies {
     neoForge "net.neoforged:neoforge:${project.neoforge_version}"
 
     modApi "me.shedaniel.cloth:cloth-config-neoforge:12.0.137"
+
+    include 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
 }
 
 processResources {
-    doFirst {
-        delete "$buildDir/resources"
-    }
-
-    from(sourceSets.main.resources.srcDirs)
-    into("$buildDir/resources")
-
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    
     filteringCharset = "UTF-8"
     
     filesMatching("META-INF/neoforge.mods.toml") {
@@ -129,7 +123,6 @@ tasks.withType(JavaCompile).configureEach {
 
 shadowJar {
     exclude "fabric.mod.json"
-    exclude "cloud_tweaks.accesswidener"
     exclude "**/*-refmap.json"
 
     configurations = [project.configurations.shadowCommon]

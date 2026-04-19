@@ -11,16 +11,16 @@ credits="Tixork for burning down my house!"
 logoFile="assets/cloud_tweaks/icon.png"
 
 [[dependencies.cloud_tweaks]]
-    modId = "forge"
-    mandatory = true
-    versionRange = "[2,)"
-    ordering = "NONE"
-    side = "CLIENT"
+    modId="forge"
+    mandatory=true
+    versionRange="[1,)"
+    ordering="NONE"
+    side="CLIENT"
 
 [[dependencies.cloud_tweaks]]
     modId="cloth_config"
     versionRange="[1,)"
-    mandatory = false
+    mandatory=false
     ordering="AFTER"
     side="CLIENT"
 
