@@ -7,7 +7,7 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.*;
 
 import java.awt.Color;
 /**
- * Config migration
+ * Config migration g
  */
 public class YACLConfigScreen {
 
