@@ -221,7 +221,7 @@ public class YACLDataSettings {
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.height"))
                 .binding(layer.LAYER_HEIGHT, () -> layer.LAYER_HEIGHT, v -> layer.LAYER_HEIGHT = v)
-                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, 256).step(1))
+                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, 8096).step(1))
                 .build())
             
             .option(Option.<String>createBuilder()
@@ -302,25 +302,25 @@ public class YACLDataSettings {
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.offset_x"))
                 .binding(layer.APPEARANCE.LAYER_OFFSET_X, () -> layer.APPEARANCE.LAYER_OFFSET_X, v -> layer.APPEARANCE.LAYER_OFFSET_X = v)
-                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(-1000, 1000).step(1))
+                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(-ConfigConstants.MAX_LAYER_OFFSET, ConfigConstants.MAX_LAYER_OFFSET).step(1))
                 .build())
             
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.offset_z"))
                 .binding(layer.APPEARANCE.LAYER_OFFSET_Z, () -> layer.APPEARANCE.LAYER_OFFSET_Z, v -> layer.APPEARANCE.LAYER_OFFSET_Z = v)
-                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(-1000, 1000).step(1))
+                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(-ConfigConstants.MAX_LAYER_OFFSET, ConfigConstants.MAX_LAYER_OFFSET).step(1))
                 .build())
             
             .option(Option.<Float>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.speed_x"))
                 .binding(layer.APPEARANCE.LAYER_SPEED_X, () -> layer.APPEARANCE.LAYER_SPEED_X, v -> layer.APPEARANCE.LAYER_SPEED_X = v)
-                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-0.5f, 0.5f).step(0.01f))
+                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-ConfigConstants.MAX_AXIS_VELOCITY, ConfigConstants.MAX_AXIS_VELOCITY).step(0.01f))
                 .build())
             
             .option(Option.<Float>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.speed_z"))
                 .binding(layer.APPEARANCE.LAYER_SPEED_Z, () -> layer.APPEARANCE.LAYER_SPEED_Z, v -> layer.APPEARANCE.LAYER_SPEED_Z = v)
-                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-0.5f, 0.5f).step(0.01f))
+                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-ConfigConstants.MAX_AXIS_VELOCITY, ConfigConstants.MAX_AXIS_VELOCITY).step(0.01f))
                 .build())
             
             .build();
@@ -333,19 +333,19 @@ public class YACLDataSettings {
             .option(Option.<Float>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.bevel_size"))
                 .binding(layer.BEVEL.BEVEL_SIZE, () -> layer.BEVEL.BEVEL_SIZE, v -> layer.BEVEL.BEVEL_SIZE = v)
-                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(0.0f, 1.0f).step(0.05f))
+                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_BEVEL_SIZE, ConfigConstants.MAX_BEVEL_SIZE).step(0.05f))
                 .build())
             
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.edge_segments"))
                 .binding(layer.BEVEL.BEVEL_EDGE_SEGMENTS, () -> layer.BEVEL.BEVEL_EDGE_SEGMENTS, v -> layer.BEVEL.BEVEL_EDGE_SEGMENTS = v)
-                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(1, 32).step(1))
+                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_EDGE_SEGMENTS, ConfigConstants.MAX_EDGE_SEGMENTS).step(1))
                 .build())
             
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.corner_segments"))
                 .binding(layer.BEVEL.BEVEL_CORNER_SEGMENTS, () -> layer.BEVEL.BEVEL_CORNER_SEGMENTS, v -> layer.BEVEL.BEVEL_CORNER_SEGMENTS = v)
-                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(1, 32).step(1))
+                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_CORNER_SEGMENTS, ConfigConstants.MAX_CORNER_SEGMENTS).step(1))
                 .build())
             
             .build();
@@ -358,13 +358,13 @@ public class YACLDataSettings {
             .option(Option.<Float>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.fog_start"))
                 .binding(layer.FOG.FOG_START_DISTANCE, () -> layer.FOG.FOG_START_DISTANCE, v -> layer.FOG.FOG_START_DISTANCE = v)
-                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(1.0f, 500.0f).step(5.0f))
+                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_FOG_DISTANCE, ConfigConstants.MAX_FOG_START_DISTANCE).step(5.0f))
                 .build())
             
             .option(Option.<Float>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.fog_end"))
                 .binding(layer.FOG.FOG_END_DISTANCE, () -> layer.FOG.FOG_END_DISTANCE, v -> layer.FOG.FOG_END_DISTANCE = v)
-                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(1.0f, 500.0f).step(5.0f))
+                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_FOG_DISTANCE, ConfigConstants.MAX_FOG_END_DISTANCE).step(5.0f))
                 .build())
             
             .build();
