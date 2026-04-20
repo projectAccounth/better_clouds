@@ -1,14 +1,12 @@
 package net.not_thefirst.story_mode_clouds;
 
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.compat.ForgeModChecker;
-import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.config.YACLConfigScreen;
 
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
@@ -26,7 +24,7 @@ public class StoryModeClouds {
 
         ctx.registerExtensionPoint(
             ConfigScreenHandler.ConfigScreenFactory.class,
-            () -> new ConfigScreenHandler.ConfigScreenFactory((mc, prevScreen) -> CloudsConfiguration.createConfigScreen(prevScreen))
+            () -> new ConfigScreenHandler.ConfigScreenFactory((mc, prevScreen) -> YACLConfigScreen.createConfigScreen(prevScreen))
         );
     }
 }
