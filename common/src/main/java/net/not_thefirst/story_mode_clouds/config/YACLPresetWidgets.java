@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
 import java.awt.datatransfer.StringSelection;
 
@@ -115,9 +116,9 @@ public class YACLPresetWidgets {
                         if (!base64.isEmpty()) {
                             try {
                                 copyToClipboard(base64);
-                                System.out.println("[CloudTweaks] Preview copied to clipboard");
+                                LoggerProvider.get().info("Preview copied to clipboard");
                             } catch (Exception e) {
-                                System.err.println("[CloudTweaks] ERROR: " + e.getMessage());
+                                LoggerProvider.get().error("ERROR: " + e.getMessage());
                             }
                         }
                     })
@@ -144,11 +145,11 @@ public class YACLPresetWidgets {
                     .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.preview.load.tooltip")))
                     .action((screen, btn) -> {
                         if (ConfigPresets.loadPreset(presetId)) {
+                            CloudsConfiguration.save();
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null && mc.player != null) {
-                                mc.player.displayClientMessage(
-                                    ComponentWrapper.literal("§aLoaded preset: " + displayName),
-                                    false
+                                mc.player.sendSystemMessage(
+                                    ComponentWrapper.literal("§aLoaded preset: " + displayName)
                                 );
                             }
                             if (mc != null) {
@@ -185,9 +186,8 @@ public class YACLPresetWidgets {
                         CloudsConfiguration.save();
                         Minecraft mc = Minecraft.getInstance();
                         if (mc != null && mc.player != null) {
-                            mc.player.displayClientMessage(
-                                ComponentWrapper.literal("§aSaved preset: " + presetName),
-                                false
+                            mc.player.sendSystemMessage(
+                                ComponentWrapper.literal("§aSaved preset: " + presetName)
                             );
                         }
                         if (mc != null) {
@@ -204,9 +204,8 @@ public class YACLPresetWidgets {
                     if (ConfigPresets.resetToDefault()) {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc != null && mc.player != null) {
-                            mc.player.displayClientMessage(
-                                ComponentWrapper.literal("§aReset to default configuration"),
-                                false
+                            mc.player.sendSystemMessage(
+                                ComponentWrapper.literal("§aReset to default configuration")
                             );
                         }
                         if (mc != null) {
@@ -215,9 +214,8 @@ public class YACLPresetWidgets {
                     } else {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc != null && mc.player != null) {
-                            mc.player.displayClientMessage(
-                                ComponentWrapper.literal("§cFailed to reset to default"),
-                                false
+                            mc.player.sendSystemMessage(
+                                ComponentWrapper.literal("§cFailed to reset to default")
                             );
                         }
                     }
@@ -238,9 +236,9 @@ public class YACLPresetWidgets {
                     if (base64 != null && !base64.isEmpty()) {
                         try {
                             copyToClipboard(base64);
-                            System.out.println("[CloudTweaks] Config copied to clipboard");
+                            LoggerProvider.get().info("Config copied to clipboard");
                         } catch (Exception e) {
-                            System.err.println("[CloudTweaks] ERROR: " + e.getMessage());
+                            LoggerProvider.get().error("ERROR: " + e.getMessage());
                         }
                     }
                 })
@@ -344,9 +342,8 @@ public class YACLPresetWidgets {
                         if (ConfigPresets.renamePreset(presetId, newName)) {
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null && mc.player != null) {
-                                mc.player.displayClientMessage(
-                                    ComponentWrapper.literal("§aRenamed to: " + newName),
-                                    false
+                                mc.player.sendSystemMessage(
+                                    ComponentWrapper.literal("§aRenamed to: " + newName)
                                 );
                             }
                             if (mc != null) {
@@ -365,11 +362,11 @@ public class YACLPresetWidgets {
             .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.load.tooltip")))
             .action((yacl, btn) -> {
                 if (ConfigPresets.loadPreset(presetId)) {
+                    CloudsConfiguration.save();
                     Minecraft mc = Minecraft.getInstance();
                     if (mc != null && mc.player != null) {
-                        mc.player.displayClientMessage(
-                            ComponentWrapper.literal("§aLoaded preset: " + displayName),
-                            false
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("§aLoaded preset: " + displayName)
                         );
                     }
                     if (mc != null) {
@@ -392,9 +389,9 @@ public class YACLPresetWidgets {
                 if (presetBase64 != null && !presetBase64.isEmpty()) {
                     try {
                         copyToClipboard(presetBase64);
-                        System.out.println("[CloudTweaks] Preset copied to clipboard");
+                        LoggerProvider.get().info("Preset copied to clipboard");
                     } catch (Exception e) {
-                        System.err.println("[CloudTweaks] ERROR: " + e.getMessage());
+                        LoggerProvider.get().error("ERROR: " + e.getMessage());
                     }
                 }
             })
@@ -425,9 +422,8 @@ public class YACLPresetWidgets {
                 if (ConfigPresets.copyPreset(presetId, newPresetId, newPresetName)) {
                     Minecraft mc = Minecraft.getInstance();
                     if (mc != null && mc.player != null) {
-                        mc.player.displayClientMessage(
-                            ComponentWrapper.literal("Copied preset: " + newPresetName),
-                            false
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("Copied preset: " + newPresetName)
                         );
                     }
                     if (mc != null) {
@@ -445,9 +441,8 @@ public class YACLPresetWidgets {
                 if (ConfigPresets.deletePreset(presetId)) {
                     Minecraft mc = Minecraft.getInstance();
                     if (mc != null && mc.player != null) {
-                        mc.player.displayClientMessage(
-                            ComponentWrapper.literal("Deleted preset: " + metadata.displayName),
-                            false
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("Deleted preset: " + metadata.displayName)
                         );
                     }
                     if (mc != null) {

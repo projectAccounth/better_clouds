@@ -34,7 +34,7 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
         ci.cancel();
 
         Minecraft client = Minecraft.getInstance();
-        CloudStatus cloudStatus = client.options.getCloudsType();
+        CloudStatus cloudStatus = client.options.getCloudStatus();
         float partialTicks = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
         Vec3 camPos = client.gameRenderer.getMainCamera().position();
 

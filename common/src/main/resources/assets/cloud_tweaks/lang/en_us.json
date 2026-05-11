@@ -238,5 +238,8 @@
   "cloudtweaks.preview.delete.tooltip": "Delete this preset permanently",
 
   "cloudtweaks.option.remove_layer": "Remove Layer",
-  "cloudtweaks.desc.remove_layer": "Delete this layer permanently"
+  "cloudtweaks.desc.remove_layer": "Delete this layer permanently",
+  
+  "cloudtweaks.option.edit": "Edit",
+  "cloudtweaks.option.edit.tooltip": "Edit all layer settings in a dedicated screen"
 }

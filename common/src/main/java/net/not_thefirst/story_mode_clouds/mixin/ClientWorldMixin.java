@@ -12,7 +12,7 @@ import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
 public class ClientWorldMixin {
     @Inject(method = "tick", at = @At("TAIL"))
     public void onTick(CallbackInfo ci) {
-        long currentDayTime = ((ClientLevel)(Object)this).getDayTime();
+        long currentDayTime = ((ClientLevel)(Object)this).getOverworldClockTime();
         CloudColorProvider.evaluateColor(currentDayTime);
     }
 }

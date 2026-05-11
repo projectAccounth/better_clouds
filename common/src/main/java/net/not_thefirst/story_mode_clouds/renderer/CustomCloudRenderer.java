@@ -170,7 +170,7 @@ public class CustomCloudRenderer implements AutoCloseable {
 
         final int skyColor = CloudColorProvider.getCloudColor(weather);
         final long gameTime = level.getGameTime();
-        final long dayTime = level.getDayTime();
+        final long dayTime = level.getOverworldClockTime();
         final float time = (gameTime + tickDelta) / 20.0F;
 
         startRender();

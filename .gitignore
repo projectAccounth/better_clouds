@@ -6,3 +6,4 @@ run/
 bin/
 *.sh
 .architectury-transformer/
+.eclipse/
