@@ -39,16 +39,6 @@ public class CloudTextureLayers {
     }
 
     /**
-     * Get the underlying Minecraft Identifier for a layer (for Minecraft interop).
-     *
-     * @param layerIndex The layer index
-     * @return Minecraft Identifier
-     */
-    public static net.minecraft.resources.Identifier getLayerTextureId(int layerIndex) {
-        return getLayerTexture(layerIndex).getDelegate();
-    }
-
-    /**
      * Clear all custom layer textures, reverting to defaults.
      */
     public static void clearCustomTextures() {
@@ -84,10 +74,10 @@ public class CloudTextureLayers {
             if (identifier != null) {
                 setLayerTexture(layerIndex, identifier);
             } else {
-                LoggerProvider.get().warn("Invalid texture identifier: " + textureString);
+                LoggerProvider.get().warn("Invalid texture identifier: {}", textureString);
             }
         } catch (IllegalArgumentException e) {
-            LoggerProvider.get().warn("Invalid texture identifier: " + textureString);
+            LoggerProvider.get().warn("Invalid texture identifier: {}", textureString);
         }
     }
 }

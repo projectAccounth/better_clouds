@@ -24,6 +24,7 @@ public class CloudRendererMixin {
         float partialTicks = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
         Vec3 camPos = client.gameRenderer.getMainCamera().position();
 
+        // ...
         RendererHolder.renderCloud(cloudStatus, camPos, partialTicks);
     }
 }

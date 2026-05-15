@@ -175,11 +175,16 @@ public class YACLDataSettings {
     }
 
     public static Screen createLayerEditingScreen(int layerIndex, Screen backScreen) {
+        return createLayerEditingScreen(CloudsConfiguration.Dimension.OVERWORLD, layerIndex, backScreen);
+    }
+
+    public static Screen createLayerEditingScreen(CloudsConfiguration.Dimension dimension, int layerIndex, Screen backScreen) {
         CloudsConfiguration config = CloudsConfiguration.getInstance();
-        LayerConfiguration layer = config.getLayer(layerIndex);
+        LayerConfiguration layer = config.getLayerInDimension(dimension, layerIndex);
+        String dimensionName = dimension.getId().substring(0, 1).toUpperCase() + dimension.getId().substring(1);
         
         return YetAnotherConfigLib.createBuilder()
-            .title(ComponentWrapper.literal("Layer " + (layerIndex + 1) + " Settings"))
+            .title(ComponentWrapper.literal("Layer " + (layerIndex + 1) + " Settings (" + dimensionName + ")"))
             .save(CloudsConfiguration::save)
             
             .category(buildLayerBasicSettings(layer))
@@ -319,6 +324,12 @@ public class YACLDataSettings {
                 .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-ConfigConstants.MAX_AXIS_VELOCITY, ConfigConstants.MAX_AXIS_VELOCITY).step(0.01f))
                 .build())
             
+            .option(Option.<Float>createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.height_offset"))
+                .binding(layer.APPEARANCE.LAYER_HEIGHT_OFFSET, () -> layer.APPEARANCE.LAYER_HEIGHT_OFFSET, v -> layer.APPEARANCE.LAYER_HEIGHT_OFFSET = v)
+                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_LAYER_HEIGHT_OFFSET, ConfigConstants.MAX_LAYER_HEIGHT_OFFSET).step(ConfigConstants.LAYER_HEIGHT_OFFSET_STEP))
+                .build())
+            
             .build();
     }
 
@@ -423,21 +434,52 @@ public class YACLDataSettings {
     }
 
     public static ConfigCategory buildLayersSettings(CloudsConfiguration config) {
+        return buildLayersSettingsForDimension(config, CloudsConfiguration.Dimension.OVERWORLD, 
+            "cloudtweaks.category.overworld_layers", "cloudtweaks.desc.overworld_layers");
+    }
+
+    public static ConfigCategory buildNetherLayersSettings(CloudsConfiguration config) {
+        return buildLayersSettingsForDimension(config, CloudsConfiguration.Dimension.NETHER,
+            "cloudtweaks.category.nether_layers", "cloudtweaks.desc.nether_layers");
+    }
+
+    public static ConfigCategory buildEndLayersSettings(CloudsConfiguration config) {
+        return buildLayersSettingsForDimension(config, CloudsConfiguration.Dimension.END,
+            "cloudtweaks.category.end_layers", "cloudtweaks.desc.end_layers");
+    }
+
+    private static ConfigCategory buildLayersSettingsForDimension(CloudsConfiguration config, 
+                                                                   CloudsConfiguration.Dimension dimension,
+                                                                   String categoryNameKey,
+                                                                   String categoryDescKey) {
         var builder = ConfigCategory.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.category.layers"))
-            .tooltip(ComponentWrapper.translatable("cloudtweaks.desc.layers"));
+            .name(ComponentWrapper.translatable(categoryNameKey))
+            .tooltip(ComponentWrapper.translatable(categoryDescKey));
+        
+        LayerHolder layerHolder = config.getLayerHolder(dimension);
+        
+        // Add per-dimension render toggle
+        builder.option(Option.<Boolean>createBuilder()
+            .name(ComponentWrapper.translatable("cloudtweaks.option.dimension_clouds_rendered"))
+            .binding(
+                config.getCloudRendered(dimension),
+                () -> config.getCloudRendered(dimension),
+                v -> config.setCloudRendered(dimension, v)
+            )
+            .controller(BooleanControllerBuilder::create)
+            .build());
         
         builder.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.translatable("cloudtweaks.title.add_layer"))
             .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc.add_layer")))
             .action((yacl, btn) -> {
-                LayerConfiguration newLayer = new LayerConfiguration(config.getLayerCount());
-                config.getHolder().addLayer(newLayer);
+                LayerConfiguration newLayer = new LayerConfiguration(layerHolder.layers.size());
+                layerHolder.addLayer(newLayer);
                 CloudsConfiguration.save();
                 Minecraft mc = Minecraft.getInstance();
                 if (mc != null && mc.player != null) {
                     mc.player.sendSystemMessage(
-                        ComponentWrapper.literal("Added layer " + config.getLayerCount())
+                        ComponentWrapper.literal("Added layer " + layerHolder.layers.size() + " to " + dimension.getId())
                     );
                 }
                 if (mc != null) {
@@ -446,9 +488,8 @@ public class YACLDataSettings {
             })
             .build());
         
-        int layerCount = config.getLayerCount();
-        for (int i = 0; i < layerCount; i++) {
-            LayerConfiguration layer = config.getLayer(i);
+        for (int i = 0; i < layerHolder.layers.size(); i++) {
+            LayerConfiguration layer = layerHolder.layers.get(i);
             final int layerIndex = i;
             
             var layerGroup = OptionGroup.createBuilder()
@@ -464,7 +505,7 @@ public class YACLDataSettings {
                     .name(ComponentWrapper.translatable("cloudtweaks.option.edit"))
                     .description(OptionDescription.of(ComponentWrapper.literal("Edit all layer settings")))
                     .action((yacl, btn) -> {
-                        Screen editScreen = createLayerEditingScreen(layerIndex, Minecraft.getInstance().screen);
+                        Screen editScreen = createLayerEditingScreen(dimension, layerIndex, Minecraft.getInstance().screen);
                         if (editScreen != null) {
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null) {
@@ -478,13 +519,13 @@ public class YACLDataSettings {
                     .name(ComponentWrapper.translatable("cloudtweaks.option.remove_layer"))
                     .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc.remove_layer")))
                     .action((yacl, btn) -> {
-                        if (config.getLayerCount() > 1) {
-                            config.getHolder().removeLayer(layerIndex);
+                        if (layerHolder.layers.size() > 1) {
+                            layerHolder.removeLayer(layerIndex);
                             CloudsConfiguration.save();
                             Minecraft mc = Minecraft.getInstance();
                             if (mc != null && mc.player != null) {
                                 mc.player.sendSystemMessage(
-                                    ComponentWrapper.literal("Removed layer")
+                                    ComponentWrapper.literal("Removed layer from " + dimension.getId())
                                 );
                             }
                             if (mc != null) {

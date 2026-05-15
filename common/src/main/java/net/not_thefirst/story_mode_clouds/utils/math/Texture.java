@@ -232,7 +232,7 @@ public class Texture {
             );
 
         } catch (IOException e) {
-            LoggerProvider.get().error("Failed to load cloud texture: " + e);
+            LoggerProvider.get().error("Failed to load cloud texture: {}", e);
             return Optional.empty();
         }
     }

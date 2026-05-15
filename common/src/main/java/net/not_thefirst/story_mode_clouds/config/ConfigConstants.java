@@ -51,6 +51,10 @@ public class ConfigConstants {
     public static final float MIN_LAYER_SPEED = -0.1f;
     public static final float MAX_LAYER_SPEED = 0.1f;
     
+    public static final float MIN_LAYER_HEIGHT_OFFSET = -1.0f;
+    public static final float MAX_LAYER_HEIGHT_OFFSET = 1.0f;
+    public static final float LAYER_HEIGHT_OFFSET_STEP = 0.01f;
+    
     public static final float MIN_FOG_DISTANCE = 0.0f;
     public static final float MAX_FOG_START_DISTANCE = 800.0f;
     public static final float MAX_FOG_END_DISTANCE = 5000.0f;

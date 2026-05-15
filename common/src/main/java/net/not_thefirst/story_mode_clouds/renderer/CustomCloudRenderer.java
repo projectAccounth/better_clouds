@@ -226,7 +226,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             }
                         
             float offX = (float)(dxLayer - currentLayer.baseCellX * MeshBuilder.CELL_SIZE_IN_BLOCKS);
-            float offY = (float) (layerConfiguration.LAYER_HEIGHT - cam.y);
+            float offY = (float) (layerConfiguration.LAYER_HEIGHT + layerConfiguration.APPEARANCE.LAYER_HEIGHT_OFFSET - cam.y);
             float offZ = (float)(dzLayer - currentLayer.baseCellZ * MeshBuilder.CELL_SIZE_IN_BLOCKS);
 
             boolean needs = 

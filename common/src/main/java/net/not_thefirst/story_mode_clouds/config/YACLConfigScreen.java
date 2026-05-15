@@ -30,6 +30,8 @@ public class YACLConfigScreen {
             .category(YACLDataSettings.buildSkyColorSettings(config))
             .category(YACLDataSettings.buildLightSourcesSettings(config))
             .category(YACLDataSettings.buildLayersSettings(config))
+            .category(YACLDataSettings.buildNetherLayersSettings(config))
+            .category(YACLDataSettings.buildEndLayersSettings(config))
             
             .build()
             .generateScreen(parent);
@@ -42,7 +44,7 @@ public class YACLConfigScreen {
             .tooltip(ComponentWrapper.translatable("cloudtweaks.desc.global"))
             
             .option(Option.<Boolean>createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.option.clouds_rendered"))
+                .name(ComponentWrapper.translatable("cloudtweaks.option.clouds_mod_enabled"))
                 .binding(config.CLOUDS_RENDERED, () -> config.CLOUDS_RENDERED, v -> config.CLOUDS_RENDERED = v)
                 .controller(BooleanControllerBuilder::create)
                 .build())

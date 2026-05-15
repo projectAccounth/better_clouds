@@ -17,6 +17,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
+import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
@@ -124,7 +125,7 @@ public class ConfigPresets {
                             metadata.fromResourcePack = true;
                             metadata.resourcePackName = namespace;
                             PRESETS.put(rpPresetId, metadata);
-                            LoggerProvider.get().info("Loaded resource pack preset: " + rpPresetId);
+                            LoggerProvider.get().info("Loaded resource pack preset: {}", rpPresetId);
                         }
                     }
                 } catch (Exception ignored) {
@@ -155,7 +156,7 @@ public class ConfigPresets {
                 for (PresetMetadata preset : presets) {
                     PRESETS.put(preset.id, preset);
                 }
-                LoggerProvider.get().info("Loaded " + PRESETS.size() + " presets");
+                LoggerProvider.get().info("Loaded {} presets", PRESETS.size());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -178,40 +179,8 @@ public class ConfigPresets {
         }
     }
 
-    /**
-     * Scan resourcepack folder for presets
-     * Builds RESOURCEPACK_PRESET_FILES and adds metadata entries (not persisted).
-     */
     private static void scanResourcePacks() {
-        if (true) {
-            // no-op, tryna figure out how to safely access the resourcepack folder
-            return; 
-        }
-        RESOURCEPACK_PRESET_FILES.clear();
-        File rpRoot = new File("saiuhdoawijfoasdj/resourcepacks");
-        if (!rpRoot.exists() || !rpRoot.isDirectory()) return;
-
-        File[] packs = rpRoot.listFiles(File::isDirectory);
-        if (packs == null) return;
-
-        for (File pack : packs) {
-            File assets = new File(pack, "assets");
-            if (!assets.exists() || !assets.isDirectory()) continue;
-            File[] namespaces = assets.listFiles(File::isDirectory);
-            if (namespaces == null) continue;
-            for (File ns : namespaces) {
-                File presetsDir = new File(ns, "cloud_presets");
-                if (!presetsDir.exists() || !presetsDir.isDirectory()) continue;
-                File[] presetFiles = presetsDir.listFiles((d, name) -> name.toLowerCase().endsWith(".json"));
-                if (presetFiles == null) continue;
-                for (File f : presetFiles) {
-                    String name = f.getName();
-                    String base = name.substring(0, name.length() - 5);
-                    String id = "rp:" + ns.getName() + ":" + base;
-                    RESOURCEPACK_PRESET_FILES.put(id, f);
-                }
-            }
-        }
+        // no-op
     }
 
     /**
@@ -232,7 +201,7 @@ public class ConfigPresets {
             writer.write(json);
             PRESETS.put(presetId, metadata);
             savePresetsIndex();
-            LoggerProvider.get().info("Saved preset: " + presetId);
+            LoggerProvider.get().info("Saved preset: {}", presetId);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -264,7 +233,7 @@ public class ConfigPresets {
                 scanResourcePacks();
                 f = RESOURCEPACK_PRESET_FILES.get(presetId);
                 if (f == null) {
-                    LoggerProvider.get().warn("Resourcepack preset not found: " + presetId);
+                    LoggerProvider.get().warn("Resourcepack preset not found: {}", presetId);
                     return false;
                 }
             }
@@ -273,7 +242,7 @@ public class ConfigPresets {
                 if (config != null) {
                     CloudsConfiguration current = CloudsConfiguration.getInstance();
                     current.copyFrom(config);
-                    LoggerProvider.get().info("Loaded resourcepack preset: " + presetId);
+                    LoggerProvider.get().info("Loaded resourcepack preset: {}", presetId);
                     return true;
                 }
             } catch (IOException e) {
@@ -284,13 +253,13 @@ public class ConfigPresets {
 
         PresetMetadata metadata = PRESETS.get(presetId);
         if (metadata == null) {
-            LoggerProvider.get().warn("Preset not found: " + presetId);
+            LoggerProvider.get().warn("Preset not found: {}", presetId);
             return false;
         }
 
         File configFile = new File(PRESETS_DIR, metadata.configFile);
         if (!configFile.exists()) {
-            LoggerProvider.get().warn("Preset file missing: " + configFile);
+            LoggerProvider.get().warn("Preset file missing: {}", configFile);
             return false;
         }
 
@@ -300,11 +269,11 @@ public class ConfigPresets {
                 // Validate the loaded config
                 CloudsConfiguration current = CloudsConfiguration.getInstance();
                 current.copyFrom(config);
-                LoggerProvider.get().info("Loaded preset: " + presetId);
+                LoggerProvider.get().info("Loaded preset: {}", presetId);
                 return true;
             }
         } catch (IOException e) {
-            LoggerProvider.get().error("Failed to load preset: " + presetId);
+            LoggerProvider.get().error("Failed to load preset: {}", presetId);
             e.printStackTrace();
         }
         return false;
@@ -327,7 +296,7 @@ public class ConfigPresets {
                 scanResourcePacks();
                 f = RESOURCEPACK_PRESET_FILES.get(presetId);
                 if (f == null) {
-                    LoggerProvider.get().warn("Resourcepack preset not found: " + presetId);
+                    LoggerProvider.get().warn("Resourcepack preset not found: {}", presetId);
                     return null;
                 }
             }
@@ -342,13 +311,13 @@ public class ConfigPresets {
 
         PresetMetadata metadata = PRESETS.get(presetId);
         if (metadata == null) {
-            LoggerProvider.get().warn("Preset not found: " + presetId);
+            LoggerProvider.get().warn("Preset not found: {}", presetId);
             return null;
         }
 
         File configFile = new File(PRESETS_DIR, metadata.configFile);
         if (!configFile.exists()) {
-            LoggerProvider.get().warn("Preset file missing: " + configFile);
+            LoggerProvider.get().warn("Preset file missing: {}", configFile);
             return null;
         }
 
@@ -356,7 +325,7 @@ public class ConfigPresets {
             CloudsConfiguration config = GSON.fromJson(reader, CloudsConfiguration.class);
             return config;
         } catch (IOException e) {
-            LoggerProvider.get().error("Failed to load preset configuration: " + presetId);
+            LoggerProvider.get().error("Failed to load preset configuration: {}", presetId);
             e.printStackTrace();
             return null;
         }
@@ -394,7 +363,7 @@ public class ConfigPresets {
             );
             PRESETS.put(presetId, metadata);
             savePresetsIndex();
-            LoggerProvider.get().info("Loaded preset from Base64 string: " + presetId);
+            LoggerProvider.get().info("Loaded preset from Base64 string: {}", presetId);
             return true;
         } catch (Exception e) {
             LoggerProvider.get().error("Failed to load preset from Base64");
@@ -412,9 +381,7 @@ public class ConfigPresets {
         try {
             CloudsConfiguration current = CloudsConfiguration.getInstance();
             if (current != null) {
-                String base64 = ConfigSerializer.toBase64(current);
-                // LoggerProvider.get().info("Exported current config as Base64");
-                return base64;
+                return ConfigSerializer.toBase64(current);
             }
         } catch (Exception e) {
             LoggerProvider.get().error("Failed to export current config as Base64");
@@ -466,7 +433,7 @@ public class ConfigPresets {
             // funny cap
             int layerCount = config.getLayerCount();
             if (layerCount < 0 || layerCount > 20) {
-                LoggerProvider.get().warn("Layer count out of bounds: " + layerCount + ", clamping to 0-20");
+                LoggerProvider.get().warn("Layer count out of bounds: {}, clamping to 0-20", layerCount);
                 while (config.getLayerCount() > 20) {
                     config.getHolder().removeLayer(config.getLayerCount() - 1);
                 }
@@ -519,7 +486,7 @@ public class ConfigPresets {
             }
             
             if (config.LIGHTING.lights.size() > CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT) {
-                LoggerProvider.get().warn("Light count exceeds maximum, truncating to " + CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT);
+                LoggerProvider.get().warn("Light count exceeds maximum, truncating to {}", CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT);
                 while (config.LIGHTING.lights.size() > CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT) {
                     config.LIGHTING.lights.remove(config.LIGHTING.lights.size() - 1);
                 }
@@ -586,7 +553,7 @@ public class ConfigPresets {
             PresetMetadata metadata = new PresetMetadata(presetId, displayName, "Imported from Base64");
             PRESETS.put(presetId, metadata);
             savePresetsIndex();
-            LoggerProvider.get().info("Imported preset: " + displayName);
+            LoggerProvider.get().info("Imported preset: {}", displayName);
             return true;
         } catch (Exception e) {
             LoggerProvider.get().error("Failed to import preset from Base64");
@@ -628,25 +595,23 @@ public class ConfigPresets {
 
         PresetMetadata metadata = PRESETS.get(presetId);
         if (metadata == null) {
-            LoggerProvider.get().warn("Preset not found: " + presetId);
+            LoggerProvider.get().warn("Preset not found: {}", presetId);
             return null;
         }
 
         File configFile = new File(PRESETS_DIR, metadata.configFile);
         if (!configFile.exists()) {
-            LoggerProvider.get().warn("Preset file missing: " + configFile);
+            LoggerProvider.get().warn("Preset file missing: {}", configFile);
             return null;
         }
 
         try (FileReader reader = new FileReader(configFile)) {
             CloudsConfiguration config = GSON.fromJson(reader, CloudsConfiguration.class);
             if (config != null) {
-                String base64 = ConfigSerializer.toBase64(config);
-                 // LoggerProvider.get().info("Exported preset as Base64: " + presetId);
-                return base64;
+                return ConfigSerializer.toBase64(config);
             }
         } catch (IOException e) {
-            LoggerProvider.get().error("Failed to export preset: " + presetId);
+            LoggerProvider.get().error("Failed to export preset: {}", presetId);
             e.printStackTrace();
         }
         return null;
@@ -677,7 +642,7 @@ public class ConfigPresets {
         if (configFile.delete()) {
             PRESETS.remove(presetId);
             savePresetsIndex();
-            LoggerProvider.get().info("Deleted preset: " + presetId);
+            LoggerProvider.get().info("Deleted preset: {}", presetId);
             return true;
         }
         return false;
@@ -696,13 +661,13 @@ public class ConfigPresets {
 
         PresetMetadata sourceMetadata = PRESETS.get(sourcePresetId);
         if (sourceMetadata == null) {
-            LoggerProvider.get().warn("Source preset not found: " + sourcePresetId);
+            LoggerProvider.get().warn("Source preset not found: {}", sourcePresetId);
             return false;
         }
 
         File sourceFile = new File(PRESETS_DIR, sourceMetadata.configFile);
         if (!sourceFile.exists()) {
-            LoggerProvider.get().warn("Source preset file missing: " + sourceFile);
+            LoggerProvider.get().warn("Source preset file missing: {}", sourceFile);
             return false;
         }
 
@@ -773,7 +738,7 @@ public class ConfigPresets {
                 return preview.toString();
             }
         } catch (IOException e) {
-            LoggerProvider.get().error("Failed to read preset preview: " + presetId);
+            LoggerProvider.get().error("Failed to read preset preview: {}", presetId);
         }
 
         return "Could not load preview for: " + presetId;

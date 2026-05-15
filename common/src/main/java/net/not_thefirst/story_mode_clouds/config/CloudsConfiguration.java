@@ -16,6 +16,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.joml.Vector3f;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
@@ -32,7 +34,14 @@ public class CloudsConfiguration {
     private static long lastBackupTime = 0;
     private static final long BACKUP_THROTTLE_MS = 5000; // Minimum 5 seconds between main config backups
 
+    // Master mod enable/disable switch
     public boolean CLOUDS_RENDERED = true;
+    
+    // Per-dimension render toggles
+    public boolean OVERWORLD_CLOUDS_RENDERED = true;
+    public boolean NETHER_CLOUDS_RENDERED = true;
+    public boolean END_CLOUDS_RENDERED = true;
+    
     private static CloudsConfiguration INSTANCE = new CloudsConfiguration();
     
     // Track when config was last modified for caching purposes
@@ -164,8 +173,72 @@ public class CloudsConfiguration {
     public WeatherColorConfig WEATHER_COLOR   = new WeatherColorConfig();
     public int                CLOUD_GRID_SIZE = 64;
 
-    private LayerHolder LAYERS = new LayerHolder();
+    // Dimension layer holders
+    private LayerHolder LAYERS = new LayerHolder();              // Overworld layers
+    private LayerHolder NETHER_LAYERS = new LayerHolder();       // Nether layers
+    private LayerHolder END_LAYERS = new LayerHolder();          // End layers
+    
+    public static record Dimension(String id) {
+        public static final Dimension OVERWORLD = new Dimension("overworld");
+        public static final Dimension NETHER = new Dimension("nether");
+        public static final Dimension END = new Dimension("end");
+        
+        public String getId() {
+            return id;
+        }
+
+        public static Dimension[] defaults() {
+            return new Dimension[] {OVERWORLD, NETHER, END};
+        }
+        
+        public static Dimension fromId(String id) {
+            for (Dimension d : Dimension.defaults()) {
+                if (d.id.equals(id)) {
+                    return d;
+                }
+            }
+            return null;
+        }
+
+        public static Dimension fromOrdinal(int ordinal) {
+            Dimension[] dims = Dimension.defaults();
+            if (ordinal >= 0 && ordinal < dims.length) {
+                return dims[ordinal];
+            }
+            return null;
+        }
+
+        public static Dimension fromVanilla(ResourceKey<?> key) {
+            if (key.equals(Level.OVERWORLD)) {
+                return OVERWORLD;
+            } else if (key.equals(Level.NETHER)) {
+                return NETHER;
+            } else if (key.equals(Level.END)) {
+                return END;
+            }
+            return null;
+        }
+    }
+    
     public LayerHolder getHolder() { return LAYERS; }
+    
+    public LayerHolder getLayerHolder(Dimension dimension) {
+        return switch (dimension.getId()) {
+            case "overworld" -> LAYERS;
+            case "nether" -> NETHER_LAYERS;
+            case "end" -> END_LAYERS;
+            default -> null;
+        };
+    }
+    
+    public void setLayerHolder(Dimension dimension, LayerHolder holder) {
+        switch (dimension.getId()) {
+            case "overworld" -> this.LAYERS = holder;
+            case "nether" -> this.NETHER_LAYERS = holder;
+            case "end" -> this.END_LAYERS = holder;
+            default -> LoggerProvider.get().error("Attempted to set layer holder for unknown dimension: {}", dimension.getId());
+        }
+    }
 
     public LayerConfiguration getLayer(int idx) {
         if (LAYERS == null || idx < 0 || idx >= LAYERS.layers.size()) {
@@ -173,9 +246,22 @@ public class CloudsConfiguration {
         }
         return LAYERS.layers.get(idx);
     }
+    
+    public LayerConfiguration getLayerInDimension(Dimension dimension, int idx) {
+        LayerHolder holder = getLayerHolder(dimension);
+        if (holder == null || idx < 0 || idx >= holder.layers.size()) {
+            throw new IndexOutOfBoundsException("Layer index out of bounds: " + idx);
+        }
+        return holder.layers.get(idx);
+    }
  
     public int getLayerCount() {
         return LAYERS == null ? 0 : LAYERS.layers.size();
+    }
+    
+    public int getLayerCount(Dimension dimension) {
+        LayerHolder holder = getLayerHolder(dimension);
+        return holder == null ? 0 : holder.layers.size();
     }
 
     public LayerConfiguration template = new LayerConfiguration();
@@ -249,6 +335,7 @@ public class CloudsConfiguration {
             private static final float DEFAULT_CLOUD_Y_SCALE = 1.5f;
             private static final int DEFAULT_OFFSET = 0;
             private static final float DEFAULT_LAYER_SPEED = 0.03f;
+            private static final float DEFAULT_LAYER_HEIGHT_OFFSET = 0.23f;
 
             public boolean SHADING_ENABLED = DEFAULT_SHADING_ENABLED;
             public boolean USES_CUSTOM_ALPHA = DEFAULT_USES_CUSTOM_ALPHA;
@@ -262,6 +349,7 @@ public class CloudsConfiguration {
             public int LAYER_OFFSET_Z = DEFAULT_OFFSET;
             public float LAYER_SPEED_X = DEFAULT_LAYER_SPEED;
             public float LAYER_SPEED_Z = DEFAULT_LAYER_SPEED;
+            public float LAYER_HEIGHT_OFFSET = DEFAULT_LAYER_HEIGHT_OFFSET;
 
             void copy(AppearanceParameters other) {
                 this.SHADING_ENABLED = other.SHADING_ENABLED;
@@ -276,6 +364,7 @@ public class CloudsConfiguration {
                 this.LAYER_OFFSET_Z = other.LAYER_OFFSET_Z;
                 this.LAYER_SPEED_X = other.LAYER_SPEED_X;
                 this.LAYER_SPEED_Z = other.LAYER_SPEED_Z;
+                this.LAYER_HEIGHT_OFFSET = other.LAYER_HEIGHT_OFFSET;
             }
         }
 
@@ -383,6 +472,8 @@ public class CloudsConfiguration {
 
     public CloudsConfiguration() {
         LAYERS.addLayer(new LayerConfiguration(0));
+        NETHER_LAYERS.addLayer(new LayerConfiguration(0));
+        END_LAYERS.addLayer(new LayerConfiguration(0));
     }
 
     public static void load() {
@@ -400,6 +491,19 @@ public class CloudsConfiguration {
 
         if (INSTANCE == null) {
             INSTANCE = new CloudsConfiguration();
+        }
+
+        if (INSTANCE.LAYERS == null) {
+            INSTANCE.LAYERS = new LayerHolder();
+            INSTANCE.LAYERS.addLayer(new LayerConfiguration(0));
+        }
+        if (INSTANCE.NETHER_LAYERS == null) {
+            INSTANCE.NETHER_LAYERS = new LayerHolder();
+            INSTANCE.NETHER_LAYERS.addLayer(new LayerConfiguration(0));
+        }
+        if (INSTANCE.END_LAYERS == null) {
+            INSTANCE.END_LAYERS = new LayerHolder();
+            INSTANCE.END_LAYERS.addLayer(new LayerConfiguration(0));
         }
 
         if (INSTANCE.CLOUD_COLOR == null || INSTANCE.CLOUD_COLOR.isEmpty()) {
@@ -516,7 +620,7 @@ public class CloudsConfiguration {
         // Check throttling: only backup if enough time has passed since last backup
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastBackupTime < BACKUP_THROTTLE_MS) {
-            LoggerProvider.get().debug("Main config backup skipped - throttled (< " + BACKUP_THROTTLE_MS + "ms)");
+            LoggerProvider.get().debug("Main config backup skipped - throttled (< {}ms)", BACKUP_THROTTLE_MS);
             return;
         }
         
@@ -535,6 +639,9 @@ public class CloudsConfiguration {
      */
     public void copyFrom(CloudsConfiguration other) {
         this.CLOUDS_RENDERED = other.CLOUDS_RENDERED;
+        this.OVERWORLD_CLOUDS_RENDERED = other.OVERWORLD_CLOUDS_RENDERED;
+        this.NETHER_CLOUDS_RENDERED = other.NETHER_CLOUDS_RENDERED;
+        this.END_CLOUDS_RENDERED = other.END_CLOUDS_RENDERED;
         this.CLOUD_COLOR = new ArrayList<>(other.CLOUD_COLOR);
         this.COLOR_MODE = other.COLOR_MODE;
         this.LIGHTING = new LightingParameters();
@@ -553,11 +660,17 @@ public class CloudsConfiguration {
         this.WEATHER_COLOR.thunderStrength = other.WEATHER_COLOR.thunderStrength;
         this.CLOUD_GRID_SIZE = other.CLOUD_GRID_SIZE;
         
-        this.LAYERS.clear();
-        for (LayerConfiguration otherLayer : other.LAYERS.layers) {
+        copyLayerHolder(this.LAYERS, other.LAYERS);
+        copyLayerHolder(this.NETHER_LAYERS, other.NETHER_LAYERS);
+        copyLayerHolder(this.END_LAYERS, other.END_LAYERS);
+    }
+    
+    private void copyLayerHolder(LayerHolder dest, LayerHolder src) {
+        dest.clear();
+        for (LayerConfiguration otherLayer : src.layers) {
             LayerConfiguration newLayer = new LayerConfiguration(otherLayer.getLayerIndex());
             newLayer.copy(otherLayer);
-            this.LAYERS.addLayer(newLayer);
+            dest.addLayer(newLayer);
         }
     }
 
@@ -578,9 +691,24 @@ public class CloudsConfiguration {
         lastModificationTime = System.currentTimeMillis();
     }
 
-    // Getters and setters for config binding (planning to also use other backends)
-    public boolean getCloudsRendered() { return CLOUDS_RENDERED; }
-    public void setCloudsRendered(boolean value) { CLOUDS_RENDERED = value; }
+    
+    public boolean getCloudRendered(Dimension dimension) {
+        return switch (dimension.getId()) {
+            case "overworld" -> OVERWORLD_CLOUDS_RENDERED;
+            case "nether" -> NETHER_CLOUDS_RENDERED;
+            case "end" -> END_CLOUDS_RENDERED;
+            default -> false;
+        };
+    }
+    
+    public void setCloudRendered(Dimension dimension, boolean value) {
+        switch (dimension.getId()) {
+            case "overworld" -> this.OVERWORLD_CLOUDS_RENDERED = value;
+            case "nether" -> this.NETHER_CLOUDS_RENDERED = value;
+            case "end" -> this.END_CLOUDS_RENDERED = value;
+            default -> LoggerProvider.get().error("Attempted to set cloud rendered for unknown dimension: {}", dimension.getId());
+        }
+    }
 
     public int getCloudGridSize() { return CLOUD_GRID_SIZE; }
     public void setCloudGridSize(int value) { CLOUD_GRID_SIZE = value; }

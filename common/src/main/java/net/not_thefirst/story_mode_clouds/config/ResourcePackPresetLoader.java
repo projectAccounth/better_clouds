@@ -36,10 +36,10 @@ public class ResourcePackPresetLoader {
                     new java.io.InputStreamReader(inputStream),
                     CloudsConfiguration.class
             );
-            LoggerProvider.get().info("Loaded resource pack preset: " + identifier);
+            LoggerProvider.get().info("Loaded resource pack preset: {}", identifier);
             return config;
         } catch (IOException e) {
-            LoggerProvider.get().warn("Failed to load preset from: " + identifier);
+            LoggerProvider.get().warn("Failed to load preset from: {}", identifier);
             return null;
         }
     }
@@ -69,7 +69,7 @@ public class ResourcePackPresetLoader {
         Map<String, CloudsConfiguration> presets = new HashMap<>();
         // Note: In a full implementation, you'd scan the namespace for all preset files
         // This requires resource pack introspection which is complex in Minecraft
-        LoggerProvider.get().info("Attempting to load presets from namespace: " + namespace);
+        LoggerProvider.get().info("Attempting to load presets from namespace: {}", namespace);
         return presets;
     }
 
