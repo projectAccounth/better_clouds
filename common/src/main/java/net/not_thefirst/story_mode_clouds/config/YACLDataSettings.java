@@ -6,16 +6,23 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.*;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.FadeType;
+import net.not_thefirst.story_mode_clouds.config.screens.LayerPresets;
+import net.not_thefirst.story_mode_clouds.config.screens.YACLLayerPresetsScreen;
+import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 
 import java.awt.Color;
+import java.time.format.DateTimeFormatter;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 /**
  * sdjsdjsjdsjd
  */
 public class YACLDataSettings {
+    private YACLDataSettings() {}
 
     public static ConfigCategory buildSkyColorSettings(CloudsConfiguration config) {
         var builder = ConfigCategory.createBuilder()
@@ -55,7 +62,7 @@ public class YACLDataSettings {
                     .name(ComponentWrapper.translatable("cloudtweaks.raw.time"))
                     .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.option.time_of_day")))
                     .binding(kp.time, () -> kp.time, v -> kp.time = v)
-                    .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, 24000).step(100))
+                    .controller(opt -> IntegerFieldControllerBuilder.create(opt).range(0, 24000))
                     .build())
                 
                 .option(Option.<Color>createBuilder()
@@ -66,7 +73,7 @@ public class YACLDataSettings {
                         () -> new Color(kp.color),
                         v -> kp.color = v.getRGB()
                     )
-                    .controller(opt -> ColorControllerBuilder.create(opt))
+                    .controller(ColorControllerBuilder::create)
                     .build())
                 
                 .option(ButtonOption.createBuilder()
@@ -91,13 +98,37 @@ public class YACLDataSettings {
             builder.group(groupBuilder.build());
         }
         
+        builder.option(ButtonOption.createBuilder()
+            .name(ComponentWrapper.literal("💾 Save as Color Preset"))
+            .description(OptionDescription.of(ComponentWrapper.literal("Save current color settings as a preset")))
+            .action((yacl, btn) -> {
+                String timestamp = String.valueOf(System.currentTimeMillis());
+                String presetName = "CloudPreset_" + formatTimestamp(System.currentTimeMillis());
+                if (net.not_thefirst.story_mode_clouds.config.presets.PresetController.saveColorPreset(timestamp, presetName, "Saved from Color settings", config)) {
+                    CloudsConfiguration.save();
+                    if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc != null && mc.player != null) {
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("§aSaved color preset: " + presetName)
+                        );
+                    }
+                }
+            })
+            .build());
+        
         return builder.build();
+    }
+    
+    private static String formatTimestamp(long millis) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").withZone(ZoneId.systemDefault());
+        return formatter.format(Instant.ofEpochMilli(millis));
     }
 
     public static ConfigCategory buildLightSourcesSettings(CloudsConfiguration config) {
         var builder = ConfigCategory.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.category.lighting"))
-            .tooltip(ComponentWrapper.translatable("cloudtweaks.tooltip.light"));
+            .name(ComponentWrapper.translatable("cloudtweaks.category.light_sources"))
+            .tooltip(ComponentWrapper.translatable("cloudtweaks.desc.light_sources"));
         
         List<DiffuseLight> lights = config.LIGHTING.lights;
         
@@ -171,6 +202,25 @@ public class YACLDataSettings {
             builder.group(groupBuilder.build());
         }
         
+        builder.option(ButtonOption.createBuilder()
+            .name(ComponentWrapper.literal("💾 Save as Light Sources Preset"))
+            .description(OptionDescription.of(ComponentWrapper.literal("Save current light source settings as a preset")))
+            .action((yacl, btn) -> {
+                String timestamp = String.valueOf(System.currentTimeMillis());
+                String presetName = "LightSourcesPreset_" + formatTimestamp(System.currentTimeMillis());
+                if (net.not_thefirst.story_mode_clouds.config.presets.PresetController.saveLightSourcesPreset(timestamp, presetName, "Saved from Light Sources settings", config)) {
+                    CloudsConfiguration.save();
+                    if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc != null && mc.player != null) {
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("§aSaved light sources preset: " + presetName)
+                        );
+                    }
+                }
+            })
+            .build());
+        
         return builder.build();
     }
 
@@ -192,6 +242,7 @@ public class YACLDataSettings {
             .category(buildLayerBevelSettings(layer))
             .category(buildLayerFogSettings(layer))
             .category(buildLayerFadeSettings(layer))
+            .category(buildLayerSaveAsPresetCategory(layer, dimension))
             
             .build()
             .generateScreen(backScreen);
@@ -204,7 +255,7 @@ public class YACLDataSettings {
             .option(Option.<String>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.name"))
                 .binding(layer.NAME, () -> layer.NAME, v -> layer.NAME = v)
-                .controller(opt -> StringControllerBuilder.create(opt))
+                .controller(StringControllerBuilder::create)
                 .build())
             
             .option(Option.<Boolean>createBuilder()
@@ -222,7 +273,7 @@ public class YACLDataSettings {
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.height"))
                 .binding(layer.LAYER_HEIGHT, () -> layer.LAYER_HEIGHT, v -> layer.LAYER_HEIGHT = v)
-                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, 8096).step(1))
+                .controller(IntegerFieldControllerBuilder::create)
                 .build())
             
             .option(Option.<String>createBuilder()
@@ -291,7 +342,7 @@ public class YACLDataSettings {
                     () -> new Color(layer.APPEARANCE.LAYER_COLOR),
                     v -> layer.APPEARANCE.LAYER_COLOR = v.getRGB()
                 )
-                .controller(opt -> ColorControllerBuilder.create(opt))
+                .controller(ColorControllerBuilder::create)
                 .build())
             
             .option(Option.<Float>createBuilder()
@@ -303,13 +354,13 @@ public class YACLDataSettings {
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.offset_x"))
                 .binding(layer.APPEARANCE.LAYER_OFFSET_X, () -> layer.APPEARANCE.LAYER_OFFSET_X, v -> layer.APPEARANCE.LAYER_OFFSET_X = v)
-                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(-ConfigConstants.MAX_LAYER_OFFSET, ConfigConstants.MAX_LAYER_OFFSET).step(1))
+                .controller(opt -> IntegerFieldControllerBuilder.create(opt).range(-ConfigConstants.MAX_LAYER_OFFSET, ConfigConstants.MAX_LAYER_OFFSET))
                 .build())
             
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.offset_z"))
                 .binding(layer.APPEARANCE.LAYER_OFFSET_Z, () -> layer.APPEARANCE.LAYER_OFFSET_Z, v -> layer.APPEARANCE.LAYER_OFFSET_Z = v)
-                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(-ConfigConstants.MAX_LAYER_OFFSET, ConfigConstants.MAX_LAYER_OFFSET).step(1))
+                .controller(opt -> IntegerFieldControllerBuilder.create(opt).range(-ConfigConstants.MAX_LAYER_OFFSET, ConfigConstants.MAX_LAYER_OFFSET))
                 .build())
             
             .option(Option.<Float>createBuilder()
@@ -362,16 +413,24 @@ public class YACLDataSettings {
         return ConfigCategory.createBuilder()
             .name(ComponentWrapper.literal("Fog"))
             
-            .option(Option.<Float>createBuilder()
+            .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.fog_start"))
-                .binding(layer.FOG.FOG_START_DISTANCE, () -> layer.FOG.FOG_START_DISTANCE, v -> layer.FOG.FOG_START_DISTANCE = v)
-                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_FOG_DISTANCE, ConfigConstants.MAX_FOG_START_DISTANCE).step(5.0f))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc.fog_start")))
+                .binding(
+                    (int) (layer.FOG.FOG_START_DISTANCE / ConfigConstants.FOG_DISTANCE_CHUNK_SIZE),
+                    () -> (int) (layer.FOG.FOG_START_DISTANCE / ConfigConstants.FOG_DISTANCE_CHUNK_SIZE),
+                    v -> layer.FOG.FOG_START_DISTANCE = (float)v * ConfigConstants.FOG_DISTANCE_CHUNK_SIZE)
+                .controller(opt -> IntegerFieldControllerBuilder.create(opt).range(ConfigConstants.MIN_FOG_DISTANCE_CHUNKS, ConfigConstants.MAX_FOG_START_DISTANCE_CHUNKS))
                 .build())
             
-            .option(Option.<Float>createBuilder()
+            .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.fog_end"))
-                .binding(layer.FOG.FOG_END_DISTANCE, () -> layer.FOG.FOG_END_DISTANCE, v -> layer.FOG.FOG_END_DISTANCE = v)
-                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_FOG_DISTANCE, ConfigConstants.MAX_FOG_END_DISTANCE).step(5.0f))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc.fog_end")))
+                .binding(
+                    (int) (layer.FOG.FOG_END_DISTANCE / ConfigConstants.FOG_DISTANCE_CHUNK_SIZE),
+                    () -> (int) (layer.FOG.FOG_END_DISTANCE / ConfigConstants.FOG_DISTANCE_CHUNK_SIZE),
+                    v -> layer.FOG.FOG_END_DISTANCE = (float)v * ConfigConstants.FOG_DISTANCE_CHUNK_SIZE)
+                .controller(opt -> IntegerFieldControllerBuilder.create(opt).range(ConfigConstants.MIN_FOG_DISTANCE_CHUNKS, ConfigConstants.MAX_FOG_END_DISTANCE_CHUNKS))
                 .build())
             
             .build();
@@ -414,7 +473,7 @@ public class YACLDataSettings {
             .option(Option.<Color>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.fade_to_color"))
                 .binding(new Color(layer.FADE.FADE_TO_COLOR), () -> new Color(layer.FADE.FADE_TO_COLOR), v -> layer.FADE.FADE_TO_COLOR = v.getRGB())
-                .controller(opt -> ColorControllerBuilder.create(opt))
+                .controller(ColorControllerBuilder::create)
                 .build())
             
             .option(Option.<Float>createBuilder()
@@ -448,10 +507,11 @@ public class YACLDataSettings {
             "cloudtweaks.category.end_layers", "cloudtweaks.desc.end_layers");
     }
 
-    private static ConfigCategory buildLayersSettingsForDimension(CloudsConfiguration config, 
-                                                                   CloudsConfiguration.Dimension dimension,
-                                                                   String categoryNameKey,
-                                                                   String categoryDescKey) {
+    private static ConfigCategory buildLayersSettingsForDimension(
+        CloudsConfiguration config, 
+        CloudsConfiguration.Dimension dimension,
+        String categoryNameKey,
+        String categoryDescKey) {
         var builder = ConfigCategory.createBuilder()
             .name(ComponentWrapper.translatable(categoryNameKey))
             .tooltip(ComponentWrapper.translatable(categoryDescKey));
@@ -498,7 +558,7 @@ public class YACLDataSettings {
                 .option(Option.<String>createBuilder()
                     .name(ComponentWrapper.translatable("cloudtweaks.option.name"))
                     .binding(layer.NAME, () -> layer.NAME, v -> layer.NAME = v)
-                    .controller(opt -> StringControllerBuilder.create(opt))
+                    .controller(StringControllerBuilder::create)
                     .build())
                 
                 .option(ButtonOption.createBuilder()
@@ -538,6 +598,154 @@ public class YACLDataSettings {
             builder.group(layerGroup.build());
         }
         
+        // Add Layer Presets button
+        builder.option(ButtonOption.createBuilder()
+            .name(ComponentWrapper.literal("Layer Presets"))
+            .description(OptionDescription.of(ComponentWrapper.literal("Import, export, and manage layer presets")))
+            .action((yacl, btn) -> {
+                Screen presetsScreen = YACLLayerPresetsScreen.createLayerPresetsScreen(dimension, Minecraft.getInstance().screen);
+                if (presetsScreen != null) {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc != null) {
+                        mc.setScreen(presetsScreen);
+                    }
+                }
+            })
+            .build());
+        
         return builder.build();
+    }
+
+    public static Screen createLayerPresetEditingScreen(LayerConfiguration layer, String presetId, 
+                                                         CloudsConfiguration.Dimension dimension, Screen backScreen) {
+        return YetAnotherConfigLib.createBuilder()
+            .title(ComponentWrapper.literal("Edit Layer Preset - " + layer.NAME))
+            .save(() -> LayerPresets.saveLayerPreset(
+                presetId,
+                layer.NAME,
+                "Modified layer preset",
+                layer,
+                    dimension.getId()
+                )
+            )
+            
+            .category(buildLayerBasicSettings(layer))
+            .category(buildLayerAppearanceSettings(layer))
+            .category(buildLayerBevelSettings(layer))
+            .category(buildLayerFogSettings(layer))
+            .category(buildLayerFadeSettings(layer))
+            .category(buildLayerPresetSaveCategory(layer, presetId, dimension, backScreen))
+            
+            .build()
+            .generateScreen(backScreen);
+    }
+
+    /**
+     * Build a category with options to save/update the layer preset.
+     */
+    private static ConfigCategory buildLayerPresetSaveCategory(LayerConfiguration layer, String presetId, 
+                                                               CloudsConfiguration.Dimension dimension, Screen backScreen) {
+        var saveData = new Object() {
+            String displayName = layer.NAME;
+            String description = "Layer preset";
+        };
+
+        return ConfigCategory.createBuilder()
+            .name(ComponentWrapper.literal("Save Preset"))
+            
+            .option(Option.<String>createBuilder()
+                .name(ComponentWrapper.literal("Display Name"))
+                .binding(saveData.displayName, () -> saveData.displayName, v -> saveData.displayName = v)
+                .controller(StringControllerBuilder::create)
+                .build())
+            
+            .option(Option.<String>createBuilder()
+                .name(ComponentWrapper.literal("Description"))
+                .binding(saveData.description, () -> saveData.description, v -> saveData.description = v)
+                .controller(StringControllerBuilder::create)
+                .build())
+            
+            .option(ButtonOption.createBuilder()
+                .name(ComponentWrapper.literal("Update Preset"))
+                .description(OptionDescription.of(ComponentWrapper.literal("Save changes to this preset")))
+                .action((yacl, btn) -> {
+                    boolean success = LayerPresets.saveLayerPreset(
+                        presetId,
+                        saveData.displayName,
+                        saveData.description,
+                        layer,
+                        dimension.getId()
+                    );
+                    
+                    Minecraft mc = Minecraft.getInstance();
+                    if (success && mc != null && mc.player != null) {
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("Preset updated: " + saveData.displayName)
+                        );
+                        // Return to presets list
+                        if (mc != null) {
+                            mc.setScreen(backScreen);
+                        }
+                    }
+                })
+                .build())
+            
+            .build();
+    }
+
+    /**
+     * Build a category with option to save the current layer as a preset.
+     */
+    private static ConfigCategory buildLayerSaveAsPresetCategory(LayerConfiguration layer, CloudsConfiguration.Dimension dimension) {
+        var saveData = new Object() {
+            String presetId = "layer_" + System.currentTimeMillis();
+            String displayName = layer.NAME;
+            String description = "Custom layer preset";
+        };
+
+        return ConfigCategory.createBuilder()
+            .name(ComponentWrapper.literal("Save as Preset"))
+            
+            .option(Option.<String>createBuilder()
+                .name(ComponentWrapper.literal("Preset ID"))
+                .description(OptionDescription.of(ComponentWrapper.literal("Unique identifier for this preset")))
+                .binding(saveData.presetId, () -> saveData.presetId, v -> saveData.presetId = v)
+                .controller(StringControllerBuilder::create)
+                .build())
+            
+            .option(Option.<String>createBuilder()
+                .name(ComponentWrapper.literal("Display Name"))
+                .binding(saveData.displayName, () -> saveData.displayName, v -> saveData.displayName = v)
+                .controller(StringControllerBuilder::create)
+                .build())
+            
+            .option(Option.<String>createBuilder()
+                .name(ComponentWrapper.literal("Description"))
+                .binding(saveData.description, () -> saveData.description, v -> saveData.description = v)
+                .controller(StringControllerBuilder::create)
+                .build())
+            
+            .option(ButtonOption.createBuilder()
+                .name(ComponentWrapper.literal("Save as Preset"))
+                .description(OptionDescription.of(ComponentWrapper.literal("Save this layer as a preset for later use")))
+                .action((yacl, btn) -> {
+                    boolean success = LayerPresets.saveLayerPreset(
+                        saveData.presetId,
+                        saveData.displayName,
+                        saveData.description,
+                        layer,
+                        dimension.getId()
+                    );
+                    
+                    Minecraft mc = Minecraft.getInstance();
+                    if (success && mc != null && mc.player != null) {
+                        mc.player.sendSystemMessage(
+                            ComponentWrapper.literal("Layer preset saved: " + saveData.displayName)
+                        );
+                    }
+                })
+                .build())
+            
+            .build();
     }
 }

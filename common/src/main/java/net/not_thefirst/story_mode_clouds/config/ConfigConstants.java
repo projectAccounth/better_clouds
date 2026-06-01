@@ -5,10 +5,6 @@ package net.not_thefirst.story_mode_clouds.config;
  */
 public class ConfigConstants {
     
-    public static final int MIN_GRID_SIZE = 16;
-    public static final int MAX_GRID_SIZE = 512;
-    public static final int GRID_SIZE_STEP = 16;
-    
     public static final float MIN_BRIGHTNESS = 0.0f;
     public static final float MAX_BRIGHTNESS = 1.0f;
     public static final float BRIGHTNESS_STEP = 0.01f;
@@ -61,6 +57,13 @@ public class ConfigConstants {
     public static final float DEFAULT_FOG_START = 50.0f;
     public static final float DEFAULT_FOG_END = 200.0f;
     
+    public static final int MIN_FOG_DISTANCE_CHUNKS = 0;
+    public static final int MAX_FOG_START_DISTANCE_CHUNKS = 50;
+    public static final int MAX_FOG_END_DISTANCE_CHUNKS = 312;
+    public static final int DEFAULT_FOG_START_DISTANCE_CHUNKS = 3;
+    public static final int DEFAULT_FOG_END_DISTANCE_CHUNKS = 12;
+    public static final int FOG_DISTANCE_CHUNK_SIZE = 16;
+    
     public static final float MIN_BEVEL_SIZE = 0.0f;
     public static final float MAX_BEVEL_SIZE = 10.0f;
     public static final int MIN_EDGE_SEGMENTS = 1;
@@ -74,9 +77,10 @@ public class ConfigConstants {
     public static final int MAX_REBUILD_BUDGET_MS = 100;
     public static final int DEFAULT_REBUILD_BUDGET_MS = 2;
 
-    public static final int MIN_CLOUD_GRID_SIZE = 16;
-    public static final int MAX_CLOUD_GRID_SIZE = 512;
-    public static final int CLOUD_GRID_SIZE_STEP = 2;
+    public static final int MIN_CLOUD_DISTANCE_CHUNKS = 4;      // 12 chunks = 192 blocks -> 16 grid size
+    public static final int MAX_CLOUD_DISTANCE_CHUNKS = 128;    // 384 chunks = 6144 blocks -> 512 grid size
+    public static final int DEFAULT_CLOUD_DISTANCE_CHUNKS = 48; // 48 chunks = 768 blocks -> 64 grid size
+    public static final int CLOUD_DISTANCE_STEP = 1;
 
     public static final int MAX_LAYER_OFFSET = 1000;
 

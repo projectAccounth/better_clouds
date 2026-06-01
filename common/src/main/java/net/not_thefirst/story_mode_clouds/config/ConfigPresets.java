@@ -6,9 +6,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,31 +17,26 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 
-import net.minecraft.server.packs.resources.ReloadableResourceManager;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
+import net.not_thefirst.story_mode_clouds.utils.math.MathUtils;
 
-/**
- * Manages configuration presets for easy switching between different cloud setups.
- * Presets are stored in JSON format and can be loaded/saved independently.
- */
 public class ConfigPresets {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final File PRESETS_DIR = new File("config/cloud_presets");
     private static final File PRESETS_INDEX = new File(PRESETS_DIR, "presets.json");
     private static final File BACKUPS_DIR = new File(PRESETS_DIR, "backups");
-    private static final SimpleDateFormat BACKUP_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-SSS");
+    private static final DateTimeFormatter BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss-SSS");
 
     private static final Map<String, PresetMetadata> PRESETS = new HashMap<>();
     
     private static final Map<String, java.io.File> RESOURCEPACK_PRESET_FILES = new HashMap<>();
-    private static boolean INITIALIZED = false;
-    private static int IMPORTED_COUNT = 0;
+    private static boolean initialized = false;
+    private static int importedCount = 0;
     
     private static final Map<String, Long> LAST_BACKUP_TIME = new HashMap<>();
-    private static final long BACKUP_THROTTLE_MS = 5000; // Minimum 5s
+    private static final long BACKUP_THROTTLE_MS = 5000;
     
-    // Base64 caching to prevent expensive serialization on every frame
     private static String cachedBase64 = null;
     private static long lastConfigModifiedTime = 0;
 
@@ -71,14 +66,14 @@ public class ConfigPresets {
      * Initialize the presets system and load all available presets.
      */
     public static void initialize() {
-        if (INITIALIZED) return;
+        if (initialized) return;
 
         PRESETS_DIR.mkdirs();
         BACKUPS_DIR.mkdirs();
         loadPresetsIndex();
         scanResourcePacks();
         createDefaultPreset();
-        INITIALIZED = true;
+        initialized = true;
     }
 
     /**
@@ -96,6 +91,32 @@ public class ConfigPresets {
         }
     }
 
+    private static void tryLoadPreset(ResourceManager resourceManager, IdentifierWrapper presetId, String namespace, String presetName) {
+        try {
+            CloudsConfiguration config = ResourcePackPresetLoader.loadPresetFromResources(
+                resourceManager,
+                presetId
+            );
+            if (config != null) {
+                String rpPresetId = "rp:" + namespace + ":" + presetName;
+                if (!PRESETS.containsKey(rpPresetId)) {
+                    PresetMetadata metadata = new PresetMetadata(
+                        rpPresetId,
+                        presetName,
+                        "From resource pack: " + namespace
+                    );
+                    metadata.fromResourcePack = true;
+                    metadata.resourcePackName = namespace;
+                    PRESETS.put(rpPresetId, metadata);
+                    LoggerProvider.get().info("Loaded resource pack preset: {}", rpPresetId);
+                }
+            }
+        } catch (Exception ignored) {
+            // Preset doesn't exist in this namespace, skip
+            LoggerProvider.get().warn("Error loading preset from namespace {}: {}", namespace, ignored.getMessage());
+        }
+    }
+
     /**
      * Load presets from a specific namespace using ResourceManager and IdentifierWrapper.
      * Looks for JSON files in assets/<namespace>/cloud_presets/
@@ -109,31 +130,10 @@ public class ConfigPresets {
                     namespace,
                     "cloud_presets/" + presetName + ".json"
                 );
-                try {
-                    CloudsConfiguration config = ResourcePackPresetLoader.loadPresetFromResources(
-                        resourceManager,
-                        presetId
-                    );
-                    if (config != null) {
-                        String rpPresetId = "rp:" + namespace + ":" + presetName;
-                        if (!PRESETS.containsKey(rpPresetId)) {
-                            PresetMetadata metadata = new PresetMetadata(
-                                rpPresetId,
-                                presetName,
-                                "From resource pack: " + namespace
-                            );
-                            metadata.fromResourcePack = true;
-                            metadata.resourcePackName = namespace;
-                            PRESETS.put(rpPresetId, metadata);
-                            LoggerProvider.get().info("Loaded resource pack preset: {}", rpPresetId);
-                        }
-                    }
-                } catch (Exception ignored) {
-                    // Preset doesn't exist in this namespace, skip
-                }
+                tryLoadPreset(resourceManager, presetId, namespace, presetName);
             }
         } catch (Exception e) {
-            LoggerProvider.get().warn("Error loading presets from namespace " + namespace + ": " + e.getMessage());
+            LoggerProvider.get().warn("Error loading presets from namespace {}: {}", namespace, e.getMessage());
         }
     }
 
@@ -222,7 +222,7 @@ public class ConfigPresets {
         try {
             backupCurrentConfig("before_load_" + presetId);
         } catch (IOException e) {
-            LoggerProvider.get().warn("Could not create backup before loading preset");
+            LoggerProvider.get().warn("Could not create backup before loading preset: {}", e.getMessage());
         }
         
         // Support resourcepack presets prefixed with rp:namespace:name
@@ -301,8 +301,7 @@ public class ConfigPresets {
                 }
             }
             try (FileReader reader = new FileReader(f)) {
-                CloudsConfiguration config = GSON.fromJson(reader, CloudsConfiguration.class);
-                return config;
+                return GSON.fromJson(reader, CloudsConfiguration.class);
             } catch (IOException e) {
                 e.printStackTrace();
                 return null;
@@ -322,8 +321,7 @@ public class ConfigPresets {
         }
 
         try (FileReader reader = new FileReader(configFile)) {
-            CloudsConfiguration config = GSON.fromJson(reader, CloudsConfiguration.class);
-            return config;
+            return GSON.fromJson(reader, CloudsConfiguration.class);
         } catch (IOException e) {
             LoggerProvider.get().error("Failed to load preset configuration: {}", presetId);
             e.printStackTrace();
@@ -432,9 +430,9 @@ public class ConfigPresets {
         try {
             // funny cap
             int layerCount = config.getLayerCount();
-            if (layerCount < 0 || layerCount > 20) {
-                LoggerProvider.get().warn("Layer count out of bounds: {}, clamping to 0-20", layerCount);
-                while (config.getLayerCount() > 20) {
+            if (layerCount < ConfigConstants.MIN_LAYERS || layerCount > ConfigConstants.MAX_LAYERS) {
+                LoggerProvider.get().warn("Layer count out of bounds: {}, clamping to {}-{}", layerCount, ConfigConstants.MIN_LAYERS, ConfigConstants.MAX_LAYERS);
+                while (config.getLayerCount() > ConfigConstants.MAX_LAYERS) {
                     config.getHolder().removeLayer(config.getLayerCount() - 1);
                 }
             }
@@ -442,71 +440,79 @@ public class ConfigPresets {
             for (int i = 0; i < config.getLayerCount(); i++) {
                 CloudsConfiguration.LayerConfiguration layer = config.getLayer(i);
                 
-                if (layer.LAYER_HEIGHT < 0) {
-                    LoggerProvider.get().warn("Layer " + i + " height out of bounds: " + layer.LAYER_HEIGHT);
-                    layer.LAYER_HEIGHT = Math.max(0, layer.LAYER_HEIGHT);
+                if (layer.LAYER_HEIGHT < ConfigConstants.MIN_LAYER_HEIGHT) {
+                    LoggerProvider.get().warn("Layer {} height out of bounds: {}", i, layer.LAYER_HEIGHT);
+                    layer.LAYER_HEIGHT = Math.max(ConfigConstants.MIN_LAYER_HEIGHT, layer.LAYER_HEIGHT);
                 }
                 
-                if (layer.APPEARANCE.BASE_ALPHA < 0 || layer.APPEARANCE.BASE_ALPHA > 255) {
-                    layer.APPEARANCE.BASE_ALPHA = Math.max(255, Math.min(0, layer.APPEARANCE.BASE_ALPHA));
+                if (layer.APPEARANCE.BASE_ALPHA < ConfigConstants.MIN_ALPHA || layer.APPEARANCE.BASE_ALPHA > ConfigConstants.MAX_ALPHA) {
+                    layer.APPEARANCE.BASE_ALPHA = MathUtils.clamp(layer.APPEARANCE.BASE_ALPHA, ConfigConstants.MIN_ALPHA, ConfigConstants.MAX_ALPHA);
                 }
                 if (layer.APPEARANCE.BRIGHTNESS < 0 || layer.APPEARANCE.BRIGHTNESS > 2f) {
-                    layer.APPEARANCE.BRIGHTNESS = Math.max(2f, Math.min(0f, layer.APPEARANCE.BRIGHTNESS));
+                    layer.APPEARANCE.BRIGHTNESS = MathUtils.clamp(layer.APPEARANCE.BRIGHTNESS, 0f, 2f);
                 }
-                if (layer.APPEARANCE.CLOUD_Y_SCALE < 0.1f || layer.APPEARANCE.CLOUD_Y_SCALE > 5f) {
-                    layer.APPEARANCE.CLOUD_Y_SCALE = Math.max(5f, Math.min(0.1f, layer.APPEARANCE.CLOUD_Y_SCALE));
-                }
-                
-                layer.APPEARANCE.LAYER_SPEED_X = Math.max(0.1f, Math.min(-0.1f, layer.APPEARANCE.LAYER_SPEED_X));
-                layer.APPEARANCE.LAYER_SPEED_Z = Math.max(0.1f, Math.min(-0.1f, layer.APPEARANCE.LAYER_SPEED_Z));
-
-                if (layer.FOG.FOG_START_DISTANCE < 0 || layer.FOG.FOG_START_DISTANCE > 500) {
-                    layer.FOG.FOG_START_DISTANCE = Math.max(500f, Math.min(0f, layer.FOG.FOG_START_DISTANCE));
-                }
-                if (layer.FOG.FOG_END_DISTANCE < 0 || layer.FOG.FOG_END_DISTANCE > 1000) {
-                    layer.FOG.FOG_END_DISTANCE = Math.max(1000f, Math.min(0f, layer.FOG.FOG_END_DISTANCE));
-                }
-                if (layer.FADE.FADE_ALPHA < 0 || layer.FADE.FADE_ALPHA > 255) {
-                    layer.FADE.FADE_ALPHA = Math.max(255, Math.min(0, layer.FADE.FADE_ALPHA));
+                if (layer.APPEARANCE.CLOUD_Y_SCALE < ConfigConstants.MIN_LAYER_SCALE || layer.APPEARANCE.CLOUD_Y_SCALE > ConfigConstants.MAX_LAYER_SCALE) {
+                    layer.APPEARANCE.CLOUD_Y_SCALE = MathUtils.clamp(layer.APPEARANCE.CLOUD_Y_SCALE, ConfigConstants.MIN_LAYER_SCALE, ConfigConstants.MAX_LAYER_SCALE);
                 }
 
-                if (layer.BEVEL.BEVEL_SIZE < 0 || layer.BEVEL.BEVEL_SIZE > 1f) {
-                    layer.BEVEL.BEVEL_SIZE = Math.max(1f, Math.min(0f, layer.BEVEL.BEVEL_SIZE));
+                layer.APPEARANCE.LAYER_SPEED_X = MathUtils.clamp(layer.APPEARANCE.LAYER_SPEED_X, ConfigConstants.MIN_LAYER_SPEED, ConfigConstants.MAX_LAYER_SPEED);
+                layer.APPEARANCE.LAYER_SPEED_Z = MathUtils.clamp(layer.APPEARANCE.LAYER_SPEED_Z, ConfigConstants.MIN_LAYER_SPEED, ConfigConstants.MAX_LAYER_SPEED);
+
+                if (layer.FOG.FOG_START_DISTANCE < ConfigConstants.MIN_FOG_DISTANCE || layer.FOG.FOG_START_DISTANCE > ConfigConstants.MAX_FOG_START_DISTANCE) {
+                    layer.FOG.FOG_START_DISTANCE = MathUtils.clamp(layer.FOG.FOG_START_DISTANCE, ConfigConstants.MIN_FOG_DISTANCE, ConfigConstants.MAX_FOG_START_DISTANCE);
                 }
-                if (layer.BEVEL.BEVEL_EDGE_SEGMENTS < 1 || layer.BEVEL.BEVEL_EDGE_SEGMENTS > 32) {
-                    layer.BEVEL.BEVEL_EDGE_SEGMENTS = Math.max(32, Math.min(1, layer.BEVEL.BEVEL_EDGE_SEGMENTS));
+                if (layer.FOG.FOG_END_DISTANCE < ConfigConstants.MIN_FOG_DISTANCE || layer.FOG.FOG_END_DISTANCE > ConfigConstants.MAX_FOG_END_DISTANCE) {
+                    layer.FOG.FOG_END_DISTANCE = MathUtils.clamp(layer.FOG.FOG_END_DISTANCE, ConfigConstants.MIN_FOG_DISTANCE, ConfigConstants.MAX_FOG_END_DISTANCE);
+                }
+                if (layer.FADE.FADE_ALPHA < ConfigConstants.MIN_ALPHA || layer.FADE.FADE_ALPHA > ConfigConstants.MAX_ALPHA) {
+                    layer.FADE.FADE_ALPHA = MathUtils.clamp(layer.FADE.FADE_ALPHA, ConfigConstants.MIN_ALPHA, ConfigConstants.MAX_ALPHA);
+                }
+
+                if (layer.BEVEL.BEVEL_SIZE < ConfigConstants.MIN_BEVEL_SIZE || layer.BEVEL.BEVEL_SIZE > ConfigConstants.MAX_BEVEL_SIZE) {
+                    layer.BEVEL.BEVEL_SIZE = MathUtils.clamp(layer.BEVEL.BEVEL_SIZE, ConfigConstants.MIN_BEVEL_SIZE, ConfigConstants.MAX_BEVEL_SIZE);
+                }
+                if (layer.BEVEL.BEVEL_EDGE_SEGMENTS < ConfigConstants.MIN_EDGE_SEGMENTS || layer.BEVEL.BEVEL_EDGE_SEGMENTS > ConfigConstants.MAX_EDGE_SEGMENTS) {
+                    layer.BEVEL.BEVEL_EDGE_SEGMENTS = MathUtils.clamp(layer.BEVEL.BEVEL_EDGE_SEGMENTS, ConfigConstants.MIN_EDGE_SEGMENTS, ConfigConstants.MAX_EDGE_SEGMENTS);
                 }
             }
 
             if (config.LIGHTING.AMBIENT_LIGHTING_STRENGTH < 0 || config.LIGHTING.AMBIENT_LIGHTING_STRENGTH > 2f) {
-                config.LIGHTING.AMBIENT_LIGHTING_STRENGTH = Math.max(2f, Math.min(0f, config.LIGHTING.AMBIENT_LIGHTING_STRENGTH));
+                config.LIGHTING.AMBIENT_LIGHTING_STRENGTH = MathUtils.clamp(config.LIGHTING.AMBIENT_LIGHTING_STRENGTH, 0f, 2f);
             }
-            if (config.LIGHTING.MAX_LIGHTING_SHADING < 0 || config.LIGHTING.MAX_LIGHTING_SHADING > 1f) {
-                config.LIGHTING.MAX_LIGHTING_SHADING = Math.max(1f, Math.min(0f, config.LIGHTING.MAX_LIGHTING_SHADING));
+            if (config.LIGHTING.MAX_LIGHTING_SHADING < ConfigConstants.MIN_BRIGHTNESS || config.LIGHTING.MAX_LIGHTING_SHADING > ConfigConstants.MAX_BRIGHTNESS) {
+                config.LIGHTING.MAX_LIGHTING_SHADING = MathUtils.clamp(config.LIGHTING.MAX_LIGHTING_SHADING, ConfigConstants.MIN_BRIGHTNESS, ConfigConstants.MAX_BRIGHTNESS);
             }
             
-            if (config.LIGHTING.lights.size() > CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT) {
-                LoggerProvider.get().warn("Light count exceeds maximum, truncating to {}", CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT);
-                while (config.LIGHTING.lights.size() > CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT) {
+            if (config.LIGHTING.lights.size() > ConfigConstants.MAX_LIGHT_COUNT) {
+                LoggerProvider.get().warn("Light count exceeds maximum, truncating to {}", ConfigConstants.MAX_LIGHT_COUNT);
+                while (config.LIGHTING.lights.size() > ConfigConstants.MAX_LIGHT_COUNT) {
                     config.LIGHTING.lights.remove(config.LIGHTING.lights.size() - 1);
                 }
             }
 
-            if (config.CLOUD_GRID_SIZE < 16 || config.CLOUD_GRID_SIZE > 512) {
-                config.CLOUD_GRID_SIZE = Math.max(512, Math.min(16, config.CLOUD_GRID_SIZE));
+            if (config.CLOUD_DISTANCE_CHUNKS == null) {
+                if (config.CLOUD_GRID_SIZE > 0) {
+                    config.CLOUD_DISTANCE_CHUNKS = Math.max(ConfigConstants.MIN_CLOUD_DISTANCE_CHUNKS, Math.round(config.CLOUD_GRID_SIZE * 12f / 16f));
+                } else {
+                    config.CLOUD_DISTANCE_CHUNKS = ConfigConstants.DEFAULT_CLOUD_DISTANCE_CHUNKS;
+                }
             }
+            if (config.CLOUD_DISTANCE_CHUNKS < ConfigConstants.MIN_CLOUD_DISTANCE_CHUNKS || config.CLOUD_DISTANCE_CHUNKS > ConfigConstants.MAX_CLOUD_DISTANCE_CHUNKS) {
+                config.CLOUD_DISTANCE_CHUNKS = MathUtils.clamp(config.CLOUD_DISTANCE_CHUNKS, ConfigConstants.MIN_CLOUD_DISTANCE_CHUNKS, ConfigConstants.MAX_CLOUD_DISTANCE_CHUNKS);
+            }
+            config.CLOUD_GRID_SIZE = Math.round(config.CLOUD_DISTANCE_CHUNKS * 16f / 12f);
 
-            if (config.WEATHER_COLOR.rainColor < 0 || config.WEATHER_COLOR.rainColor > 0xFFFFFF) {
-                config.WEATHER_COLOR.rainColor = Math.max(0xFFFFFF, Math.min(0, config.WEATHER_COLOR.rainColor));
+            if (config.WEATHER_COLOR.rainColor < ConfigConstants.MIN_COLOR || config.WEATHER_COLOR.rainColor > ConfigConstants.MAX_COLOR) {
+                config.WEATHER_COLOR.rainColor = MathUtils.clamp(config.WEATHER_COLOR.rainColor, ConfigConstants.MIN_COLOR, ConfigConstants.MAX_COLOR);
             }
-            if (config.WEATHER_COLOR.thunderColor < 0 || config.WEATHER_COLOR.thunderColor > 0xFFFFFF) {
-                config.WEATHER_COLOR.thunderColor = Math.max(0xFFFFFF, Math.min(0, config.WEATHER_COLOR.thunderColor));
+            if (config.WEATHER_COLOR.thunderColor < ConfigConstants.MIN_COLOR || config.WEATHER_COLOR.thunderColor > ConfigConstants.MAX_COLOR) {
+                config.WEATHER_COLOR.thunderColor = MathUtils.clamp(config.WEATHER_COLOR.thunderColor, ConfigConstants.MIN_COLOR, ConfigConstants.MAX_COLOR);
             }
 
             LoggerProvider.get().info("Configuration validation completed");
             return config;
         } catch (Exception e) {
-            LoggerProvider.get().error("Error during config validation: " + e.getMessage());
+            LoggerProvider.get().error("Error during config validation: {}", e.getMessage());
             e.printStackTrace();
             return config; // Return original if validation fails (unsafe state)
         }
@@ -539,9 +545,9 @@ public class ConfigPresets {
                 return false;
             }
 
-            IMPORTED_COUNT++;
-            String presetId = "imported_" + System.currentTimeMillis() + "_" + IMPORTED_COUNT;
-            String displayName = "Imported Preset #" + IMPORTED_COUNT;
+            importedCount++;
+            String presetId = "imported_" + System.currentTimeMillis() + "_" + importedCount;
+            String displayName = "Imported Preset #" + importedCount;
 
             // flood flood
             File configFile = new File(PRESETS_DIR, presetId + ".json");
@@ -580,7 +586,7 @@ public class ConfigPresets {
         metadata.displayName = newDisplayName;
         metadata.lastModified = System.currentTimeMillis();
         savePresetsIndex();
-        LoggerProvider.get().info("Renamed preset: " + presetId + " d " + newDisplayName);
+        LoggerProvider.get().info("Renamed preset: {} to {}", presetId, newDisplayName);
         return true;
     }
 
@@ -635,15 +641,20 @@ public class ConfigPresets {
         try {
             // backup the preset before deletion
             backupFile(configFile, "deleted_" + presetId);
-        } catch (IOException e) {
+        } catch (IOException _) {
             LoggerProvider.get().warn("Could not backup preset before deletion");
         }
         
-        if (configFile.delete()) {
-            PRESETS.remove(presetId);
-            savePresetsIndex();
-            LoggerProvider.get().info("Deleted preset: {}", presetId);
-            return true;
+        try {
+            if (Files.deleteIfExists(configFile.toPath())) {
+                PRESETS.remove(presetId);
+                savePresetsIndex();
+                LoggerProvider.get().info("Deleted preset: {}", presetId);
+                return true;
+            }
+        } catch (IOException e) {
+            LoggerProvider.get().error("Failed to delete preset: {}", presetId);
+            e.printStackTrace();
         }
         return false;
     }
@@ -698,7 +709,7 @@ public class ConfigPresets {
             );
             PRESETS.put(targetPresetId, newMetadata);
             savePresetsIndex();
-            LoggerProvider.get().info("Copied preset: " + sourcePresetId + " -> " + targetPresetId);
+            LoggerProvider.get().info("Copied preset: {} -> {}", sourcePresetId, targetPresetId);
             return true;
         } catch (IOException e) {
             LoggerProvider.get().error("Failed to copy preset");
@@ -737,7 +748,7 @@ public class ConfigPresets {
                 preview.append("Description: ").append(metadata.description);
                 return preview.toString();
             }
-        } catch (IOException e) {
+        } catch (IOException _) {
             LoggerProvider.get().error("Failed to read preset preview: {}", presetId);
         }
 
@@ -825,8 +836,6 @@ public class ConfigPresets {
         File f = RESOURCEPACK_PRESET_FILES.get(sourcePresetId);
         if (f == null) {
             scanResourcePacks();
-            // f = RESOURCEPACK_PRESET_FILES.get(sourcePresetId);
-            if (f == null) return false;
         }
         File dest = new File(PRESETS_DIR, targetId + ".json");
         try {
@@ -841,7 +850,7 @@ public class ConfigPresets {
             PresetMetadata metadata = new PresetMetadata(targetId, displayName != null ? displayName : targetId, description != null ? description : "");
             PRESETS.put(targetId, metadata);
             savePresetsIndex();
-            LoggerProvider.get().info("Imported resourcepack preset: " + sourcePresetId + " as " + targetId);
+            LoggerProvider.get().info("Imported resourcepack preset: {} as {}", sourcePresetId, targetId);
             return true;
         } catch (Exception e) {
             LoggerProvider.get().error("Failed to import resourcepack preset");
@@ -939,16 +948,16 @@ public class ConfigPresets {
         Long lastBackupTime = LAST_BACKUP_TIME.getOrDefault(prefix, 0L);
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastBackupTime < BACKUP_THROTTLE_MS) {
-            LoggerProvider.get().debug("Backup skipped for '" + prefix + "' - throttled (< " + BACKUP_THROTTLE_MS + "ms)");
+            LoggerProvider.get().debug("Backup skipped for '{}' - throttled (< {}ms)", prefix, BACKUP_THROTTLE_MS);
             return;
         }
         
-        String timestamp = BACKUP_DATE_FORMAT.format(new Date());
+        String timestamp = BACKUP_DATE_FORMAT.format(LocalDateTime.now());
         String backupName = prefix + "_" + timestamp + ".json";
         File backupFile = new File(BACKUPS_DIR, backupName);
         Files.copy(source.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         LAST_BACKUP_TIME.put(prefix, currentTime);
-        LoggerProvider.get().info("Created backup: " + backupFile.getName());
+        LoggerProvider.get().info("Created backup: {}", backupFile.getName());
     }
 
     /**

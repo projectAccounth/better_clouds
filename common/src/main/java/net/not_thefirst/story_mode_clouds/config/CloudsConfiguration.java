@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -23,6 +25,7 @@ import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.DimensionProvider;
 
 public class CloudsConfiguration {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -42,24 +45,27 @@ public class CloudsConfiguration {
     public boolean NETHER_CLOUDS_RENDERED = true;
     public boolean END_CLOUDS_RENDERED = true;
     
-    private static CloudsConfiguration INSTANCE = new CloudsConfiguration();
+    private static CloudsConfiguration instance = new CloudsConfiguration();
     
     // Track when config was last modified for caching purposes
     private long lastModificationTime = System.currentTimeMillis();
 
     public enum ShadingMode {
         GOURAUD, PHONG
-    };
+    }
 
     public enum LightingType {
         STATIC, DYNAMIC
-    };
+    }
 
     public enum ConfigBackend {
         YACL
-    };
+    }
 
     public static class LightingParameters {
+        public LightingParameters() {
+            // no-op
+        }
         private static final float DEFAULT_AMBIENT_LIGHTING = 0.7f;
         private static final float DEFAULT_MAX_LIGHTING_SHADING = 0.8f;
         private static final int DEFAULT_DAY_START = 0;
@@ -81,9 +87,6 @@ public class CloudsConfiguration {
             new DiffuseLight(new Vector3f(0.5f, -0.8f, 1.0f), 0.6f),
             new DiffuseLight(new Vector3f(-0.3f, -0.3f, 0.6f), 0.5f)
         ));
-
-        public LightingParameters() {
-        }
     }
 
     public static class WeatherColorConfig {
@@ -171,14 +174,19 @@ public class CloudsConfiguration {
 
     public LightingParameters LIGHTING        = new LightingParameters();
     public WeatherColorConfig WEATHER_COLOR   = new WeatherColorConfig();
-    public int                CLOUD_GRID_SIZE = 64;
+    public int                CLOUD_GRID_SIZE = 64; // legacy serialized block half-range, kept for backward compatibility
+    public Integer            CLOUD_DISTANCE_CHUNKS = null; // distance in chunks; grid half-range = (chunks * 16) / 12
 
-    // Dimension layer holders
-    private LayerHolder LAYERS = new LayerHolder();              // Overworld layers
-    private LayerHolder NETHER_LAYERS = new LayerHolder();       // Nether layers
-    private LayerHolder END_LAYERS = new LayerHolder();          // End layers
-    
-    public static record Dimension(String id) {
+    private LayerHolder LAYERS = new LayerHolder();
+    private LayerHolder NETHER_LAYERS = new LayerHolder();  
+    private LayerHolder END_LAYERS = new LayerHolder();  
+    public static final class Dimension {
+        public final String id;
+
+        public Dimension(String id) {
+            this.id = id;
+        }
+
         public static final Dimension OVERWORLD = new Dimension("overworld");
         public static final Dimension NETHER = new Dimension("nether");
         public static final Dimension END = new Dimension("end");
@@ -241,10 +249,7 @@ public class CloudsConfiguration {
     }
 
     public LayerConfiguration getLayer(int idx) {
-        if (LAYERS == null || idx < 0 || idx >= LAYERS.layers.size()) {
-            throw new IndexOutOfBoundsException("Layer index out of bounds: " + idx);
-        }
-        return LAYERS.layers.get(idx);
+        return getLayerInDimension(DimensionProvider.getCurrentDimension(), idx);
     }
     
     public LayerConfiguration getLayerInDimension(Dimension dimension, int idx) {
@@ -256,7 +261,7 @@ public class CloudsConfiguration {
     }
  
     public int getLayerCount() {
-        return LAYERS == null ? 0 : LAYERS.layers.size();
+        return getLayerCount(DimensionProvider.getCurrentDimension());
     }
     
     public int getLayerCount(Dimension dimension) {
@@ -318,12 +323,8 @@ public class CloudsConfiguration {
                 this.FOG_START_DISTANCE = other.FOG_START_DISTANCE;
                 this.FOG_END_DISTANCE = other.FOG_END_DISTANCE;
             }
-        };
+        }
 
-        /**
-         * Visual appearance parameters for the cloud layer.
-         * Controls color, alpha, brightness, shading, and animation propertie.
-         */
         public static class AppearanceParameters {
             private static final boolean DEFAULT_SHADING_ENABLED = false;
             private static final boolean DEFAULT_USES_CUSTOM_ALPHA = true;
@@ -422,7 +423,7 @@ public class CloudsConfiguration {
 
         public int getLayerIndex() { return LAYER_IDX; }
 
-        void copy(LayerConfiguration other) {
+        public void copy(LayerConfiguration other) {
             this.NAME = other.NAME;
             this.FOG_ENABLED = other.FOG_ENABLED;
             this.IS_ENABLED = other.IS_ENABLED;
@@ -434,7 +435,7 @@ public class CloudsConfiguration {
             this.FADE.copy(other.FADE);
             this.FOG.copy(other.FOG);
         }
-    };
+    }
 
     public static class LayerHolder {
 
@@ -483,39 +484,39 @@ public class CloudsConfiguration {
         }
 
         try (FileReader reader = new FileReader(CONFIG_FILE)) {
-            INSTANCE = GSON.fromJson(reader, CloudsConfiguration.class);
+            instance = GSON.fromJson(reader, CloudsConfiguration.class);
         } catch (IOException e) {
             e.printStackTrace();
-            INSTANCE = null;
+            instance = null;
         }
 
-        if (INSTANCE == null) {
-            INSTANCE = new CloudsConfiguration();
+        if (instance == null) {
+            instance = new CloudsConfiguration();
         }
 
-        if (INSTANCE.LAYERS == null) {
-            INSTANCE.LAYERS = new LayerHolder();
-            INSTANCE.LAYERS.addLayer(new LayerConfiguration(0));
+        if (instance.LAYERS == null) {
+            instance.LAYERS = new LayerHolder();
+            instance.LAYERS.addLayer(new LayerConfiguration(0));
         }
-        if (INSTANCE.NETHER_LAYERS == null) {
-            INSTANCE.NETHER_LAYERS = new LayerHolder();
-            INSTANCE.NETHER_LAYERS.addLayer(new LayerConfiguration(0));
+        if (instance.NETHER_LAYERS == null) {
+            instance.NETHER_LAYERS = new LayerHolder();
+            instance.NETHER_LAYERS.addLayer(new LayerConfiguration(0));
         }
-        if (INSTANCE.END_LAYERS == null) {
-            INSTANCE.END_LAYERS = new LayerHolder();
-            INSTANCE.END_LAYERS.addLayer(new LayerConfiguration(0));
-        }
-
-        if (INSTANCE.CLOUD_COLOR == null || INSTANCE.CLOUD_COLOR.isEmpty()) {
-            INSTANCE.CLOUD_COLOR = new ArrayList<>(DEFAULT_COLORS);
+        if (instance.END_LAYERS == null) {
+            instance.END_LAYERS = new LayerHolder();
+            instance.END_LAYERS.addLayer(new LayerConfiguration(0));
         }
 
-        INSTANCE.CLOUD_COLOR.sort(Comparator.comparingInt(kp -> kp.time));
+        if (instance.CLOUD_COLOR == null || instance.CLOUD_COLOR.isEmpty()) {
+            instance.CLOUD_COLOR = new ArrayList<>(DEFAULT_COLORS);
+        }
+
+        instance.CLOUD_COLOR.sort(Comparator.comparingInt(kp -> kp.time));
 
         NumberSequence sequence = CloudColorProvider.getCurrentSequence();
         sequence.clearKeypoints();
 
-        for (SkyColorKeypoint kp : INSTANCE.CLOUD_COLOR) {
+        for (SkyColorKeypoint kp : instance.CLOUD_COLOR) {
             int c = kp.color;
 
             double r = ((c >> 16) & 0xFF) / 255.0;
@@ -531,8 +532,8 @@ public class CloudsConfiguration {
         }
 
         // cyclic continuity (23999 == 0)
-        SkyColorKeypoint first = INSTANCE.CLOUD_COLOR.get(0);
-        SkyColorKeypoint last = INSTANCE.CLOUD_COLOR.get(INSTANCE.CLOUD_COLOR.size() - 1);
+        SkyColorKeypoint first = instance.CLOUD_COLOR.get(0);
+        SkyColorKeypoint last = instance.CLOUD_COLOR.get(instance.CLOUD_COLOR.size() - 1);
 
         if (last.time != 23999) {
             int c = first.color;
@@ -547,7 +548,7 @@ public class CloudsConfiguration {
     }
 
     public static void save() {
-        INSTANCE.markModified();
+        instance.markModified();
         
         try {
             saveSafely();
@@ -573,7 +574,7 @@ public class CloudsConfiguration {
 
         try {
             try (FileWriter fw = new FileWriter(tempFile)) {
-                GSON.toJson(INSTANCE, fw);
+                GSON.toJson(instance, fw);
             }
 
             try (FileReader fr = new FileReader(tempFile)) {
@@ -626,7 +627,8 @@ public class CloudsConfiguration {
         
         File backupDir = new File(CONFIG_DIR, "cloud_tweaks/backups");
         backupDir.mkdirs();
-        String timestamp = new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new java.util.Date());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+        String timestamp = formatter.format(LocalDateTime.now());
         File backupFile = new File(backupDir, "cloud_configs_" + timestamp + ".json");
         Files.copy(source.toPath(), backupFile.toPath(), 
             StandardCopyOption.REPLACE_EXISTING);
@@ -658,7 +660,7 @@ public class CloudsConfiguration {
         this.WEATHER_COLOR.thunderColor = other.WEATHER_COLOR.thunderColor;
         this.WEATHER_COLOR.rainStrength = other.WEATHER_COLOR.rainStrength;
         this.WEATHER_COLOR.thunderStrength = other.WEATHER_COLOR.thunderStrength;
-        this.CLOUD_GRID_SIZE = other.CLOUD_GRID_SIZE;
+        this.CLOUD_DISTANCE_CHUNKS = other.CLOUD_DISTANCE_CHUNKS;
         
         copyLayerHolder(this.LAYERS, other.LAYERS);
         copyLayerHolder(this.NETHER_LAYERS, other.NETHER_LAYERS);
@@ -674,12 +676,8 @@ public class CloudsConfiguration {
         }
     }
 
-    public static CloudsConfiguration getInstance() { return INSTANCE; }
+    public static CloudsConfiguration getInstance() { return instance; }
 
-    /**
-     * Get the last modification time of this configuration.
-     * Used for caching purposes to avoid regenerating expensive exports.
-     */
     public long getLastModifiedTime() {
         return lastModificationTime;
     }
@@ -710,8 +708,22 @@ public class CloudsConfiguration {
         }
     }
 
-    public int getCloudGridSize() { return CLOUD_GRID_SIZE; }
-    public void setCloudGridSize(int value) { CLOUD_GRID_SIZE = value; }
+    public int getCloudDistanceChunks() {
+        if (CLOUD_DISTANCE_CHUNKS != null && CLOUD_DISTANCE_CHUNKS > 0) {
+            return CLOUD_DISTANCE_CHUNKS;
+        }
+        int derived = Math.round(CLOUD_GRID_SIZE * 12f / 16f);
+        return derived >= ConfigConstants.MIN_CLOUD_DISTANCE_CHUNKS ? derived : ConfigConstants.DEFAULT_CLOUD_DISTANCE_CHUNKS;
+    }
+
+    public void setCloudDistanceChunks(int value) {
+        CLOUD_DISTANCE_CHUNKS = value;
+        CLOUD_GRID_SIZE = Math.round(value * 16f / 12f);
+    }
+
+    public int getCloudGridRange() {
+        return Math.round(getCloudDistanceChunks() * 16f / 12f);
+    }
 
     public WeatherColorConfig getWeather() { return WEATHER_COLOR; }
 }
