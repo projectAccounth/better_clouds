@@ -15,6 +15,8 @@ import net.not_thefirst.story_mode_clouds.Initializer;
 import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
 
 public class ModRenderPipelines {
+    private ModRenderPipelines() {}
+
     public static RenderPipeline POSITION_COLOR_NO_DEPTH;
     public static RenderPipeline CUSTOM_POSITION_COLOR;
     public static RenderPipeline POSITION_COLOR_DEPTH;
@@ -43,8 +45,8 @@ public class ModRenderPipelines {
             .withUniform("Lighting", UniformType.UNIFORM_BUFFER)
             .withUniform("Camera", UniformType.UNIFORM_BUFFER);
         
-        POSITION_COLOR_NO_DEPTH = builder.withColorTargetState(TRANSLUCENT_BLEND_COLOR_TARGET).withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false)).build();
-        CUSTOM_POSITION_COLOR = builder.withColorTargetState(TRANSLUCENT_BLEND_COLOR_TARGET).withDepthStencilState(new DepthStencilState(CompareOp.EQUAL, true)).build();
+        POSITION_COLOR_NO_DEPTH = builder.withColorTargetState(TRANSLUCENT_BLEND_COLOR_TARGET).withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false)).build();
+        CUSTOM_POSITION_COLOR = builder.withColorTargetState(TRANSLUCENT_BLEND_COLOR_TARGET).withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false)).build();
         POSITION_COLOR_DEPTH = builder.withColorTargetState(NONE).withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, true)).build();
     }
 }

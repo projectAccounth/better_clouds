@@ -17,7 +17,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
         int cx, int cz, float relY, 
         int currentLayer, int skyColor) {
         
-        int range = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
+        int range = CloudsConfiguration.getInstance().getCloudGridRange();
         Texture.TextureData tex = state.texture();
         long[] cells = tex.cells;
         int w = tex.width;

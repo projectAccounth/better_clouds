@@ -11,7 +11,37 @@ import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 
 public class BeveledMeshBuilder implements MeshTypeBuilder {
 
-    @Override
+    /**
+     * Enum for corner positions to check diagonal neighbors.
+     */
+    public enum CornerPos {
+        NEG_X_NEG_Z(0), POS_X_NEG_Z(1), NEG_X_POS_Z(2), POS_X_POS_Z(3);
+        
+        final int index;
+        CornerPos(int index) { this.index = index; }
+    }
+
+    /**
+     * Pre-cache neighboring cells for faster lookup during corner generation.
+     */
+    public static class NeighborCache {
+        public long[] neighbors = new long[4]; // Only XZ diagonals needed for corners
+        
+        void cacheNeighbors(int cellX, int cellZ, Texture.TextureData tex) {
+            int w = tex.width;
+            int h = tex.height;
+            
+            // NEG_X_NEG_Z
+            neighbors[0] = tex.cells[Math.floorMod(cellX - 1, w) + Math.floorMod(cellZ - 1, h) * w];
+            // POS_X_NEG_Z
+            neighbors[1] = tex.cells[Math.floorMod(cellX + 1, w) + Math.floorMod(cellZ - 1, h) * w];
+            // NEG_X_POS_Z
+            neighbors[2] = tex.cells[Math.floorMod(cellX - 1, w) + Math.floorMod(cellZ + 1, h) * w];
+            // POS_X_POS_Z
+            neighbors[3] = tex.cells[Math.floorMod(cellX + 1, w) + Math.floorMod(cellZ + 1, h) * w];
+        }
+    }
+
     public BufferBuilder build(
         BufferBuilder bb,
         LayerState state, 
@@ -19,14 +49,20 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         int currentLayer, 
         int skyColor) {
 
-        int range = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
+        int range = CloudsConfiguration.getInstance().getCloudGridRange();
         Texture.TextureData tex = state.texture();
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
 
-        int dxStart = -range, dxEnd = range, dxStep = 1;
-        int dzStart = -range, dzEnd = range, dzStep = 1;
+        int dxStart = -range;
+        int dzStart = -range;
+
+        int dxEnd = range;
+        int dzEnd = range;
+
+        int dxStep = 1;
+        int dzStep = 1;
 
         for (int dz = dzStart; dz != dzEnd; dz += dzStep) {
             for (int dx = dxStart; dx != dxEnd; dx += dxStep) {
@@ -79,6 +115,9 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         int edgeSegments = layerConfiguration.BEVEL.BEVEL_EDGE_SEGMENTS;
         int cornerSegments = layerConfiguration.BEVEL.BEVEL_CORNER_SEGMENTS;
 
+        NeighborCache neighbors = new NeighborCache();
+        neighbors.cacheNeighbors(cellIdxX, cellIdxZ, state.texture());
+
         CubeBuilder.buildBeveledCube(
                 bb,
                 x0, x1,
@@ -89,7 +128,8 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 cornerSegments,
                 excluded,
                 currentLayer,
-                state, relY, cellIdxX, cellIdxZ, skyColor
+                state, relY, cellIdxX, cellIdxZ, skyColor,
+                neighbors
         );
     }
 }

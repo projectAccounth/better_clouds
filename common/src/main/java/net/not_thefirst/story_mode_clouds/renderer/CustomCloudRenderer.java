@@ -20,6 +20,7 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
+import net.fabricmc.fabric.mixin.client.gametest.input.GlCommandEncoderMixin;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -29,6 +30,7 @@ import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.Dimension;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LightingType;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.ShadingMode;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.FadeType;
@@ -44,6 +46,7 @@ import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider.WeatherState;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.DimensionProvider;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -65,6 +68,8 @@ public class CustomCloudRenderer implements AutoCloseable {
 
     private final RenderSystem.AutoStorageIndexBuffer indices =
             RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+
+    private Dimension previousDimension = null;
 
     public CustomCloudRenderer() {
         super();
@@ -151,10 +156,16 @@ public class CustomCloudRenderer implements AutoCloseable {
 
         if (activeLayers < 0) return;
 
-        if (activeLayers != layers.size()) {
+        Dimension currentDimension = DimensionProvider.getCurrentDimension();
+
+        if (!CloudsConfiguration.getInstance().getCloudRendered(currentDimension)) return;
+
+        if (activeLayers != layers.size() || previousDimension != currentDimension) {
             rebuildLayerStates();
             applyTexture();
         }
+
+        previousDimension = currentDimension;
 
         List<Integer> order = new ArrayList<>();
         for (int i = 0; i < activeLayers; i++) order.add(i);
@@ -168,14 +179,18 @@ public class CustomCloudRenderer implements AutoCloseable {
         ClientLevel level = client.level;
         WeatherState weather = WeatherState.from(level, tickDelta);
 
-        final int skyColor = CloudColorProvider.getCloudColor(weather);
+        // sky color in other dimensions are returned as Black from Vanilla
+        final int skyColor = 
+            DimensionProvider.isOverworld() ?
+            CloudColorProvider.getCloudColor(weather) :
+            ARGB.WHITE;
+
         final long gameTime = level.getGameTime();
         final long dayTime = level.getOverworldClockTime();
         final float time = (gameTime + tickDelta) / 20.0F;
-
         startRender();
 
-        final int range = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
+        final int range = CloudsConfiguration.getInstance().getCloudGridRange();
         final int slack = range * 3 / 4;
 
         if (System.currentTimeMillis() - last > 1000) {
@@ -242,20 +257,19 @@ public class CustomCloudRenderer implements AutoCloseable {
             int shaderColor = ColorUtils.getCloudShaderColor(layer, skyColor);
             try {
                 if (!type.doDepthWrite()) {
-                    drawLayer(ModRenderPipelines.POSITION_COLOR_NO_DEPTH,
+                    drawLayer(new RenderPipeline[]{ModRenderPipelines.POSITION_COLOR_NO_DEPTH},
                         offX, offY, offZ,
                         layer, shaderColor, relY, dayTime, cam);
                     continue;
                 }
 
                 drawLayer(
-                    ModRenderPipelines.POSITION_COLOR_DEPTH,
-                        offX, offY, offZ,
-                        layer, shaderColor, relY, dayTime, cam);
-                drawLayer(
-                    ModRenderPipelines.CUSTOM_POSITION_COLOR,
-                        offX, offY, offZ,
-                        layer, shaderColor, relY, dayTime, cam);
+                    new RenderPipeline[]{
+                        ModRenderPipelines.POSITION_COLOR_DEPTH,
+                        ModRenderPipelines.CUSTOM_POSITION_COLOR
+                    },
+                    offX, offY, offZ,
+                    layer, shaderColor, relY, dayTime, cam);
             }
             catch (Exception e) {
                 e.printStackTrace();
@@ -292,6 +306,7 @@ public class CustomCloudRenderer implements AutoCloseable {
                     );
                 }
                 currentLayer.layerIndexCount = mesh.drawState().indexCount();
+                LoggerProvider.get().info("Built cloud mesh for layer {} with {} vertices", layer, mesh.vertexBuffer().remaining() / 72);
             }
         }
     }
@@ -440,7 +455,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         16;
 
     private void drawLayer(
-        RenderPipeline pipeline,
+        RenderPipeline[] pipelines,
         float ox, float oy, float oz,
         int layerIdx,
         int skyColor,
@@ -465,6 +480,7 @@ public class CustomCloudRenderer implements AutoCloseable {
                     ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE
                     : 1.0f);
 
+        // Setup transformation buffer
         try (GpuBuffer.MappedView view =
                 RenderSystem.getDevice()
                     .createCommandEncoder()
@@ -474,6 +490,7 @@ public class CustomCloudRenderer implements AutoCloseable {
                 .putVec4(-ox, oy, -oz, 1.0f);
         }
 
+        // Setup cloud info buffer
         try (GpuBuffer.MappedView view =
                 RenderSystem.getDevice()
                     .createCommandEncoder()
@@ -522,6 +539,7 @@ public class CustomCloudRenderer implements AutoCloseable {
                 );
         }
 
+        // Setup lighting buffer
         try (GpuBuffer.MappedView view =
                 RenderSystem.getDevice()
                     .createCommandEncoder()
@@ -569,6 +587,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             );
         }
 
+        // Setup camera buffer
         try (GpuBuffer.MappedView view =
                 RenderSystem.getDevice()
                     .createCommandEncoder()
@@ -592,7 +611,6 @@ public class CustomCloudRenderer implements AutoCloseable {
 					new Matrix4f()
 				);
 
-        
         var encoder = RenderSystem.getDevice().createCommandEncoder();
 
         RenderTarget rt = Minecraft.getInstance().getMainRenderTarget();
@@ -619,7 +637,6 @@ public class CustomCloudRenderer implements AutoCloseable {
         try {
             RenderSystem.bindDefaultUniforms(pass);
 
-            pass.setPipeline(pipeline);
             pass.setUniform("Transforms", currentLayer.transformsBuffer.currentBuffer());
             pass.setUniform("CloudInfo", currentLayer.cloudsInfoBuffer.currentBuffer());
             pass.setUniform("Lighting", currentLayer.lightingBuffer.currentBuffer());
@@ -628,7 +645,11 @@ public class CustomCloudRenderer implements AutoCloseable {
 
             pass.setVertexBuffer(0, currentLayer.buffer);
             pass.setIndexBuffer(indexBuf, indices.type());
-            pass.drawIndexed(0, 0, currentLayer.layerIndexCount, 1);
+
+            for (RenderPipeline pipeline : pipelines) {
+                pass.setPipeline(pipeline);
+                pass.drawIndexed(0, 0, currentLayer.layerIndexCount, 1);
+            }
         }
         catch (Exception exception) {
             exception.printStackTrace();

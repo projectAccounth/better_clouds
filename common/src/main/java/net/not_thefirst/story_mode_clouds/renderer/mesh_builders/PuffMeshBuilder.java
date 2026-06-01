@@ -206,7 +206,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
             CloudsConfiguration.getInstance().getLayer(currentLayer);
         
-        final int RANGE = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
+        final int RANGE = CloudsConfiguration.getInstance().getCloudGridRange();
         final int PUFFS_PER_CELL = 6;
         final float PUFF_MIN_SIZE = 1.8f;
         final float PUFF_MAX_SIZE = 5.2f;

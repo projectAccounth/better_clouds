@@ -5,8 +5,16 @@
 
   "cloudtweaks.category.global": "Global",
   "cloudtweaks.category.lighting": "Lighting",
+  "cloudtweaks.category.light_sources": "Light Sources",
   "cloudtweaks.category.layers": "Layers",
   "cloudtweaks.category.layer_template": "Layer Template",
+  "cloudtweaks.category.overworld_layers": "Overworld Layers",
+  "cloudtweaks.category.nether_layers": "Nether Layers",
+  "cloudtweaks.category.end_layers": "End Layers",
+
+  "cloudtweaks.desc.overworld_layers": "Configure cloud layers for the Overworld dimension",
+  "cloudtweaks.desc.nether_layers": "Configure cloud layers for the Nether dimension",
+  "cloudtweaks.desc.end_layers": "Configure cloud layers for the End dimension",
 
   "cloudtweaks.title.add_layer": "Add New Layer",
   "cloudtweaks.desc.add_layer": "Add a new cloud layer with default settings",
@@ -15,6 +23,7 @@
   "cloudtweaks.desc.thunder_color": "Color for thunder clouds, shown during thunderstorms",
   "cloudtweaks.desc.global": "General cloud rendering settings",
   "cloudtweaks.desc.lighting": "Settings related to cloud lighting and shading",
+  "cloudtweaks.desc.light_sources": "Configure directional lights that affect cloud shading",
   "cloudtweaks.desc.light.delete": "Delete this light source",
   "cloudtweaks.desc.light": "Configure a directional light source that affects cloud shading. Can be used to simulate the sun or moon.",
   "cloudtweaks.desc.layers": "Configure individual cloud layers, each with its own height, color, and movement settings.",
@@ -28,7 +37,9 @@
   "cloudtweaks.raw.remove": "Remove",
 
   "cloudtweaks.option.clouds_rendered": "Clouds Rendered",
-  "cloudtweaks.option.grid_size": "Grid Size",
+  "cloudtweaks.option.cloud_distance": "Cloud Distance (chunks)",
+  "cloudtweaks.option.cloud_distance.tooltip": "Cloud render distance in chunks, converted to mesh range.",
+  "cloudtweaks.option.dimension_clouds_rendered": "Render Clouds in this Dimension",
 
   "cloudtweaks.option.ambient_strength": "Ambient Strength",
   "cloudtweaks.option.max_shading": "Max Shading",
@@ -92,8 +103,10 @@
   "cloudtweaks.desc.static_fade_rel_y": "Reference Y position (in blocks) for static fade mode. Determines the vertical position the fade effect is calculated from. Typically set to 0 for ground level.",
 
   "cloudtweaks.option.fog_enabled": "Fog Enabled",
-  "cloudtweaks.option.fog_start": "Fog Start Distance",
-  "cloudtweaks.option.fog_end": "Fog End Distance",
+  "cloudtweaks.option.fog_start": "Fog Start (chunks)",
+  "cloudtweaks.desc.fog_start": "Fog starts at this many chunks from the player.",
+  "cloudtweaks.option.fog_end": "Fog End (chunks)",
+  "cloudtweaks.desc.fog_end": "Fog ends at this many chunks from the player. You can set this to a value lower than start for a weird inverted fog effect",
 
   "cloudtweaks.option.bevel_size": "Bevel Size",
   "cloudtweaks.option.edge_segments": "Edge Segments",
@@ -102,7 +115,6 @@
   "cloudtweaks.option.mesh_rebuild_budget": "Mesh Rebuild Budget (ms)",
 
   "cloudtweaks.tooltip.shading_enabled": "Enable shading when the sun is behind clouds",
-  "cloudtweaks.tooltip.speed_warning": "Machine destroyer, please do not set this to lightspeed",
 
   "cloudtweaks.group.cloud_colors": "Cloud Colors",
   "cloudtweaks.group.light": "Light",
@@ -169,7 +181,7 @@
 
   "cloudtweaks.presets.navigation": "Navigation",
   "cloudtweaks.presets.navigation.tooltip": "Navigate between screens",
-  "cloudtweaks.presets.back": "← Back",
+  "cloudtweaks.presets.back": "Back",
   "cloudtweaks.presets.back.tooltip": "Return to parent screen",
   
   "cloudtweaks.presets.quick_actions": "Quick Actions",
@@ -214,7 +226,28 @@
   "cloudtweaks.presets.delete.tooltip": "Delete this preset permanently",
   
   "cloudtweaks.presets.no_presets": "No Presets Found",
-  "cloudtweaks.presets.no_presets.tooltip": "Create a new preset using Quick Actions or Import",
+  "cloudtweaks.presets.no_presets.tooltip": "Create a new preset using Quick Actions",
+  
+  "cloudtweaks.presets.color_presets": "Color Presets",
+  "cloudtweaks.presets.color_presets.tooltip": "Manage cloud color and appearance presets",
+  "cloudtweaks.presets.load.color": "Load Color Preset",
+  "cloudtweaks.presets.load.color.tooltip": "Select and load a color preset",
+  "cloudtweaks.presets.save_color_preset": "Save Color Preset",
+  "cloudtweaks.presets.save_color_preset.tooltip": "Save current color settings as a new preset",
+  
+  "cloudtweaks.presets.lighting_presets": "Lighting Presets",
+  "cloudtweaks.presets.lighting_presets.tooltip": "Manage lighting and shading presets",
+  "cloudtweaks.presets.load.lighting": "Load Lighting Preset",
+  "cloudtweaks.presets.load.lighting.tooltip": "Select and load a lighting preset",
+  "cloudtweaks.presets.save_lighting_preset": "Save Lighting Preset",
+  "cloudtweaks.presets.save_lighting_preset.tooltip": "Save current lighting settings as a new preset",
+  
+  "cloudtweaks.presets.light_sources_presets": "Light Sources Presets",
+  "cloudtweaks.presets.light_sources_presets.tooltip": "Manage light source and directional light presets",
+  "cloudtweaks.presets.load.light_sources": "Load Light Sources Preset",
+  "cloudtweaks.presets.load.light_sources.tooltip": "Select and load a light sources preset",
+  "cloudtweaks.presets.save_light_sources_preset": "Save Light Sources Preset",
+  "cloudtweaks.presets.save_light_sources_preset.tooltip": "Save current light source settings as a new preset",
   
   "cloudtweaks.preview.title": "Preview: ",
   "cloudtweaks.preview.config": "Configuration",
@@ -222,8 +255,8 @@
   "cloudtweaks.preview.actions": "Actions",
   "cloudtweaks.preview.total_layers": "Total Layers",
   "cloudtweaks.preview.total_layers.tooltip": "Number of cloud layers in this preset",
-  "cloudtweaks.preview.grid_size": "Cloud Grid Size",
-  "cloudtweaks.preview.grid_size.tooltip": "Resolution of the cloud mesh grid",
+  "cloudtweaks.preview.cloud_distance": "Cloud Distance (chunks)",
+  "cloudtweaks.preview.cloud_distance.tooltip": "Cloud render distance in chunks (converted to grid range)",
   "cloudtweaks.preview.ambient": "Ambient Brightness",
   "cloudtweaks.preview.ambient.tooltip": "Base global lighting level",
   "cloudtweaks.preview.max_shading": "Max Lighting Shading",

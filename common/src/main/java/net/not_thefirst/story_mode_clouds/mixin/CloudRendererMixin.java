@@ -10,7 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.CloudRenderer;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
-
 @Mixin(CloudRenderer.class)
 public class CloudRendererMixin {
 
@@ -23,8 +22,8 @@ public class CloudRendererMixin {
         CloudStatus cloudStatus = client.options.getCloudStatus();
         float partialTicks = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
         Vec3 camPos = client.gameRenderer.getMainCamera().position();
-
-        // ...
+        
+        
         RendererHolder.renderCloud(cloudStatus, camPos, partialTicks);
     }
 }
