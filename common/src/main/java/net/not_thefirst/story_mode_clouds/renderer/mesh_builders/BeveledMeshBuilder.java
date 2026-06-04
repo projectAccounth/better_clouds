@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder.FaceDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder.FaceMask;
+import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 
@@ -47,7 +48,10 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         LayerState state, 
         int cx, int cz, float relY,
         int currentLayer, 
-        int skyColor) {
+        int colorModifier) {
+
+        CloudsConfiguration.LayerConfiguration layerConfiguration = 
+                CloudsConfiguration.getInstance().getLayer(currentLayer);
 
         int range = CloudsConfiguration.getInstance().getCloudGridRange();
         Texture.TextureData tex = state.texture();
@@ -69,8 +73,9 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 int x = Math.floorMod(cx + dx, w);
                 int z = Math.floorMod(cz + dz, h);
                 long cell = cells[x + z * w];
+                int color = Texture.getColor(cell);
                 if (cell != 0L) {
-                    buildCell(bb, dx, dz, cell, relY, currentLayer, skyColor, x, z, state);
+                    buildCell(bb, dx, dz, cell, relY, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier, x, z, state);
                 }
             }
         }
@@ -80,7 +85,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
     
     private static void buildCell(BufferBuilder bb,
                             int cx, int cz, long cell, float relY,
-                            int currentLayer, int skyColor, int cellIdxX, int cellIdxZ, LayerState state) {
+                            int currentLayer, int colorModifier, int cellIdxX, int cellIdxZ, LayerState state) {
 
         float cellSize = MeshBuilder.CELL_SIZE_IN_BLOCKS;
 
@@ -128,7 +133,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 cornerSegments,
                 excluded,
                 currentLayer,
-                state, relY, cellIdxX, cellIdxZ, skyColor,
+                state, relY, cellIdxX, cellIdxZ, colorModifier,
                 neighbors
         );
     }

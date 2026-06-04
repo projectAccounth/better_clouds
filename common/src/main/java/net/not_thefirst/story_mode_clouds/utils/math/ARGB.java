@@ -23,6 +23,17 @@ public final class ARGB {
                (b & 0xFF);
     }
 
+    public static int toRGBA(int argb) {
+        int a = (argb >>> 24) & 0xFF;
+        int r = (argb >>> 16) & 0xFF;
+        int g = (argb >>> 8)  & 0xFF;
+        int b = argb & 0xFF;
+        return ((r & 0xFF) << 24) |
+               ((g & 0xFF) << 16) |
+               ((b & 0xFF) << 8)  |
+               (a & 0xFF);
+    }
+
     public static int colorFromFloat(float a, float r, float g, float b) {
         return color(
             (int)(a * 255.0f + 0.5f),
@@ -30,6 +41,37 @@ public final class ARGB {
             (int)(g * 255.0f + 0.5f),
             (int)(b * 255.0f + 0.5f)
         );
+    }
+    
+    public static int fromRGBA(int r, int g, int b, int a) {
+        return color(a, r, g, b);
+    }
+
+    public static int fromRGBAFloat(float r, float g, float b, float a) {
+        return colorFromFloat(a, r, g, b);
+    }
+
+    public static int fromRGB(int r, int g, int b) {
+        return color(255, r, g, b);
+    }
+
+    public static int fromRGBFloat(float r, float g, float b) {
+        return colorFromFloat(1.0f, r, g, b);
+    }
+
+    public static int fromRGBA(int color) {
+        int r = (color >>> 24) & 0xFF;
+        int g = (color >>> 16) & 0xFF;
+        int b = (color >>> 8)  & 0xFF;
+        int a = color & 0xFF;
+        return color(a, r, g, b);
+    }
+
+    public static int fromRGBA(int rgb, int alpha) {
+        int r = (rgb >>> 16) & 0xFF;
+        int g = (rgb >>> 8)  & 0xFF;
+        int b = rgb & 0xFF;
+        return color(alpha, r, g, b);
     }
 
     public static int withAlpha(int color, int alpha) {

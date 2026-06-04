@@ -152,21 +152,21 @@ public class VertexBuilder {
 
     public static void quad(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
-        float x3, float y3, float z3, int layer, float relY, int skyColor) {
+        float x3, float y3, float z3, int layer, float relY, int colorModifier) {
         quadNormal(
             bb,
             x0, y0, z0,
             x1, y1, z1,
             x2, y2, z2,
             x3, y3, z3,
-            ARGB.WHITE, ARGB.WHITE, ARGB.WHITE, ARGB.WHITE
+            colorModifier, colorModifier, colorModifier, colorModifier
         );
     }
 
     public static void triangle(BufferBuilder bb, float x0, float y0, float z0,
         float x1, float y1, float z1, float x2, float y2, float z2,
-        int layer, float relY, int skyColor) {
+        int layer, float relY, int colorModifier) {
 
-        quad(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, layer, relY, skyColor);
+        quad(bb, x0, y0, z0, x1, y1, z1, x2, y2, z2, x2, y2, z2, layer, relY, colorModifier);
     }
 }

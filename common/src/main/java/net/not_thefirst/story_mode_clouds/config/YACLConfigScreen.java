@@ -2,10 +2,12 @@ package net.not_thefirst.story_mode_clouds.config;
 
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.*;
+import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
 import net.not_thefirst.story_mode_clouds.config.screens.LayerPresets;
+import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 import java.awt.Color;
 import java.time.format.DateTimeFormatter;
@@ -21,7 +23,7 @@ public class YACLConfigScreen {
 
     public static Screen createConfigScreen(Screen parent) {
         var config = CloudsConfiguration.getInstance();
-        net.not_thefirst.story_mode_clouds.config.presets.PresetController.initialize();
+        PresetController.initialize();
         LayerPresets.initialize();
         YACLPresetWidgets.setParentScreen(parent);
         
@@ -138,20 +140,17 @@ public class YACLConfigScreen {
                 .build())
             
             .option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.literal("💾 Save as Lighting Preset"))
+                .name(ComponentWrapper.literal("Save as Lighting Preset"))
                 .description(OptionDescription.of(ComponentWrapper.literal("Save current lighting settings as a preset")))
                 .action((yacl, btn) -> {
                     String timestamp = String.valueOf(System.currentTimeMillis());
                     String presetName = "LightingPreset_" + formatTimestamp(System.currentTimeMillis());
-                    if (net.not_thefirst.story_mode_clouds.config.presets.PresetController.saveLightingPreset(timestamp, presetName, "Saved from Lighting settings", config)) {
+                    if (PresetController.saveLightingPreset(timestamp, presetName, "Saved from Lighting settings", config)) {
                         CloudsConfiguration.save();
-                        net.not_thefirst.story_mode_clouds.renderer.RendererHolder.get().markForRebuild();
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.player != null) {
-                            mc.player.sendSystemMessage(
-                                ComponentWrapper.literal("§aSaved lighting preset: " + presetName)
-                            );
-                        }
+                        RendererHolder.get().markForRebuild();
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("Saved lighting preset: " + presetName)
+                        );
                     }
                 })
                 .build());
@@ -160,7 +159,7 @@ public class YACLConfigScreen {
     }
     
     private static String formatTimestamp(long millis) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").withZone(ZoneId.systemDefault());
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").withZone(ZoneId.systemDefault());
         return formatter.format(Instant.ofEpochMilli(millis));
     }
 }

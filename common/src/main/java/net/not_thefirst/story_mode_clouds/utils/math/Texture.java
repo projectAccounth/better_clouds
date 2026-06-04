@@ -177,9 +177,9 @@ public class Texture {
         }
     }
 
-    public static Optional<Texture.TextureData> buildTexture(InputStream imgStream) {
+    public static Optional<TextureData> buildTexture(InputStream imgStream, boolean flipX, boolean flipY) {
         try (NativeImage nativeImage = NativeImage.read(imgStream)) {
-
+            
             int w = nativeImage.getWidth();
             int h = nativeImage.getHeight();
 
@@ -188,16 +188,18 @@ public class Texture {
 
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
-                    int idx = x + y * w;
-                    int pixelRGBA = nativeImage.getPixel(x, y);
+                    int coordX = flipX ? (w - 1 - x) : x;
+                    int coordY = flipY ? (h - 1 - y) : y;
+                    int idx = idx(x, y, w, h);
+                    int pixelRGBA = nativeImage.getPixel(coordX, coordY);
 
                     int b = (pixelRGBA >> 16) & 0xFF;
                     int g = (pixelRGBA >> 8) & 0xFF;
                     int r = (pixelRGBA) & 0xFF;
                     int a = (pixelRGBA >> 24) & 0xFF;
-                    int pixel = ARGB.color(a, r, g, b);
+                    int pixel = ARGB.color(a, b, g, r);
 
-                    if (ARGB.alpha(pixel) < 10) {
+                    if (ARGB.alpha(pixel) < 5) {
                         cells[idx] = 0L;
                         neighbors[idx] = 0;
                         continue;
@@ -232,9 +234,13 @@ public class Texture {
             );
 
         } catch (IOException e) {
-            LoggerProvider.get().error("Failed to load cloud texture: {}", e);
+            LoggerProvider.get().error("Failed to load texture: {}", e.getMessage());
             return Optional.empty();
         }
+    }
+
+    public static Optional<Texture.TextureData> buildTexture(InputStream imgStream) {
+        return buildTexture(imgStream, false, false);
     }
 
     private static boolean isSolid(NativeImage img, int x, int y, int w, int h) {
@@ -248,7 +254,7 @@ public class Texture {
         int a = (pixelRGBA >> 24) & 0xFF;
         int pixel = ARGB.color(a, r, g, b);
 
-        return ARGB.alpha(pixel) >= 10;
+        return ARGB.alpha(pixel) >= 5;
     }
 
     private static long packCellData(int color, boolean north, boolean east, boolean south, boolean west) {

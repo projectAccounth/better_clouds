@@ -86,8 +86,6 @@ public class ConfigConstants {
 
     public static final float MAX_AXIS_VELOCITY = 20;
 
-    
-    public static final String PRESET_DIRECTORY = "config/cloud_tweaks/cloud_presets";
     public static final String PRESET_EXTENSION = ".json";
     
     private ConfigConstants() {

@@ -118,7 +118,7 @@ public class CubeBuilder {
         float radius,
         int segments,
         int layer,
-        float relY, int skyColor
+        float relY, int colorModifier
     ) {
         float fx = signToFloat(sx);
         float fy = signToFloat(sy);
@@ -135,7 +135,7 @@ public class CubeBuilder {
             radius,
             segments,
             flip,
-            layer, relY, skyColor
+            layer, relY, colorModifier
         );
     }
 
@@ -147,7 +147,7 @@ public class CubeBuilder {
         float radius,
         int segments,
         int layer,
-        float relY, int skyColor
+        float relY, int colorModifier
     ) {
         for (EdgeDir dir : EdgeDir.values()) {
             BevelWrappers.topEdge(
@@ -157,7 +157,7 @@ public class CubeBuilder {
                 yTop,
                 radius,
                 segments,
-                layer, relY, skyColor
+                layer, relY, colorModifier
             );
 
             BevelWrappers.bottomEdge(
@@ -168,7 +168,7 @@ public class CubeBuilder {
                 radius,
                 segments,
                 layer, 
-                relY, skyColor
+                relY, colorModifier
             );
         }
     }
@@ -272,7 +272,7 @@ public class CubeBuilder {
         int segments,
         FaceMask excluded,
         int layer,
-        float relY, int skyColor,
+        float relY, int colorModifier,
         NeighborCache neighborCache
     ) {
         for (CornerCap cap : CORNER_CAPS) {
@@ -318,7 +318,7 @@ public class CubeBuilder {
                 radius,
                 segments,
                 cap.flip,
-                layer, relY, skyColor
+                layer, relY, colorModifier
             );
         }
     }
@@ -345,7 +345,7 @@ public class CubeBuilder {
         float radius,
         FaceMask excluded,
         int layer,
-        float relY, int skyColor
+        float relY, int colorModifier
     ) {
         float ix0 = excluded.has(FaceDir.NEG_X) ? minX : minX + radius;
         float ix1 = excluded.has(FaceDir.POS_X) ? maxX : maxX - radius;
@@ -366,7 +366,7 @@ public class CubeBuilder {
                         ix1, maxY, iz1,
                         ix1, maxY, iz0,
                         ix0, maxY, iz0,
-                        layer, relY, skyColor
+                        layer, relY, colorModifier
                     );
                     break;
 
@@ -376,7 +376,7 @@ public class CubeBuilder {
                         ix1, minY, iz1,
                         ix0, minY, iz1,
                         ix0, minY, iz0,
-                        layer, relY, skyColor
+                        layer, relY, colorModifier
                     );
                     break;
 
@@ -386,7 +386,7 @@ public class CubeBuilder {
                         minX, iy1, iz1,
                         minX, iy1, iz0,
                         minX, iy0, iz0,
-                        layer, relY, skyColor
+                        layer, relY, colorModifier
                     );
                     break;
 
@@ -396,7 +396,7 @@ public class CubeBuilder {
                         maxX, iy1, iz0,
                         maxX, iy1, iz1,
                         maxX, iy0, iz1,
-                        layer, relY, skyColor
+                        layer, relY, colorModifier
                     );
                     break;
 
@@ -406,7 +406,7 @@ public class CubeBuilder {
                         ix0, iy1, minZ,
                         ix1, iy1, minZ,
                         ix1, iy0, minZ,
-                        layer, relY, skyColor
+                        layer, relY, colorModifier
                     );
                     break;
 
@@ -416,7 +416,7 @@ public class CubeBuilder {
                         ix1, iy1, maxZ,
                         ix0, iy1, maxZ,
                         ix0, iy0, maxZ,
-                        layer, relY, skyColor
+                        layer, relY, colorModifier
                     );
                     break;
             }
@@ -477,7 +477,7 @@ public class CubeBuilder {
         int segments,
         FaceMask excluded,
         int layer,
-        float relY, int skyColor
+        float relY, int colorModifier
     ) {
         for (Sign sx : EDGE_SIGNS) {
             for (Sign sz : EDGE_SIGNS) {
@@ -495,7 +495,7 @@ public class CubeBuilder {
                     yBot, yTop,
                     radius,
                     segments,
-                    layer, relY, skyColor
+                    layer, relY, colorModifier
                 );
             }
         }
@@ -510,7 +510,7 @@ public class CubeBuilder {
         int segments,
         FaceMask excluded,
         int layer,
-        float relY, int skyColor
+        float relY, int colorModifier
     ) {
         for (Sign sx : EDGE_SIGNS) {
             for (Sign sy : EDGE_SIGNS) {
@@ -529,7 +529,7 @@ public class CubeBuilder {
                         sx, sy, sz,
                         radius,
                         segments,
-                        layer, relY, skyColor
+                        layer, relY, colorModifier
                     );
                 }
             }
@@ -548,7 +548,7 @@ public class CubeBuilder {
         int layer,
         CustomCloudRenderer.LayerState state,
         float relY, int idxX, int idxY, 
-        int skyColor,
+        int colorModifier,
         NeighborCache neighborCache
     ) {
 
@@ -588,7 +588,7 @@ public class CubeBuilder {
                     radius,
                     edgeSegments,
                     layer, 
-                    relY, skyColor
+                    relY, colorModifier
                 );
             }
 
@@ -601,7 +601,7 @@ public class CubeBuilder {
                     radius,
                     edgeSegments,
                     layer,
-                    relY, skyColor
+                    relY, colorModifier
                 );
             }
         }
@@ -612,7 +612,7 @@ public class CubeBuilder {
             yBot, yTop, 
             radius, edgeSegments, 
             excludedFaces, 
-            layer, relY, skyColor
+            layer, relY, colorModifier
         );
 
         emitCorners(
@@ -621,7 +621,7 @@ public class CubeBuilder {
             minY, maxY, 
             minZ, maxZ, radius, 
             cornerSegments, excludedFaces, 
-            layer, relY, skyColor
+            layer, relY, colorModifier
         );
 
         // Only emit corner caps if neighbor checking is available
@@ -635,7 +635,7 @@ public class CubeBuilder {
                 cornerSegments, 
                 excludedFaces, 
                 layer,  
-                relY, skyColor,
+                relY, colorModifier,
                 neighborCache
             );
         }
@@ -648,7 +648,7 @@ public class CubeBuilder {
             radius,
             excludedFaces,
             layer, 
-            relY, skyColor
+            relY, colorModifier
         );
     }
 }

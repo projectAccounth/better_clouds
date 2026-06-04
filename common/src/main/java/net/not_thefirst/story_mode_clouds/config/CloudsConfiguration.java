@@ -337,6 +337,11 @@ public class CloudsConfiguration {
             private static final int DEFAULT_OFFSET = 0;
             private static final float DEFAULT_LAYER_SPEED = 0.03f;
             private static final float DEFAULT_LAYER_HEIGHT_OFFSET = 0.23f;
+            private static final String DEFAULT_TEXTURE_NAME = "clouds";
+            private static final String DEFAULT_TEXTURE_NAMESPACE = "minecraft";
+            private static final boolean DEFAULT_TEXTURE_HORIZONTAL_FLIP = false;
+            private static final boolean DEFAULT_TEXTURE_VERTICAL_FLIP = false;
+            private static final boolean DEFAULT_PRESERVE_ORIGINAL_TEXTURE_COLOR = false;
 
             public boolean SHADING_ENABLED = DEFAULT_SHADING_ENABLED;
             public boolean USES_CUSTOM_ALPHA = DEFAULT_USES_CUSTOM_ALPHA;
@@ -351,6 +356,11 @@ public class CloudsConfiguration {
             public float LAYER_SPEED_X = DEFAULT_LAYER_SPEED;
             public float LAYER_SPEED_Z = DEFAULT_LAYER_SPEED;
             public float LAYER_HEIGHT_OFFSET = DEFAULT_LAYER_HEIGHT_OFFSET;
+            public String TEXTURE_NAME = DEFAULT_TEXTURE_NAME;
+            public String TEXTURE_NAMESPACE = DEFAULT_TEXTURE_NAMESPACE;
+            public boolean TEXTURE_HORIZONTAL_FLIP = DEFAULT_TEXTURE_HORIZONTAL_FLIP;
+            public boolean TEXTURE_VERTICAL_FLIP = DEFAULT_TEXTURE_VERTICAL_FLIP;
+            public boolean PRESERVE_ORIGINAL_TEXTURE_COLOR = DEFAULT_PRESERVE_ORIGINAL_TEXTURE_COLOR;
 
             void copy(AppearanceParameters other) {
                 this.SHADING_ENABLED = other.SHADING_ENABLED;
@@ -366,6 +376,11 @@ public class CloudsConfiguration {
                 this.LAYER_SPEED_X = other.LAYER_SPEED_X;
                 this.LAYER_SPEED_Z = other.LAYER_SPEED_Z;
                 this.LAYER_HEIGHT_OFFSET = other.LAYER_HEIGHT_OFFSET;
+                this.TEXTURE_NAME = other.TEXTURE_NAME;
+                this.TEXTURE_NAMESPACE = other.TEXTURE_NAMESPACE;
+                this.TEXTURE_HORIZONTAL_FLIP = other.TEXTURE_HORIZONTAL_FLIP;
+                this.TEXTURE_VERTICAL_FLIP = other.TEXTURE_VERTICAL_FLIP;
+                this.PRESERVE_ORIGINAL_TEXTURE_COLOR = other.PRESERVE_ORIGINAL_TEXTURE_COLOR;
             }
         }
 
@@ -608,8 +623,10 @@ public class CloudsConfiguration {
             );
 
         } finally {
-            if (tempFile.exists()) {
-                tempFile.delete();
+            try {
+                Files.deleteIfExists(tempFile.toPath());
+            } catch (IOException e) {
+                LoggerProvider.get().error("Error while deleting temporary file.", e);
             }
         }
     }

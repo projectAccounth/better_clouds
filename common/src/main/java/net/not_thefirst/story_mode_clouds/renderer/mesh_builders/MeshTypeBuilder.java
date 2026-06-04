@@ -8,5 +8,5 @@ public interface MeshTypeBuilder {
         BufferBuilder bb,
         LayerState state,
         int cx, int cz, float relY, 
-        int currentLayer, int skyColor);
+        int currentLayer, int colorModifier);
 }

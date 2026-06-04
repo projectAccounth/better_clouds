@@ -25,7 +25,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MappableRingBuffer;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -34,6 +33,7 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LightingTyp
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.ShadingMode;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.FadeType;
 import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
+import net.not_thefirst.story_mode_clouds.config.resources.CloudResourceLoader;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshTypeBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
@@ -58,26 +58,32 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
 public class CustomCloudRenderer implements AutoCloseable {
-
-    private Optional<Texture.TextureData> currentTexture = Optional.empty();
     private final List<LayerState> layers = new ArrayList<>();
     
-    protected static final IdentifierWrapper TEXTURE_LOCATION = 
+    protected static final IdentifierWrapper DEFAULT_TEXTURE_LOCATION = 
         IdentifierWrapper.of("minecraft", "textures/environment/clouds.png");
 
     private final RenderSystem.AutoStorageIndexBuffer indices =
             RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
 
     private Dimension previousDimension = null;
+    private boolean textureInitialized = false;
+    private boolean shouldReset = false;
 
     public CustomCloudRenderer() {
         super();
 
         rebuildLayerStates();
+        applyTexture();
     }
 
     private void rebuildLayerStates() {
+        for (LayerState layer : layers) {
+            layer.close();
+        }
         layers.clear();
+        textureInitialized = false;
+        shouldReset = false;
 
         int layerCount = CloudsConfiguration.getInstance().getLayerCount();
         for (int i = 0; i < layerCount; i++) {
@@ -105,9 +111,7 @@ public class CustomCloudRenderer implements AutoCloseable {
     ) {
         try (InputStream inputStream = 
             resourceManager.open(textureLocation.getDelegate())) {
-
-            this.currentTexture = Texture.buildTexture(inputStream);
-            return this.currentTexture;
+            return Texture.buildTexture(inputStream);
         }
         catch (IOException exception) {
             exception.printStackTrace();
@@ -116,33 +120,58 @@ public class CustomCloudRenderer implements AutoCloseable {
         }
     }
 
+    public boolean isTextureInitialized() {
+        return this.textureInitialized;
+    }
+
     @SuppressWarnings("unused")
     public void apply(Optional<Texture.TextureData> optional, ResourceManager resourceManager, ProfilerFiller profilerFiller) {
         Texture.TextureData baseTexture = optional.orElse(null);
-        for (LayerState layer : layers) {
-            layer.texture = resolveTextureForLayer(layer, baseTexture);
+        int layerCount = CloudsConfiguration.getInstance().getLayerCount();
+        for (int i = 0; i < layerCount && i < layers.size(); i++) {
+            LayerState layer = layers.get(i);
+            CloudsConfiguration.LayerConfiguration layerConfig = CloudsConfiguration.getInstance().getLayer(i);
+            layer.texture = resolveTextureForLayer(i, layerConfig, baseTexture);
             layer.needsRebuild = true;
         }
     }
 
     @Nullable
-    private Texture.TextureData resolveTextureForLayer(LayerState layer, @Nullable Texture.TextureData fallback) {
+    private Texture.TextureData resolveTextureForLayer(int layerIndex, CloudsConfiguration.LayerConfiguration layerConfig, @Nullable Texture.TextureData fallback) {
+        String textureName = layerConfig.APPEARANCE.TEXTURE_NAME;
+        String textureNamespace = layerConfig.APPEARANCE.TEXTURE_NAMESPACE;
+        boolean flipX = layerConfig.APPEARANCE.TEXTURE_HORIZONTAL_FLIP;
+        boolean flipY = layerConfig.APPEARANCE.TEXTURE_VERTICAL_FLIP;
+        
+        if (textureName != null && !textureName.isEmpty() && 
+            textureNamespace != null && !textureNamespace.isEmpty()) {
+            
+            Optional<Texture.TextureData> customTexture = CloudResourceLoader.loadLayerTexture(textureNamespace, textureName, flipX, flipY);
+            if (customTexture.isPresent()) {
+                return customTexture.get();
+            }
+        }
+        
+        // Fall back to the default/base texture if custom texture not found or configured
         return fallback;
     }
 
-    private void applyTexture() {
+    public void applyTexture() {
         Minecraft client = Minecraft.getInstance();
         if (client.level == null) return;
 
-        if (!currentTexture.isPresent()) {
-            prepare(client.getResourceManager(), Profiler.get(), TEXTURE_LOCATION);
+        if (!textureInitialized) {
+            for (int i = 0; i < layers.size(); i++) {
+                LayerState layer = layers.get(i);
+                CloudsConfiguration.LayerConfiguration layerConfig = CloudsConfiguration.getInstance().getLayer(i);
+                layer.texture = resolveTextureForLayer(i, layerConfig, null);
+            }
+            textureInitialized = true;
         }
-
-        apply(currentTexture, client.getResourceManager(), Profiler.get());
     }
 
     public Optional<Texture.TextureData> getCurrentTexture() {
-        return this.currentTexture;
+        return Optional.empty();
     }
     
     long last = 0;
@@ -159,7 +188,7 @@ public class CustomCloudRenderer implements AutoCloseable {
 
         if (!CloudsConfiguration.getInstance().getCloudRendered(currentDimension)) return;
 
-        if (activeLayers != layers.size() || previousDimension != currentDimension) {
+        if (activeLayers != layers.size() || previousDimension != currentDimension || shouldReset) {
             rebuildLayerStates();
             applyTexture();
         }
@@ -250,7 +279,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             if (needs) {
                 currentLayer.needsRebuild  = false;
                 currentLayer.prevStatus    = status;
-                tryBuildClouds(currentLayer, relY, layer, skyColor);
+                tryBuildClouds(currentLayer, relY, layer, ARGB.WHITE);
             }
 
             int shaderColor = ColorUtils.getCloudShaderColor(layer, skyColor);
@@ -277,7 +306,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         finishRender();
     }
 
-    private void tryBuildClouds(LayerState currentLayer, float relY, int layer, int skyColor) {
+    private void tryBuildClouds(LayerState currentLayer, float relY, int layer, int colorModifier) {
         if (currentLayer.buffer != null) {
             currentLayer.buffer.close();
         }
@@ -286,7 +315,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             currentLayer.texture,
             currentLayer.baseCellX, currentLayer.baseCellZ,
             currentLayer.prevStatus,
-            relY, layer, skyColor)) {
+            relY, layer, colorModifier)) {
 
             if (mesh == null) {
                 currentLayer.layerIndexCount = 0;
@@ -315,7 +344,7 @@ public class CustomCloudRenderer implements AutoCloseable {
                                        int baseCx, int baseCz,
                                        CloudStatus status,
                                        float relYCenter, int currentLayer,
-                                       int skyColor) {
+                                       int colorModifier) {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
                 CloudsConfiguration.getInstance().getLayer(currentLayer);
 
@@ -341,7 +370,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             baseCx, baseCz, 
             relYCenter, 
             currentLayer, 
-            skyColor);
+            colorModifier);
 
         return mesh.buildOrThrow();
     }
@@ -374,12 +403,14 @@ public class CustomCloudRenderer implements AutoCloseable {
     }
 
     public void markForRebuild(int layer) {
+        shouldReset = true;
         if (layer >= 0 && layer < layers.size()) {
             layers.get(layer).needsRebuild = true;
         }
     }
 
     public void markForRebuild() {
+        shouldReset = true;
         for (int i = 0; i < layers.size(); i++) {
             layers.get(i).needsRebuild = true;
         }
@@ -394,7 +425,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         }
     }
     
-    public static class LayerState {
+    public static class LayerState implements AutoCloseable{
         int index;
         float offsetX;
         float offsetZ;
@@ -427,6 +458,22 @@ public class CustomCloudRenderer implements AutoCloseable {
         public LayerState() {
             this(-1);
         }
+
+        void closeBuffers() {
+            transformsBuffer.close();
+            cloudsInfoBuffer.close();
+            lightingBuffer.close();
+            cameraBuffer.close();
+        }
+
+        @Override
+        public void close() {
+            if (buffer != null && !buffer.isClosed()) {
+                buffer.close();
+            }
+            closeBuffers();
+        }
+
     }
 
     private static final int CAMERA_SIZE =

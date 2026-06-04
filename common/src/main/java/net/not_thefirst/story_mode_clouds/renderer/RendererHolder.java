@@ -1,13 +1,9 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
-import java.util.Optional;
-
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 
 public class RendererHolder {
     private static CustomCloudRenderer renderer;
@@ -28,12 +24,6 @@ public class RendererHolder {
 
         if (renderer == null) {
             renderer = new CustomCloudRenderer();
-        }
-
-        if (!renderer.getCurrentTexture().isPresent()) {
-            Optional<Texture.TextureData> texture = renderer.prepare(client.getResourceManager(), 
-                Profiler.get(), CustomCloudRenderer.TEXTURE_LOCATION);
-            renderer.apply(texture, client.getResourceManager(), Profiler.get());
         }
 
         if (!CloudsConfiguration.getInstance().CLOUDS_RENDERED) return;

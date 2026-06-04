@@ -5,6 +5,7 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
+import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
 
@@ -14,7 +15,10 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
         BufferBuilder bb,
         LayerState state,
         int cx, int cz, float relY, 
-        int currentLayer, int skyColor) {
+        int currentLayer, int colorModifier) {
+
+        CloudsConfiguration.LayerConfiguration layerConfiguration = 
+                CloudsConfiguration.getInstance().getLayer(currentLayer);
         
         int range = CloudsConfiguration.getInstance().getCloudGridRange();
         Texture.TextureData tex = state.texture();
@@ -28,8 +32,9 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
             for (int dx = -range; dx <= range; dx++) {
                 int cellIdx = wrapped.getCellIndex(dx, dz, range);
                 long cell = cells[cellIdx];
+                int color = Texture.getColor(cell);
                 if (cell != 0L) {
-                    buildFlatCell(bb, dx, dz, currentLayer, relY, skyColor);
+                    buildFlatCell(bb, dx, dz, currentLayer, relY, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
                 }
             }
         }
@@ -37,7 +42,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
 
-    private static void buildFlatCell(BufferBuilder bb, int cx, int cz, int currentLayer, float y, int skyColor) {
+    private static void buildFlatCell(BufferBuilder bb, int cx, int cz, int currentLayer, float y, int colorModifier) {
         float x0 = cx * MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float z0 = cz * MeshBuilder.CELL_SIZE_IN_BLOCKS;
@@ -48,7 +53,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
             x1, 0, z1,
             x1, 0, z0,
             x0, 0, z0,
-            currentLayer, y, skyColor
+            currentLayer, y, colorModifier
         );
 
         VertexBuilder.quad(bb, 
@@ -56,7 +61,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
             x1, 0, z0,
             x1, 0, z1,
             x0, 0, z1,
-            currentLayer, y, skyColor
+            currentLayer, y, colorModifier
         );
     }
 }
