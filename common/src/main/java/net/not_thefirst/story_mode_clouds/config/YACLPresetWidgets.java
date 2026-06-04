@@ -6,6 +6,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
 import net.not_thefirst.story_mode_clouds.config.screens.PresetBrowserScreen;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 import java.time.format.DateTimeFormatter;
 import java.time.Instant;
@@ -45,12 +46,9 @@ public class YACLPresetWidgets {
                     if (PresetController.saveColorPreset(timestamp, presetName, "Saved via config menu", config)) {
                         CloudsConfiguration.save();
                         if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.player != null) {
-                            mc.player.sendSystemMessage(
-                                ComponentWrapper.literal("§aSaved color preset: " + presetName)
-                            );
-                        }
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("§aSaved color preset: " + presetName)
+                        );
                     }
                 })
                 .build())
@@ -64,12 +62,9 @@ public class YACLPresetWidgets {
                     if (PresetController.saveLightingPreset(timestamp, presetName, "Saved via config menu", config)) {
                         CloudsConfiguration.save();
                         if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.player != null) {
-                            mc.player.sendSystemMessage(
-                                ComponentWrapper.literal("§aSaved lighting preset: " + presetName)
-                            );
-                        }
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("§aSaved lighting preset: " + presetName)
+                        );
                     }
                 })
                 .build())
@@ -83,12 +78,9 @@ public class YACLPresetWidgets {
                     if (PresetController.saveLightSourcesPreset(timestamp, presetName, "Saved via config menu", config)) {
                         CloudsConfiguration.save();
                         if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.player != null) {
-                            mc.player.sendSystemMessage(
-                                ComponentWrapper.literal("§aSaved light sources preset: " + presetName)
-                            );
-                        }
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("§aSaved light sources preset: " + presetName)
+                        );
                     }
                 })
                 .build())
@@ -105,12 +97,9 @@ public class YACLPresetWidgets {
                     if (success) {
                         CloudsConfiguration.save();
                         if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.player != null) {
-                            mc.player.sendSystemMessage(
-                                ComponentWrapper.literal("§aReset to default presets")
-                            );
-                        }
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("§aReset to default presets")
+                        );
                     }
                 })
                 .build());
@@ -124,7 +113,7 @@ public class YACLPresetWidgets {
         
         int colorCount = PresetController.getPresetCount(PresetController.PresetCategory.COLORS);
         colorPresetsBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("📁 Browse Presets (" + colorCount + ")"))
+            .name(ComponentWrapper.literal("Browse Presets (" + colorCount + ")"))
             .description(OptionDescription.of(ComponentWrapper.literal("Open preset browser to manage, edit, and load color presets")))
             .action((yacl, btn) -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -138,14 +127,13 @@ public class YACLPresetWidgets {
         
         builder.group(colorPresetsBuilder.build());
 
-        // LIGHTING PRESETS SECTION
         var lightingPresetsBuilder = OptionGroup.createBuilder()
             .name(ComponentWrapper.translatable("cloudtweaks.presets.lighting_presets"))
             .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.lighting_presets.tooltip")));
         
         int lightingCount = PresetController.getPresetCount(PresetController.PresetCategory.LIGHTING);
         lightingPresetsBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("📁 Browse Presets (" + lightingCount + ")"))
+            .name(ComponentWrapper.literal("Browse Presets (" + lightingCount + ")"))
             .description(OptionDescription.of(ComponentWrapper.literal("Open preset browser to manage, edit, and load lighting presets")))
             .action((yacl, btn) -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -166,7 +154,7 @@ public class YACLPresetWidgets {
         
         int lightSourcesCount = PresetController.getPresetCount(PresetController.PresetCategory.LIGHT_SOURCES);
         lightSourcesPresetsBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("📁 Browse Presets (" + lightSourcesCount + ")"))
+            .name(ComponentWrapper.literal("Browse Presets (" + lightSourcesCount + ")"))
             .description(OptionDescription.of(ComponentWrapper.literal("Open preset browser to manage, edit, and load light source presets")))
             .action((yacl, btn) -> {
                 Minecraft mc = Minecraft.getInstance();

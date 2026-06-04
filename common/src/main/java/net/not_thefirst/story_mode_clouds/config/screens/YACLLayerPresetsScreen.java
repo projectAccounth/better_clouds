@@ -10,7 +10,10 @@ import net.not_thefirst.story_mode_clouds.config.YACLDataSettings;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration;
 import net.not_thefirst.story_mode_clouds.config.screens.LayerPresets.LayerPresetMetadata;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.util.List;
 
@@ -42,8 +45,8 @@ public class YACLLayerPresetsScreen {
             .description(OptionDescription.of(ComponentWrapper.literal("Paste a Base64 encoded layer preset")))
             .action((yacl, btn) -> {
                 try {
-                    String clipboard = (String) java.awt.Toolkit.getDefaultToolkit()
-                        .getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
+                    String clipboard = (String) Toolkit.getDefaultToolkit()
+                        .getSystemClipboard().getData(DataFlavor.stringFlavor);
                     if (clipboard != null && !clipboard.isEmpty()) {
                         showImportDialog(clipboard, dimension, backScreen);
                     }
@@ -73,11 +76,9 @@ public class YACLLayerPresetsScreen {
                         CloudsConfiguration.save();
                         
                         Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.player != null) {
-                            mc.player.sendSystemMessage(
-                                ComponentWrapper.literal("Loaded layer preset: " + preset.displayName)
-                            );
-                        }
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("Loaded layer preset: " + preset.displayName)
+                        );
                         // Refresh the presets screen (don't know if ts works)
                         if (mc != null) {
                             mc.setScreen(createLayerPresetsScreen(dimension, backScreen));
@@ -93,12 +94,9 @@ public class YACLLayerPresetsScreen {
                     String base64 = LayerPresets.exportLayerPresetAsBase64(preset.id);
                     if (base64 != null) {
                         copyToClipboard(base64);
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.player != null) {
-                            mc.player.sendSystemMessage(
-                                ComponentWrapper.literal("Preset exported to clipboard")
-                            );
-                        }
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("Preset exported to clipboard")
+                        );
                     }
                 })
                 .build());
@@ -129,11 +127,9 @@ public class YACLLayerPresetsScreen {
                 .action((yacl, btn) -> {
                     if (LayerPresets.deleteLayerPreset(preset.id)) {
                         Minecraft mc = Minecraft.getInstance();
-                        if (mc != null && mc.player != null) {
-                            mc.player.sendSystemMessage(
-                                ComponentWrapper.literal("Deleted layer preset: " + preset.displayName)
-                            );
-                        }
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("Deleted layer preset: " + preset.displayName)
+                        );
                         if (mc != null) {
                             mc.setScreen(createLayerPresetsScreen(dimension, backScreen));
                         }
@@ -193,13 +189,11 @@ public class YACLLayerPresetsScreen {
                     );
 
                     Minecraft mc = Minecraft.getInstance();
-                    if (success && mc != null && mc.player != null) {
-                        mc.player.sendSystemMessage(
+                    if (success && mc != null) {
+                        ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.literal("Layer preset imported successfully")
                         );
-                        if (mc != null) {
-                            mc.setScreen(null);
-                        }
+                        mc.setScreen(null);
                     }
                 })
                 .build());

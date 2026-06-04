@@ -11,6 +11,7 @@ import net.not_thefirst.story_mode_clouds.config.screens.YACLLayerPresetsScreen;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 import java.awt.Color;
 import java.time.format.DateTimeFormatter;
@@ -41,11 +42,9 @@ public class YACLDataSettings {
                     colors.add(newKeypoint);
                     CloudsConfiguration.save();
                     Minecraft mc = Minecraft.getInstance();
-                    if (mc != null && mc.player != null) {
-                        mc.player.sendSystemMessage(
-                            ComponentWrapper.literal("Added keypoint at time " + newKeypoint.time)
-                        );
-                    }
+                    ClientHelper.sendLocalSystemMessage(
+                        ComponentWrapper.literal("Added keypoint at time " + newKeypoint.time)
+                    );
                     if (mc != null) {
                         mc.setScreen(null);
                     }
@@ -83,11 +82,9 @@ public class YACLDataSettings {
                         if (colors.size() > 1 && colors.remove(kp)) {
                             CloudsConfiguration.save();
                             Minecraft mc = Minecraft.getInstance();
-                            if (mc != null && mc.player != null) {
-                                mc.player.sendSystemMessage(
-                                    ComponentWrapper.literal("Removed keypoint")
-                                );
-                            }
+                            ClientHelper.sendLocalSystemMessage(
+                                ComponentWrapper.literal("Removed keypoint")
+                            );
                             if (mc != null) {
                                 mc.setScreen(null);
                             }
@@ -99,7 +96,7 @@ public class YACLDataSettings {
         }
         
         builder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("💾 Save as Color Preset"))
+            .name(ComponentWrapper.literal("Save as Color Preset"))
             .description(OptionDescription.of(ComponentWrapper.literal("Save current color settings as a preset")))
             .action((yacl, btn) -> {
                 String timestamp = String.valueOf(System.currentTimeMillis());
@@ -107,12 +104,9 @@ public class YACLDataSettings {
                 if (net.not_thefirst.story_mode_clouds.config.presets.PresetController.saveColorPreset(timestamp, presetName, "Saved from Color settings", config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-                    Minecraft mc = Minecraft.getInstance();
-                    if (mc != null && mc.player != null) {
-                        mc.player.sendSystemMessage(
-                            ComponentWrapper.literal("§aSaved color preset: " + presetName)
-                        );
-                    }
+                    ClientHelper.sendLocalSystemMessage(
+                        ComponentWrapper.literal("Saved color preset: " + presetName)
+                    );
                 }
             })
             .build());
@@ -140,11 +134,9 @@ public class YACLDataSettings {
                 lights.add(newLight);
                 CloudsConfiguration.save();
                 Minecraft mc = Minecraft.getInstance();
-                if (mc != null && mc.player != null) {
-                    mc.player.sendSystemMessage(
-                        ComponentWrapper.literal("Added light source")
-                    );
-                }
+                ClientHelper.sendLocalSystemMessage(
+                    ComponentWrapper.literal("Added light source")
+                );
                 if (mc != null) {
                     mc.setScreen(null);
                 }
@@ -187,11 +179,9 @@ public class YACLDataSettings {
                         if (lights.size() > 1 && lights.remove(light)) {
                             CloudsConfiguration.save();
                             Minecraft mc = Minecraft.getInstance();
-                            if (mc != null && mc.player != null) {
-                                mc.player.sendSystemMessage(
-                                    ComponentWrapper.literal("Removed light source")
-                                );
-                            }
+                            ClientHelper.sendLocalSystemMessage(
+                                ComponentWrapper.literal("Removed light source")
+                            );
                             if (mc != null) {
                                 mc.setScreen(null);
                             }
@@ -203,7 +193,7 @@ public class YACLDataSettings {
         }
         
         builder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("💾 Save as Light Sources Preset"))
+            .name(ComponentWrapper.literal("Save as Light Sources Preset"))
             .description(OptionDescription.of(ComponentWrapper.literal("Save current light source settings as a preset")))
             .action((yacl, btn) -> {
                 String timestamp = String.valueOf(System.currentTimeMillis());
@@ -211,12 +201,9 @@ public class YACLDataSettings {
                 if (net.not_thefirst.story_mode_clouds.config.presets.PresetController.saveLightSourcesPreset(timestamp, presetName, "Saved from Light Sources settings", config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-                    Minecraft mc = Minecraft.getInstance();
-                    if (mc != null && mc.player != null) {
-                        mc.player.sendSystemMessage(
-                            ComponentWrapper.literal("§aSaved light sources preset: " + presetName)
-                        );
-                    }
+                    ClientHelper.sendLocalSystemMessage(
+                        ComponentWrapper.literal("§aSaved light sources preset: " + presetName)
+                    );
                 }
             })
             .build());
@@ -380,9 +367,34 @@ public class YACLDataSettings {
                 .binding(layer.APPEARANCE.LAYER_HEIGHT_OFFSET, () -> layer.APPEARANCE.LAYER_HEIGHT_OFFSET, v -> layer.APPEARANCE.LAYER_HEIGHT_OFFSET = v)
                 .controller(opt -> FloatSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_LAYER_HEIGHT_OFFSET, ConfigConstants.MAX_LAYER_HEIGHT_OFFSET).step(ConfigConstants.LAYER_HEIGHT_OFFSET_STEP))
                 .build())
+            .option(Option.<String>createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.custom_texture_namespace"))
+                .binding(layer.APPEARANCE.TEXTURE_NAMESPACE, () -> layer.APPEARANCE.TEXTURE_NAMESPACE, v -> layer.APPEARANCE.TEXTURE_NAMESPACE = v)
+                .controller(StringControllerBuilder::create)
+                .build())
+            .option(Option.<String>createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.custom_texture_name"))
+                .binding(layer.APPEARANCE.TEXTURE_NAME, () -> layer.APPEARANCE.TEXTURE_NAME, v -> layer.APPEARANCE.TEXTURE_NAME = v)
+                .controller(StringControllerBuilder::create)
+                .build())
+            .option(Option.<Boolean>createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.custom_texture_flip_x"))
+                .binding(layer.APPEARANCE.TEXTURE_HORIZONTAL_FLIP, () -> layer.APPEARANCE.TEXTURE_HORIZONTAL_FLIP, v -> layer.APPEARANCE.TEXTURE_HORIZONTAL_FLIP = v)
+                .controller(BooleanControllerBuilder::create)
+                .build())
+            .option(Option.<Boolean>createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.custom_texture_flip_y"))
+                .binding(layer.APPEARANCE.TEXTURE_VERTICAL_FLIP, () -> layer.APPEARANCE.TEXTURE_VERTICAL_FLIP, v -> layer.APPEARANCE.TEXTURE_VERTICAL_FLIP = v)
+                .controller(BooleanControllerBuilder::create)
+                .build())
+            .option(Option.<Boolean>createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.preserve_original_texture_color"))
+                .binding(layer.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR, () -> layer.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR, v -> layer.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR = v)
+                .controller(BooleanControllerBuilder::create)
+                .build())
             
             .build();
-    }
+        }
 
     private static ConfigCategory buildLayerBevelSettings(LayerConfiguration layer) {
         return ConfigCategory.createBuilder()
@@ -537,11 +549,9 @@ public class YACLDataSettings {
                 layerHolder.addLayer(newLayer);
                 CloudsConfiguration.save();
                 Minecraft mc = Minecraft.getInstance();
-                if (mc != null && mc.player != null) {
-                    mc.player.sendSystemMessage(
-                        ComponentWrapper.literal("Added layer " + layerHolder.layers.size() + " to " + dimension.getId())
-                    );
-                }
+                ClientHelper.sendLocalSystemMessage(
+                    ComponentWrapper.literal("Added layer " + layerHolder.layers.size() + " to " + dimension.getId())
+                );
                 if (mc != null) {
                     mc.setScreen(null);
                 }
@@ -583,11 +593,9 @@ public class YACLDataSettings {
                             layerHolder.removeLayer(layerIndex);
                             CloudsConfiguration.save();
                             Minecraft mc = Minecraft.getInstance();
-                            if (mc != null && mc.player != null) {
-                                mc.player.sendSystemMessage(
-                                    ComponentWrapper.literal("Removed layer from " + dimension.getId())
-                                );
-                            }
+                            ClientHelper.sendLocalSystemMessage(
+                                ComponentWrapper.literal("Removed layer from " + dimension.getId())
+                            );
                             if (mc != null) {
                                 mc.setScreen(null);
                             }
@@ -652,13 +660,7 @@ public class YACLDataSettings {
 
         return ConfigCategory.createBuilder()
             .name(ComponentWrapper.literal("Save Preset"))
-            
-            .option(Option.<String>createBuilder()
-                .name(ComponentWrapper.literal("Display Name"))
-                .binding(saveData.displayName, () -> saveData.displayName, v -> saveData.displayName = v)
-                .controller(StringControllerBuilder::create)
-                .build())
-            
+
             .option(Option.<String>createBuilder()
                 .name(ComponentWrapper.literal("Description"))
                 .binding(saveData.description, () -> saveData.description, v -> saveData.description = v)
@@ -678,14 +680,11 @@ public class YACLDataSettings {
                     );
                     
                     Minecraft mc = Minecraft.getInstance();
-                    if (success && mc != null && mc.player != null) {
-                        mc.player.sendSystemMessage(
+                    if (success && mc != null) {
+                        ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.literal("Preset updated: " + saveData.displayName)
                         );
-                        // Return to presets list
-                        if (mc != null) {
-                            mc.setScreen(backScreen);
-                        }
+                        mc.setScreen(backScreen);
                     }
                 })
                 .build())
@@ -714,12 +713,6 @@ public class YACLDataSettings {
                 .build())
             
             .option(Option.<String>createBuilder()
-                .name(ComponentWrapper.literal("Display Name"))
-                .binding(saveData.displayName, () -> saveData.displayName, v -> saveData.displayName = v)
-                .controller(StringControllerBuilder::create)
-                .build())
-            
-            .option(Option.<String>createBuilder()
                 .name(ComponentWrapper.literal("Description"))
                 .binding(saveData.description, () -> saveData.description, v -> saveData.description = v)
                 .controller(StringControllerBuilder::create)
@@ -738,8 +731,8 @@ public class YACLDataSettings {
                     );
                     
                     Minecraft mc = Minecraft.getInstance();
-                    if (success && mc != null && mc.player != null) {
-                        mc.player.sendSystemMessage(
+                    if (success && mc != null) {
+                        ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.literal("Layer preset saved: " + saveData.displayName)
                         );
                     }

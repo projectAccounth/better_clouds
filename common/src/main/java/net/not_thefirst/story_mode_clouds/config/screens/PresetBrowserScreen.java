@@ -8,6 +8,7 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.ComponentWrapper;
 import net.not_thefirst.story_mode_clouds.config.presets.*;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 import java.time.format.DateTimeFormatter;
 import java.time.Instant;
@@ -71,7 +72,7 @@ public class PresetBrowserScreen {
             )));
         
         group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("📖 View"))
+            .name(ComponentWrapper.literal("View"))
             .description(OptionDescription.of(ComponentWrapper.literal("View preset details")))
             .action((yacl, btn) -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -84,7 +85,7 @@ public class PresetBrowserScreen {
             .build());
         
         group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("✏️ Edit"))
+            .name(ComponentWrapper.literal("Edit"))
             .description(OptionDescription.of(ComponentWrapper.literal("Edit preset name and description")))
             .action((yacl, btn) -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -97,35 +98,31 @@ public class PresetBrowserScreen {
             .build());
         
         group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("⬇️ Load"))
+            .name(ComponentWrapper.literal("Load"))
             .description(OptionDescription.of(ComponentWrapper.literal("Load this color preset")))
             .action((yacl, btn) -> {
                 if (PresetController.loadColorPreset(preset.id, config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-                    Minecraft mc = Minecraft.getInstance();
-                    if (mc != null && mc.player != null) {
-                        mc.player.sendSystemMessage(
-                            ComponentWrapper.literal("§aLoaded color preset: " + preset.displayName)
-                        );
-                    }
+
+                    ClientHelper.sendLocalSystemMessage(
+                        ComponentWrapper.literal("§aLoaded color preset: " + preset.displayName)
+                    );
                 }
             })
             .build());
         
         if (!preset.id.equals("default")) {
             group.option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.literal("🗑️ Delete"))
+                .name(ComponentWrapper.literal("Delete"))
                 .description(OptionDescription.of(ComponentWrapper.literal("Delete this preset")))
                 .action((yacl, btn) -> {
                     if (PresetController.deleteColorPreset(preset.id)) {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc != null) {
-                            if (mc.player != null) {
-                                mc.player.sendSystemMessage(
-                                    ComponentWrapper.literal("§aDeleted color preset: " + preset.displayName)
-                                );
-                            }
+                            ClientHelper.sendLocalSystemMessage(
+                                ComponentWrapper.literal("§aDeleted color preset: " + preset.displayName)
+                            );
                             mc.setScreen(createBrowserScreen(PresetController.PresetCategory.COLORS, backScreen));
                         }
                     }
@@ -148,7 +145,7 @@ public class PresetBrowserScreen {
             )));
         
         group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("📖 View"))
+            .name(ComponentWrapper.literal("View"))
             .description(OptionDescription.of(ComponentWrapper.literal("View preset details")))
             .action((yacl, btn) -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -161,7 +158,7 @@ public class PresetBrowserScreen {
             .build());
         
         group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("✏️ Edit"))
+            .name(ComponentWrapper.literal("Edit"))
             .description(OptionDescription.of(ComponentWrapper.literal("Edit preset name and description")))
             .action((yacl, btn) -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -174,35 +171,30 @@ public class PresetBrowserScreen {
             .build());
         
         group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("⬇️ Load"))
+            .name(ComponentWrapper.literal("Load"))
             .description(OptionDescription.of(ComponentWrapper.literal("Load this lighting preset")))
             .action((yacl, btn) -> {
                 if (PresetController.loadLightingPreset(preset.id, config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-                    Minecraft mc = Minecraft.getInstance();
-                    if (mc != null && mc.player != null) {
-                        mc.player.sendSystemMessage(
-                            ComponentWrapper.literal("§aLoaded lighting preset: " + preset.displayName)
-                        );
-                    }
+                    ClientHelper.sendLocalSystemMessage(
+                        ComponentWrapper.literal("Loaded lighting preset: " + preset.displayName)
+                    );
                 }
             })
             .build());
         
         if (!preset.id.equals("default")) {
             group.option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.literal("🗑️ Delete"))
+                .name(ComponentWrapper.literal("Delete"))
                 .description(OptionDescription.of(ComponentWrapper.literal("Delete this preset")))
                 .action((yacl, btn) -> {
                     if (PresetController.deleteLightingPreset(preset.id)) {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc != null) {
-                            if (mc.player != null) {
-                                mc.player.sendSystemMessage(
-                                    ComponentWrapper.literal("§aDeleted lighting preset: " + preset.displayName)
-                                );
-                            }
+                            ClientHelper.sendLocalSystemMessage((
+                                ComponentWrapper.literal("Deleted lighting preset: " + preset.displayName)
+                            ));
                             mc.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHTING, backScreen));
                         }
                     }
@@ -225,7 +217,7 @@ public class PresetBrowserScreen {
             )));
         
         group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("📖 View"))
+            .name(ComponentWrapper.literal("View"))
             .description(OptionDescription.of(ComponentWrapper.literal("View preset details")))
             .action((yacl, btn) -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -238,7 +230,7 @@ public class PresetBrowserScreen {
             .build());
         
         group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("✏️ Edit"))
+            .name(ComponentWrapper.literal("Edit"))
             .description(OptionDescription.of(ComponentWrapper.literal("Edit preset name and description")))
             .action((yacl, btn) -> {
                 Minecraft mc = Minecraft.getInstance();
@@ -251,35 +243,30 @@ public class PresetBrowserScreen {
             .build());
         
         group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("⬇️ Load"))
+            .name(ComponentWrapper.literal("Load"))
             .description(OptionDescription.of(ComponentWrapper.literal("Load this light sources preset")))
             .action((yacl, btn) -> {
                 if (PresetController.loadLightSourcesPreset(preset.id, config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-                    Minecraft mc = Minecraft.getInstance();
-                    if (mc != null && mc.player != null) {
-                        mc.player.sendSystemMessage(
-                            ComponentWrapper.literal("§aLoaded light sources preset: " + preset.displayName)
-                        );
-                    }
+                    ClientHelper.sendLocalSystemMessage(
+                        ComponentWrapper.literal("§aLoaded light sources preset: " + preset.displayName)
+                    );
                 }
             })
             .build());
         
         if (!preset.id.equals("default")) {
             group.option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.literal("🗑️ Delete"))
+                .name(ComponentWrapper.literal("Delete"))
                 .description(OptionDescription.of(ComponentWrapper.literal("Delete this preset")))
                 .action((yacl, btn) -> {
                     if (PresetController.deleteLightSourcesPreset(preset.id)) {
                         Minecraft mc = Minecraft.getInstance();
                         if (mc != null) {
-                            if (mc.player != null) {
-                                mc.player.sendSystemMessage(
-                                    ComponentWrapper.literal("§aDeleted light sources preset: " + preset.displayName)
-                                );
-                            }
+                            ClientHelper.sendLocalSystemMessage(
+                                ComponentWrapper.literal("§aDeleted light sources preset: " + preset.displayName)
+                            );
                             mc.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHT_SOURCES, backScreen));
                         }
                     }
