@@ -188,18 +188,19 @@ public class Texture {
 
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
-                    int coordX = flipX ? (w - 1 - x) : x;
-                    int coordY = flipY ? (h - 1 - y) : y;
-                    int idx = idx(x, y, w, h);
-                    int pixelRGBA = nativeImage.getPixel(coordX, coordY);
+                    int gridCoordX = flipX ? (w - 1 - x) : x;
+                    int gridCoordY = flipY ? (h - 1 - y) : y;
+                    int idx = idx(gridCoordX, gridCoordY, w, h);
+                    int pixelRGBA = nativeImage.getPixel(x, y);
 
-                    int b = (pixelRGBA >> 16) & 0xFF;
-                    int g = (pixelRGBA >> 8) & 0xFF;
-                    int r = (pixelRGBA) & 0xFF;
                     int a = (pixelRGBA >> 24) & 0xFF;
-                    int pixel = ARGB.color(a, b, g, r);
+                    int r = (pixelRGBA >> 16) & 0xFF;
+                    int g = (pixelRGBA >> 8) & 0xFF;
+                    int b = (pixelRGBA) & 0xFF;
 
-                    if (ARGB.alpha(pixel) < 5) {
+                    int pixel = ARGB.color(a, r, g, b);
+
+                    if (a < 5) {
                         cells[idx] = 0L;
                         neighbors[idx] = 0;
                         continue;
@@ -219,10 +220,10 @@ public class Texture {
                         }
                     }
 
-                    boolean n  = !isSolid(nativeImage, x,     y - 1, w, h);
-                    boolean e  = !isSolid(nativeImage, x + 1, y,     w, h);
-                    boolean s  = !isSolid(nativeImage, x,     y + 1, w, h);
-                    boolean w0 = !isSolid(nativeImage, x - 1, y,     w, h);
+                    boolean n  = !isSolid(nativeImage, x, flipY ? y + 1 : y - 1, w, h);
+                    boolean e  = !isSolid(nativeImage, flipX ? x - 1 : x + 1, y, w, h);
+                    boolean s  = !isSolid(nativeImage, x, flipY ? y - 1 : y + 1, w, h);
+                    boolean w0 = !isSolid(nativeImage, flipX ? x + 1 : x - 1, y, w, h);
 
                     cells[idx] = packCellData(pixel, n, e, s, w0);
                     neighbors[idx] = (byte)count;
