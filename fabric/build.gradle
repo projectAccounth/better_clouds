@@ -1,6 +1,5 @@
 plugins {
     id "java"
-    id "net.fabricmc.fabric-loom" version "1.15.5"
     id "maven-publish"
 }
 
@@ -14,6 +13,7 @@ group = project.maven_group
 
 
 dependencies {
+    implementation project(":common") 
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 

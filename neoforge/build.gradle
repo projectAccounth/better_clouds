@@ -34,6 +34,7 @@ neoForge {
 }
 
 dependencies {
+    implementation project(":common")
     implementation "org.spongepowered:mixin:0.8.5"
     implementation 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
     compileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
