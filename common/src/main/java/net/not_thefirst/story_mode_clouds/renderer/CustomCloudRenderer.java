@@ -1,9 +1,11 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
+import com.mojang.blaze3d.buffers.GpuBufferSlice.MappedView;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderPass;
@@ -15,9 +17,9 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
-import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.minecraft.client.CloudStatus;
@@ -45,6 +47,7 @@ import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider.WeatherState;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.DimensionProvider;
 
 import org.jetbrains.annotations.Nullable;
@@ -64,7 +67,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         IdentifierWrapper.of("minecraft", "textures/environment/clouds.png");
 
     private final RenderSystem.AutoStorageIndexBuffer indices =
-            RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+            RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
 
     private Dimension previousDimension = null;
     private boolean textureInitialized = false;
@@ -157,8 +160,7 @@ public class CustomCloudRenderer implements AutoCloseable {
     }
 
     public void applyTexture() {
-        Minecraft client = Minecraft.getInstance();
-        if (client.level == null) return;
+        if (ClientHelper.getLevel() == null) return;
 
         if (!textureInitialized) {
             for (int i = 0; i < layers.size(); i++) {
@@ -203,8 +205,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             return Float.compare(Math.abs(yb), Math.abs(ya));
         });
 
-        Minecraft client = Minecraft.getInstance();
-        ClientLevel level = client.level;
+        ClientLevel level = ClientHelper.getLevel();
         WeatherState weather = WeatherState.from(level, tickDelta);
 
         // sky color in other dimensions are returned as Black from Vanilla
@@ -329,7 +330,7 @@ public class CustomCloudRenderer implements AutoCloseable {
                     if (currentLayer.buffer != null && !currentLayer.buffer.isClosed()) currentLayer.buffer.close();
                     currentLayer.buffer = RenderSystem.getDevice().createBuffer(
                             () -> "Cloud layer " + layer,
-                            72,
+                            GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_COPY_DST,
                             mesh.vertexBuffer()
                     );
                 }
@@ -349,11 +350,8 @@ public class CustomCloudRenderer implements AutoCloseable {
                 CloudsConfiguration.getInstance().getLayer(currentLayer);
 
         LayerState state = layers.get(currentLayer);
-
-        BufferBuilder mesh = Tesselator.getInstance().begin(
-            VertexFormat.Mode.QUADS, 
-            DefaultVertexFormat.POSITION_COLOR_NORMAL
-        );
+        ByteBufferBuilder bb = new ByteBufferBuilder(1024 * 1024);
+        BufferBuilder mesh = new BufferBuilder(bb, PrimitiveTopology.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
 
         MeshTypeBuilder builder = null;
         try {
@@ -527,20 +525,14 @@ public class CustomCloudRenderer implements AutoCloseable {
                     : 1.0f);
 
         // Setup transformation buffer
-        try (GpuBuffer.MappedView view =
-                RenderSystem.getDevice()
-                    .createCommandEncoder()
-                    .mapBuffer(currentLayer.transformsBuffer.currentBuffer(), false, true)) {
+        try (MappedView view = currentLayer.transformsBuffer.currentBuffer().map(/*read=*/false, /*write=*/true)) {
 
             Std140Builder.intoBuffer(view.data())
                 .putVec4(-ox, oy, -oz, 1.0f);
         }
 
         // Setup cloud info buffer
-        try (GpuBuffer.MappedView view =
-                RenderSystem.getDevice()
-                    .createCommandEncoder()
-                    .mapBuffer(currentLayer.cloudsInfoBuffer.currentBuffer(), false, true)) {
+        try (MappedView view = currentLayer.cloudsInfoBuffer.currentBuffer().map(/*read=*/false, /*write=*/true)) {
 
             Std140Builder.intoBuffer(view.data())
 
@@ -586,10 +578,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         }
 
         // Setup lighting buffer
-        try (GpuBuffer.MappedView view =
-                RenderSystem.getDevice()
-                    .createCommandEncoder()
-                    .mapBuffer(currentLayer.lightingBuffer.currentBuffer(), false, true)) {
+        try (MappedView view = currentLayer.lightingBuffer.currentBuffer().map(false, true)) {
 
             Std140Builder builder = Std140Builder.intoBuffer(view.data());
 
@@ -634,10 +623,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         }
 
         // Setup camera buffer
-        try (GpuBuffer.MappedView view =
-                RenderSystem.getDevice()
-                    .createCommandEncoder()
-                    .mapBuffer(currentLayer.cameraBuffer.currentBuffer(), false, true)) {
+        try (MappedView view = currentLayer.cameraBuffer.currentBuffer().map(false, true)) {
 
             Std140Builder.intoBuffer(view.data())
                 .putVec4(
@@ -650,17 +636,12 @@ public class CustomCloudRenderer implements AutoCloseable {
 
         GpuBuffer indexBuf = indices.getBuffer(currentLayer.layerIndexCount);
         GpuBufferSlice slice = RenderSystem.getDynamicUniforms()
-				.writeTransform(
-					RenderSystem.getModelViewMatrix(),
-					new Vector4f(1.0F, 1.0F, 1.0F, 1.0F),
-					new Vector3f(0, 0, 0),
-					new Matrix4f()
-				);
+				.writeTransform(RenderSystem.getModelViewMatrixCopy());
 
         var encoder = RenderSystem.getDevice().createCommandEncoder();
 
-        RenderTarget rt = Minecraft.getInstance().getMainRenderTarget();
-        RenderTarget ct = Minecraft.getInstance().levelRenderer.getCloudsTarget();
+        RenderTarget rt = ClientHelper.GameRendererHelper.getRenderer().mainRenderTarget();
+        RenderTarget ct = ClientHelper.LevelRendererHelper.getRenderer().cloudsTarget();
         GpuTextureView colorTex;
         GpuTextureView depthTex;
         
@@ -675,7 +656,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         RenderPass pass = encoder.createRenderPass(
             () -> "Clouds",
             colorTex,
-            OptionalInt.empty(),
+            Optional.empty(),
             depthTex,
             OptionalDouble.empty() 
         );
@@ -689,12 +670,12 @@ public class CustomCloudRenderer implements AutoCloseable {
             pass.setUniform("Camera", currentLayer.cameraBuffer.currentBuffer());
             pass.setUniform("DynamicTransforms", slice);
 
-            pass.setVertexBuffer(0, currentLayer.buffer);
+            pass.setVertexBuffer(0, currentLayer.buffer.slice());
             pass.setIndexBuffer(indexBuf, indices.type());
 
             for (RenderPipeline pipeline : pipelines) {
                 pass.setPipeline(pipeline);
-                pass.drawIndexed(0, 0, currentLayer.layerIndexCount, 1);
+                pass.drawIndexed(currentLayer.layerIndexCount, 1, 0, 0, 0);
             }
         }
         catch (Exception exception) {

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.not_thefirst.story_mode_clouds.config.ComponentWrapper;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
@@ -24,13 +23,12 @@ public class CloudResourceLoader {
      * @return Optional containing TextureData if found and loaded successfully, empty Optional otherwise
      */
     public static Optional<Texture.TextureData> loadLayerTexture(String namespace, String textureName, boolean flipX, boolean flipY) {
-        Minecraft client = Minecraft.getInstance();
-        if (client == null || client.getResourceManager() == null) {
-            LoggerProvider.get().warn("Cannot load texture: Minecraft client not initialized");
+        ResourceManager resourceManager = ClientHelper.ResourceHelper.getResourceManager();
+
+        if (resourceManager == null) {
+            LoggerProvider.get().warn("ResourceManager is null, cannot load texture: {}:{}", namespace, textureName);
             return Optional.empty();
         }
-
-        ResourceManager resourceManager = client.getResourceManager();
         
         var resources = ResourceHandler.getResourcesWithNameInDirectoryAndNamespace(
             resourceManager,
