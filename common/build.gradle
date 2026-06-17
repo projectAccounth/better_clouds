@@ -26,3 +26,7 @@ dependencies {
     // compile only, has no Fabric-specific mappings here
     compileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 }
+
+tasks.withType(Jar) {
+    zip64 = true
+}
