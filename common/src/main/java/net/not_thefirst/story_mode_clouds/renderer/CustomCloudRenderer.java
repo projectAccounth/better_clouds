@@ -535,7 +535,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         try (MappedView view = currentLayer.cloudsInfoBuffer.currentBuffer().map(/*read=*/false, /*write=*/true)) {
 
             Std140Builder.intoBuffer(view.data())
-
+                
                 // ivec4 info0
                 .putIVec4(
                     packConfig(layerIdx),

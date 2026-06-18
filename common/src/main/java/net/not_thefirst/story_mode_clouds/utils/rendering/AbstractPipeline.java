@@ -3,29 +3,64 @@ package net.not_thefirst.story_mode_clouds.utils.rendering;
 import java.util.List;
 import java.util.Map;
 
+import net.not_thefirst.lib.gl_render_system.state.BlendState;
+import net.not_thefirst.lib.gl_render_system.state.CullState;
+import net.not_thefirst.lib.gl_render_system.state.DepthTestState;
+import net.not_thefirst.lib.gl_render_system.state.MaskState;
+import net.not_thefirst.lib.gl_render_system.vertex.VertexFormat;
+import net.not_thefirst.story_mode_clouds.utils.rendering.PipelineManager.DepthBufferImplType;
+
 public abstract class AbstractPipeline {
-    private final String name;
-    private final List<String> uniforms;
-    private final Map<String, Integer> uniformBlocks;
+    protected final String name;
+    protected final List<String> uniforms;
+    protected final Map<String, Integer> uniformBlocks;
 
     // placeholder (not implemented)
-    private final List<String> textures;
-    private final List<String> textureArrays;
+    protected final List<String> textures;
+    protected final List<String> textureArrays;
 
-    protected AbstractPipeline(String name) {
-        this.name = name;
-        this.uniforms = List.of();
-        this.uniformBlocks = Map.of();
-        this.textures = List.of();
-        this.textureArrays = List.of();
-    }
+    protected final BlendState blendState;
+    protected final CullState cullState;
+    protected final MaskState maskState;
+    protected final DepthTestState depthTestState;
 
-    protected AbstractPipeline(String name, List<String> uniforms, Map<String, Integer> uniformBlocks, List<String> textures, List<String> textureArrays) {
+    protected final String vertexShader;
+    protected final String fragmentShader;
+    protected final String id;
+
+    protected final VertexFormat vertexFormat;
+
+    protected AbstractPipeline(
+        final String name, 
+
+        final List<String> uniforms, 
+        final Map<String, Integer> uniformBlocks,
+        final List<String> textures,
+        final List<String> textureArrays,
+
+        final BlendState blendState,
+        final CullState cullState,
+        final MaskState maskState,
+        final DepthTestState depthTestState,
+
+        final String vertexShader,
+        final String fragmentShader,
+        final String id,
+        final VertexFormat vertexFormat
+    ) {
         this.name = name;
         this.uniforms = uniforms;
         this.uniformBlocks = uniformBlocks;
         this.textures = textures;
         this.textureArrays = textureArrays;
+        this.blendState = blendState;
+        this.cullState = cullState;
+        this.maskState = maskState;
+        this.depthTestState = depthTestState;
+        this.vertexShader = vertexShader;
+        this.fragmentShader = fragmentShader;
+        this.id = id;
+        this.vertexFormat = vertexFormat;
     }
 
     public Map<String, Integer> getUniformBlocks() {
@@ -64,26 +99,28 @@ public abstract class AbstractPipeline {
         return textureArrays.contains(name);
     }
 
-    public void addUniform(String name) {
-        if (!uniforms.contains(name)) {
-            uniforms.add(name);
-        }
+    public BlendState getBlendState() {
+        return blendState;
     }
 
-    public void addUniformBlock(String name, int bindingPoint) {
-        uniformBlocks.computeIfAbsent(name, k -> bindingPoint);
+    public CullState getCullState() {
+        return cullState;
     }
 
-    public void addTexture(String name) {
-        throw new UnsupportedOperationException("Adding textures is not supported in this pipeline.");
+    public MaskState getMaskState() {
+        return maskState;
     }
 
-    public void addTextureArray(String name) {
-        throw new UnsupportedOperationException("Adding texture arrays is not supported in this pipeline.");
+    public DepthTestState getDepthTestState() {
+        return depthTestState;
     }
 
     public abstract void bind();
     public abstract void unbind();
+
+    /**
+     * Sets up the pipeline at game initialization/resource reload. This is where shader compilation and other expensive setup should occur.
+     */
     public abstract void setup();
 
     public static class Builder<T extends AbstractPipeline> {
@@ -92,6 +129,14 @@ public abstract class AbstractPipeline {
         protected Map<String, Integer> uniformBlocks;
         protected List<String> textures;
         protected List<String> textureArrays;
+        protected BlendState blendState;
+        protected CullState cullState;
+        protected MaskState maskState;
+        protected DepthTestState depthTestState;
+        protected String vertexShader;
+        protected String fragmentShader;
+        protected String id;
+        protected VertexFormat vertexFormat;
 
         public Builder(String name) {
             this.name = name;
@@ -99,6 +144,18 @@ public abstract class AbstractPipeline {
             this.uniformBlocks = Map.of();
             this.textures = List.of();
             this.textureArrays = List.of();
+
+            cullState = CullState.CULL;
+            maskState = MaskState.COLOR_DEPTH;
+            depthTestState = 
+                PipelineManager.DEPTH_BUFFER_IMPL == DepthBufferImplType.STANDARD ? 
+                    DepthTestState.LEQUAL : DepthTestState.GEQUAL;
+            blendState = BlendState.TRANSLUCENT;
+            vertexFormat = VertexFormat.POSITION_COLOR;
+        }
+
+        public Builder<T> withName(String name) {
+            return new Builder<>(name);
         }
 
         public Builder<T> withUniforms(List<String> uniforms) {
@@ -118,6 +175,46 @@ public abstract class AbstractPipeline {
 
         public Builder<T> withTextureArrays(List<String> textureArrays) {
             this.textureArrays = textureArrays;
+            return this;
+        }
+
+        public Builder<T> withBlendState(BlendState blendState) {
+            this.blendState = blendState;
+            return this;
+        }
+
+        public Builder<T> withCullState(CullState cullState) {
+            this.cullState = cullState;
+            return this;
+        }
+
+        public Builder<T> withMaskState(MaskState maskState) {
+            this.maskState = maskState;
+            return this;
+        }
+
+        public Builder<T> withDepthTestState(DepthTestState depthTestState) {
+            this.depthTestState = depthTestState;
+            return this;
+        }
+
+        public Builder<T> withVertexShader(String vert) {
+            this.vertexShader = vert;
+            return this;
+        }
+
+        public Builder<T> withFragmentShader(String frag) {
+            this.fragmentShader = frag;
+            return this;
+        }
+
+        public Builder<T> withId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder<T> withVertexFormat(VertexFormat vertexFormat) {
+            this.vertexFormat = vertexFormat;
             return this;
         }
 

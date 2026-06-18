@@ -1,28 +1,101 @@
 package net.not_thefirst.story_mode_clouds.utils.rendering.opengl;
 
+import java.util.List;
+import java.util.Map;
+
+import net.not_thefirst.lib.gl_render_system.shader.GLProgram;
+import net.not_thefirst.lib.gl_render_system.state.BlendState;
+import net.not_thefirst.lib.gl_render_system.state.CullState;
+import net.not_thefirst.lib.gl_render_system.state.DepthTestState;
+import net.not_thefirst.lib.gl_render_system.state.GLStateGuard;
+import net.not_thefirst.lib.gl_render_system.state.MaskState;
+import net.not_thefirst.lib.gl_render_system.state.RenderStateBuilder;
+import net.not_thefirst.lib.gl_render_system.state.ShaderRenderType;
+import net.not_thefirst.lib.gl_render_system.state.ShaderState;
+import net.not_thefirst.lib.gl_render_system.vertex.VertexFormat;
+import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
 import net.not_thefirst.story_mode_clouds.utils.rendering.AbstractPipeline;
 
 public class GLPipeline extends AbstractPipeline {
 
-    public GLPipeline(String name) {
-        super(name);
+    private ShaderRenderType renderType;
+    private GLProgram program;
+
+    private IdentifierWrapper vertexShaderId;
+    private IdentifierWrapper fragmentShaderId;
+    private IdentifierWrapper pipelineId;
+
+    public GLPipeline(
+        final String name, 
+
+        final List<String> uniforms, 
+        final Map<String, Integer> uniformBlocks,
+        final List<String> textures,
+        final List<String> textureArrays,
+
+        final BlendState blendState,
+        final CullState cullState,
+        final MaskState maskState,
+        final DepthTestState depthTestState,
+        
+        final String vertexShader,
+        final String fragmentShader,
+        final String id,
+        final VertexFormat vertexFormat
+    ) {
+        super(name, uniforms, uniformBlocks, textures, textureArrays, blendState, cullState, maskState, depthTestState, vertexShader, fragmentShader, id, vertexFormat);
+
+        pipelineId = IdentifierWrapper.tryParse(id);
+        vertexShaderId = IdentifierWrapper.tryParse(vertexShader);
+        fragmentShaderId = IdentifierWrapper.tryParse(fragmentShader);
+
+        if (pipelineId == null) {
+            throw new IllegalArgumentException("Invalid pipeline ID: " + id);
+        }
+        if (vertexShaderId == null) {
+            throw new IllegalArgumentException("Invalid vertex shader ID: " + vertexShader);
+        }
+        if (fragmentShaderId == null) {
+            throw new IllegalArgumentException("Invalid fragment shader ID: " + fragmentShader);
+        }
+
+        GLResourceHandler.getProgramManager().register(vertexShaderId, vertexShader, fragmentShader);
     }
 
     @Override
     public void setup() {
-        // nothing at the moment 
+        program = GLResourceHandler.getProgramManager().get(vertexShaderId);
+
+        for (var entry : uniformBlocks.entrySet()) {
+            program.bindUniformBlock(entry.getKey(), entry.getValue().intValue());
+        }
+
+        renderType = new ShaderRenderType(
+            name, 
+            new ShaderState(program),
+            new RenderStateBuilder()
+                .blend(blendState)
+                .cull(cullState)
+                .mask(maskState)
+                .depthTest(depthTestState)
+                .build()
+        );
+    }
+
+    public GLProgram getProgram() {
+        return this.renderType.program();
     }
 
     @Override
     public void bind() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'bind'");
+        this.renderType.setup();
+        getProgram().use();
     }
 
     @Override
     public void unbind() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'unbind'");
+        getProgram().close();
+        this.renderType.clear();
     }
  
     public static class Builder extends AbstractPipeline.Builder<GLPipeline> {
@@ -32,14 +105,21 @@ public class GLPipeline extends AbstractPipeline {
 
         @Override
         public GLPipeline build() {
-            GLPipeline pipeline = new GLPipeline(name);
-            for (String uniform : uniforms) {
-                pipeline.addUniform(uniform);
-            }
-            for (var entry : uniformBlocks.entrySet()) {
-                pipeline.addUniformBlock(entry.getKey(), entry.getValue());
-            }
-            return pipeline;
+            return new GLPipeline(
+                name, 
+                uniforms, 
+                uniformBlocks, 
+                textures, 
+                textureArrays, 
+                blendState, 
+                cullState, 
+                maskState, 
+                depthTestState,
+                vertexShader,
+                fragmentShader,
+                id,
+                vertexFormat
+            );
         }
     }
 }

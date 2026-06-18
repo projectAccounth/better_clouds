@@ -52,11 +52,11 @@ public class ModRenderPipelines {
         .withUniform("Camera", UniformType.UNIFORM_BUFFER)
         .build();
 
-    private static final RenderPipeline.Snippet MATRICES_PROJECTION_SNIPPET = RenderPipeline.builder()
+    public static final RenderPipeline.Snippet MATRICES_PROJECTION_SNIPPET = RenderPipeline.builder()
 		.withBindGroupLayout(MATRICES_PROJECTION)
 		.buildSnippet();
-	private static final RenderPipeline.Snippet FOG_SNIPPET = RenderPipeline.builder().withBindGroupLayout(FOG).buildSnippet();
-	private static final RenderPipeline.Snippet MATRICES_FOG_SNIPPET = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET, FOG_SNIPPET).buildSnippet();
+	public static final RenderPipeline.Snippet FOG_SNIPPET = RenderPipeline.builder().withBindGroupLayout(FOG).buildSnippet();
+	public static final RenderPipeline.Snippet MATRICES_FOG_SNIPPET = RenderPipeline.builder(MATRICES_PROJECTION_SNIPPET, FOG_SNIPPET).buildSnippet();
 
     public static void registerCloudPipelines() {
         IdentifierWrapper loc1 = IdentifierWrapper.of(Initializer.MOD_ID, "pipeline/pos_tex_c");
