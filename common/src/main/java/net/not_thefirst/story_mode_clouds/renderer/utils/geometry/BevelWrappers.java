@@ -1,6 +1,7 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.utils.math.ARGB;
 
 public final class BevelWrappers {
 
@@ -38,15 +39,14 @@ public final class BevelWrappers {
     }
 
     public static void topEdge(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
         float y,
         float radius,
         int segments,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -73,20 +73,19 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.SOUTH || dir == EdgeDir.WEST),
-            layer, relY, skyColor
+            colorModifier
         );
     };
 
     public static void bottomEdge(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
         float y,
         float radius,
         int segments,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -113,12 +112,12 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.EAST || dir == EdgeDir.NORTH),
-            layer, relY, skyColor
+            colorModifier
         );
     }
 
     public static void verticalEdge(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
 
         Sign dirX,
         Sign dirZ,
@@ -131,8 +130,7 @@ public final class BevelWrappers {
         float radius,
         int segments,
 
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         float sx = (float) dirX.value;
         float sz = (float) dirZ.value;
@@ -164,7 +162,7 @@ public final class BevelWrappers {
             radius,
             segments,
             flip,
-            layer, relY, skyColor
+            colorModifier
         );
     }
 }

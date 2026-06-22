@@ -12,6 +12,7 @@ architectury {
 repositories {
     maven { url "https://maven.isxander.dev/releases" }
     maven { url "https://maven.terraformersmc.com/releases" }
+    mavenLocal()
 }
 
 configurations {
@@ -43,8 +44,8 @@ dependencies {
     modApi "com.terraformersmc:modmenu:${project.modmenu_version}"
     modApi "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 
-    implementation 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.2-alpha.1'
-    include 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.2-alpha.1'
+    implementation 'io.github.projectaccounth:opengl-grl:0.1.5'
+    include 'io.github.projectaccounth:opengl-grl:0.1.5'
 }
 
 loom {

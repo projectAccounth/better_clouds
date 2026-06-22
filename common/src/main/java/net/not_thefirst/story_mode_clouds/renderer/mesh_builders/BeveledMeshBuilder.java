@@ -1,8 +1,7 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
-
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder;
@@ -14,8 +13,8 @@ import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 public class BeveledMeshBuilder implements MeshTypeBuilder {
 
     @Override
-    public BuildingMesh build(
-        BuildingMesh bb,
+    public AbstractStaticMesh.Builder<?, ?>build(
+        AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state, 
         int cx, int cz, float relY,
         int currentLayer, 
@@ -44,7 +43,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
     
-    private static void buildCell(BuildingMesh bb,
+    private static void buildCell(AbstractStaticMesh.Builder<?, ?> bb,
                             int cx, int cz, long cell, float relY,
                             int currentLayer, int skyColor, int cellIdxX, int cellIdxZ, LayerState state) {
 
@@ -91,7 +90,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 cornerSegments,
                 excluded,
                 currentLayer,
-                state, relY, cellIdxX, cellIdxZ, skyColor
+                state, cellIdxX, cellIdxZ, ARGB.WHITE
         );
     }
 }

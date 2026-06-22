@@ -6,15 +6,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.client.Minecraft;
-import net.not_thefirst.story_mode_clouds.renderer.ModRenderPipelines;
-import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
-
+import net.not_thefirst.lib.gl_render_system.alt.PipelineManager;
+import net.not_thefirst.story_mode_clouds.utils.rendering.gl.GLResourceHandler;
 @Mixin(Minecraft.class)
 public class ClientMixin {
     @Inject(method = "<init>", at = @At("TAIL"))
     private void onResourcePacksReloaded(CallbackInfo ci) {
-        ModRenderPipelines.registerCloudPipelines();
-        ModRenderPipelines.getProgramManager().reloadAll();
-        ModRenderPipelines.postReload();
+        GLResourceHandler.init(Minecraft.getInstance().getResourceManager());
+        GLResourceHandler.getProgramManager().reloadAll();
+        PipelineManager.getInstance().init();
     }
 }

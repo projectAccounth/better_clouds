@@ -1,9 +1,9 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
-
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
+import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
-import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.EdgeDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.Sign;
 
@@ -111,13 +111,12 @@ public class CubeBuilder {
 
 
     public static void emitCorner(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float x, float y, float z,
         Sign sx, Sign sy, Sign sz,
         float radius,
         int segments,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         float fx = signToFloat(sx);
         float fy = signToFloat(sy);
@@ -134,19 +133,18 @@ public class CubeBuilder {
             radius,
             segments,
             flip,
-            layer, relY, skyColor
+            colorModifier
         );
     }
 
     public static void emitTopAndBottomEdges(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float minX, float maxX,
         float minZ, float maxZ,
         float yTop, float yBot,
         float radius,
         int segments,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         for (EdgeDir dir : EdgeDir.values()) {
             BevelWrappers.topEdge(
@@ -156,7 +154,7 @@ public class CubeBuilder {
                 yTop,
                 radius,
                 segments,
-                layer, relY, skyColor
+                colorModifier
             );
 
             BevelWrappers.bottomEdge(
@@ -166,8 +164,7 @@ public class CubeBuilder {
                 yBot,
                 radius,
                 segments,
-                layer, 
-                relY, skyColor
+                colorModifier
             );
         }
     }
@@ -263,15 +260,14 @@ public class CubeBuilder {
     }
 
     private static void emitHorizontalCornerCaps(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float minX, float maxX,
         float minZ, float maxZ,
         float yTop, float yBot,
         float radius,
         int segments,
         FaceMask excluded,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         for (CornerCap cap : CORNER_CAPS) {
             if (!excluded.has(cap.fx) || !excluded.has(cap.fz)) {
@@ -312,7 +308,7 @@ public class CubeBuilder {
                 radius,
                 segments,
                 cap.flip,
-                layer, relY, skyColor
+                colorModifier
             );
         }
     }
@@ -327,14 +323,13 @@ public class CubeBuilder {
     };
 
     public static void emitInsetFaces(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float minX, float maxX,
         float minY, float maxY,
         float minZ, float maxZ,
         float radius,
         FaceMask excluded,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         float ix0 = excluded.has(FaceDir.NEG_X) ? minX : minX + radius;
         float ix1 = excluded.has(FaceDir.POS_X) ? maxX : maxX - radius;
@@ -350,62 +345,62 @@ public class CubeBuilder {
 
             switch (f) {
                 case POS_Y:
-                    VertexBuilder.quad(bb,
+                    GLVertexBuilder.quad(bb,
                         ix0, maxY, iz1,
                         ix1, maxY, iz1,
                         ix1, maxY, iz0,
                         ix0, maxY, iz0,
-                        layer, relY, skyColor
+                        colorModifier
                     );
                     break;
 
                 case NEG_Y:
-                    VertexBuilder.quad(bb,
+                    GLVertexBuilder.quad(bb,
                         ix1, minY, iz0,
                         ix1, minY, iz1,
                         ix0, minY, iz1,
                         ix0, minY, iz0,
-                        layer, relY, skyColor
+                        colorModifier
                     );
                     break;
 
                 case NEG_X:
-                    VertexBuilder.quad(bb,
+                    GLVertexBuilder.quad(bb,
                         minX, iy0, iz1,
                         minX, iy1, iz1,
                         minX, iy1, iz0,
                         minX, iy0, iz0,
-                        layer, relY, skyColor
+                        colorModifier
                     );
                     break;
 
                 case POS_X:
-                    VertexBuilder.quad(bb,
+                    GLVertexBuilder.quad(bb,
                         maxX, iy0, iz0,
                         maxX, iy1, iz0,
                         maxX, iy1, iz1,
                         maxX, iy0, iz1,
-                        layer, relY, skyColor
+                        colorModifier
                     );
                     break;
 
                 case NEG_Z:
-                    VertexBuilder.quad(bb,
+                    GLVertexBuilder.quad(bb,
                         ix0, iy0, minZ,
                         ix0, iy1, minZ,
                         ix1, iy1, minZ,
                         ix1, iy0, minZ,
-                        layer, relY, skyColor
+                        colorModifier
                     );
                     break;
 
                 case POS_Z:
-                    VertexBuilder.quad(bb,
+                    GLVertexBuilder.quad(bb,
                         ix1, iy0, maxZ,
                         ix1, iy1, maxZ,
                         ix0, iy1, maxZ,
                         ix0, iy0, maxZ,
-                        layer, relY, skyColor
+                        colorModifier
                     );
                     break;
             }
@@ -458,15 +453,14 @@ public class CubeBuilder {
     };
 
     private static void emitVerticalEdges(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float minX, float maxX,
         float minZ, float maxZ,
         float yBot, float yTop,
         float radius,
         int segments,
         FaceMask excluded,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         for (Sign sx : EDGE_SIGNS) {
             for (Sign sz : EDGE_SIGNS) {
@@ -484,22 +478,21 @@ public class CubeBuilder {
                     yBot, yTop,
                     radius,
                     segments,
-                    layer, relY, skyColor
+                    colorModifier
                 );
             }
         }
     }
 
     private static void emitCorners(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float minX, float maxX,
         float minY, float maxY,
         float minZ, float maxZ,
         float radius,
         int segments,
         FaceMask excluded,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         for (Sign sx : EDGE_SIGNS) {
             for (Sign sy : EDGE_SIGNS) {
@@ -518,7 +511,7 @@ public class CubeBuilder {
                         sx, sy, sz,
                         radius,
                         segments,
-                        layer, relY, skyColor
+                        colorModifier
                     );
                 }
             }
@@ -526,7 +519,7 @@ public class CubeBuilder {
     }
 
     public static void buildBeveledCube(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float minX, float maxX,
         float minY, float maxY,
         float minZ, float maxZ,
@@ -536,8 +529,8 @@ public class CubeBuilder {
         FaceMask excludedFaces,
         int layer,
         CustomCloudRenderer.LayerState state,
-        float relY, int idxX, int idxY, 
-        int skyColor
+        int idxX, int idxY, 
+        int colorModifier
     ) {
 
         float yTop = hasFace(excludedFaces, FaceDir.POS_Y)
@@ -575,8 +568,7 @@ public class CubeBuilder {
                     yTop,
                     radius,
                     edgeSegments,
-                    layer, 
-                    relY, skyColor
+                    colorModifier
                 );
             }
 
@@ -588,8 +580,7 @@ public class CubeBuilder {
                     yBot,
                     radius,
                     edgeSegments,
-                    layer,
-                    relY, skyColor
+                    colorModifier
                 );
             }
         }
@@ -600,7 +591,7 @@ public class CubeBuilder {
             yBot, yTop, 
             radius, edgeSegments, 
             excludedFaces, 
-            layer, relY, skyColor
+            colorModifier
         );
 
         emitCorners(
@@ -609,7 +600,7 @@ public class CubeBuilder {
             minY, maxY, 
             minZ, maxZ, radius, 
             cornerSegments, excludedFaces, 
-            layer, relY, skyColor
+            colorModifier
         );
 
         if (state.texture.neighbors[idxX + idxY * state.texture.width] < 8) {
@@ -621,8 +612,7 @@ public class CubeBuilder {
                 radius, 
                 cornerSegments, 
                 excludedFaces, 
-                layer,  
-                relY, skyColor
+                colorModifier
             );
         }
 
@@ -633,8 +623,7 @@ public class CubeBuilder {
             minZ, maxZ,
             radius,
             excludedFaces,
-            layer, 
-            relY, skyColor
+            colorModifier
         );
     }
 }
