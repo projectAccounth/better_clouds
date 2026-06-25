@@ -1,12 +1,12 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
-import com.mojang.blaze3d.vertex.BufferBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder.FaceDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder.FaceMask;
-import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 
@@ -43,8 +43,8 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         }
     }
 
-    public BufferBuilder build(
-        BufferBuilder bb,
+    public AbstractStaticMesh.Builder<?, ?> build(
+        AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state, 
         int cx, int cz, float relY,
         int currentLayer, 
@@ -83,7 +83,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
     
-    private static void buildCell(BufferBuilder bb,
+    private static void buildCell(AbstractStaticMesh.Builder<?, ?> bb,
                             int cx, int cz, long cell, float relY,
                             int currentLayer, int colorModifier, int cellIdxX, int cellIdxZ, LayerState state) {
 
@@ -120,9 +120,6 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         int edgeSegments = layerConfiguration.BEVEL.BEVEL_EDGE_SEGMENTS;
         int cornerSegments = layerConfiguration.BEVEL.BEVEL_CORNER_SEGMENTS;
 
-        NeighborCache neighbors = new NeighborCache();
-        neighbors.cacheNeighbors(cellIdxX, cellIdxZ, state.texture());
-
         CubeBuilder.buildBeveledCube(
                 bb,
                 x0, x1,
@@ -133,8 +130,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 cornerSegments,
                 excluded,
                 currentLayer,
-                state, relY, cellIdxX, cellIdxZ, colorModifier,
-                neighbors
+                state, cellIdxX, cellIdxZ, ARGB.WHITE
         );
     }
 }

@@ -3,15 +3,14 @@ package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
 import net.minecraft.util.Mth;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder.PuffMode;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
 import net.not_thefirst.story_mode_clouds.utils.MiscUtils.CacheKey;
-import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
 
@@ -198,8 +197,8 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
     @SuppressWarnings("unused")
     @Override
-    public BufferBuilder build(
-        BufferBuilder bb,
+    public AbstractStaticMesh.Builder<?, ?> build(
+        AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
         int cx, int cz, float relY, 
         int currentLayer, int colorModifier) {
@@ -274,7 +273,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
     }
 
     private static void drawCube(
-        BufferBuilder bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float cx, float cy, float cz,
         float hr, float vr,
         int layer, float relY, int colorModifier) {
@@ -286,63 +285,63 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         float z0 = cz - hr; 
         float z1 = cz + hr;
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x0, y1, z1,
                 x1, y1, z1,
                 x1, y1, z0,
                 x0, y1, z0,
-                layer, relY, colorModifier
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x0, y0, z0,
                 x1, y0, z0,
                 x1, y0, z1,
                 x0, y0, z1,
-                layer, relY, colorModifier
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x0, y0, z1,
                 x1, y0, z1,
                 x1, y1, z1,
                 x0, y1, z1,
-                layer, relY, colorModifier
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x1, y0, z0,
                 x0, y0, z0,
                 x0, y1, z0,
                 x1, y1, z0,
-                layer, relY, colorModifier
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x0, y0, z0,
                 x0, y0, z1,
                 x0, y1, z1,
                 x0, y1, z0,
-                layer, relY, colorModifier
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x1, y0, z1,
                 x1, y0, z0,
                 x1, y1, z0,
                 x1, y1, z1,
-                layer, relY, colorModifier
+                colorModifier
         );
     }
 
     private static void drawCross(
-        BufferBuilder bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float cx, float cy, float cz,
         float hr, float vr,
         int layer, float relY, int colorModifier) {
@@ -350,20 +349,20 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         float y0 = cy;
         float y1 = cy + vr;
 
-        VertexBuilder.quad(bb, 
+        GLVertexBuilder.quad(bb, 
             cx - hr, y0, cz,
             cx + hr, y0, cz,
             cx + hr, y1, cz,
             cx - hr, y1, cz,
-            layer, relY, colorModifier
+            colorModifier
         );
 
-        VertexBuilder.quad(bb, 
+        GLVertexBuilder.quad(bb, 
             cx, y0, cz - hr,
             cx, y0, cz + hr,
             cx, y1, cz + hr,
             cx, y1, cz - hr,
-            layer, relY, colorModifier
+            colorModifier
         );
     }
 }

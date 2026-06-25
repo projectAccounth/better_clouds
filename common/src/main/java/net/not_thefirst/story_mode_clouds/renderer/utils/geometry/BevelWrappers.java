@@ -1,6 +1,7 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.utils.math.ARGB;
 
 public final class BevelWrappers {
 
@@ -17,7 +18,7 @@ public final class BevelWrappers {
             this.dx = dx;
             this.dz = dz;
         }
-    };
+    }
 
     public enum Sign {
         POS(1),
@@ -28,7 +29,7 @@ public final class BevelWrappers {
         Sign(int val) {
             this.value = val;
         }
-    };
+    }
 
     public static int dx(EdgeDir d) {
         return (d == EdgeDir.WEST) ? -1 : (d == EdgeDir.EAST) ? 1 : 0;
@@ -38,15 +39,14 @@ public final class BevelWrappers {
     }
 
     public static void topEdge(
-        BufferBuilder bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
         float y,
         float radius,
         int segments,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -73,20 +73,19 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.SOUTH || dir == EdgeDir.WEST),
-            layer, relY, skyColor
+            colorModifier
         );
     };
 
     public static void bottomEdge(
-        BufferBuilder bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         EdgeDir dir,
         float x0, float x1,
         float z0, float z1,
         float y,
         float radius,
         int segments,
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
         float ex0, ez0, ex1, ez1;
 
@@ -113,12 +112,12 @@ public final class BevelWrappers {
             radius,
             segments,
             !(dir == EdgeDir.EAST || dir == EdgeDir.NORTH),
-            layer, relY, skyColor
+            colorModifier
         );
     }
 
     public static void verticalEdge(
-        BufferBuilder bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
 
         Sign dirX,
         Sign dirZ,
@@ -131,11 +130,10 @@ public final class BevelWrappers {
         float radius,
         int segments,
 
-        int layer,
-        float relY, int skyColor
+        int colorModifier
     ) {
-        float sx = (float) dirX.value;
-        float sz = (float) dirZ.value;
+        float sx = dirX.value;
+        float sz = dirZ.value;
 
         float ex0 = x;
         float ey0 = y1;
@@ -164,7 +162,7 @@ public final class BevelWrappers {
             radius,
             segments,
             flip,
-            layer, relY, skyColor
+            colorModifier
         );
     }
 }

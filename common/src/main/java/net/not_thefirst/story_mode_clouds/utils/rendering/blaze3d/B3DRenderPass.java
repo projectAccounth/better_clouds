@@ -14,19 +14,19 @@ import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTextureView;
 
+import net.not_thefirst.lib.gl_render_system.alt.AbstractRenderPass;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractUBODataBuffer;
+import net.not_thefirst.lib.gl_render_system.alt.RenderParams;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
-import net.not_thefirst.story_mode_clouds.utils.rendering.AbstractRenderPass;
-import net.not_thefirst.story_mode_clouds.utils.rendering.AbstractUBODataBuffer;
 
 public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
 
-    private RenderPass pass;
-    private final Map<String, B3DUBODataBuffer> uniformBlocks = new HashMap<>();
+    private final RenderPass pass;
+    private final Map<String, GpuBuffer> uniformBlocks = new HashMap<>();
 
-    private GpuBuffer vertexBuffer;
     private int instanceCount;
-    private int idxCount;
-
     public B3DRenderPass(String name, B3DPipeline... pipelines) {
         super(name, pipelines);
 
@@ -53,9 +53,8 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
         // nothing at the moment 
     }
 
-    public void setMesh(GpuBuffer vertexBuffer, int idxCount) {
-        this.vertexBuffer = vertexBuffer;
-        this.idxCount = idxCount;
+    public RenderPass getPass() {
+        return this.pass;
     }
 
     public void setInstanceCount(int instanceCount) {
@@ -66,42 +65,51 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
         return instanceCount;
     }
 
+    public void validateBeforeRender() {
+        if (pipelines.isEmpty())
+            throw new IllegalStateException("Rendering pass with no pipelines, pass name: " + name);
+    }
+
     @Override
     public void render() {
+        validateBeforeRender();
+
         GpuBufferSlice slice = RenderSystem.getDynamicUniforms()
 			.writeTransform(RenderSystem.getModelViewMatrixCopy());
-
+        
         try {
             RenderSystem.bindDefaultUniforms(pass);
 
-            bindPipelineUBOs();
             pass.setUniform("DynamicTransforms", slice);
+            bindPipelineUBOs();
 
-            pass.setVertexBuffer(0, vertexBuffer.slice());
-            
+            ((B3DMesh) meshData).setup(this);
+
+            RenderSystem.AutoStorageIndexBuffer indices =
+                RenderSystem.getSequentialBuffer(this.pipelines.get(0).getPipeline().getPrimitiveTopology());
+
+            GpuBuffer indexBuf = indices.getBuffer(indexCount);
+            pass.setIndexBuffer(indexBuf, indices.type());
+
             for (B3DPipeline pipeline : this.pipelines) {
                 RenderPipeline vanillaPipeline = pipeline.getPipeline();
-                RenderSystem.AutoStorageIndexBuffer indices =
-                    RenderSystem.getSequentialBuffer(vanillaPipeline.getPrimitiveTopology());
-
-                GpuBuffer indexBuf = indices.getBuffer(idxCount);
-                pass.setIndexBuffer(indexBuf, indices.type());
-
+                
                 pass.setPipeline(vanillaPipeline);
-                pass.drawIndexed(idxCount, instanceCount, 0, 0, 0);
+                ((B3DMesh) meshData).draw(this, new RenderParams(1, 0, 0, 0));
             }
         }
         catch (Exception exception) {
-            exception.printStackTrace();
+            LoggerProvider.get().error("Error while rendering: ", exception);
         }
     }
 
     private void bindPipelineUBOs() {
         for (var entry : uniformBlocks.entrySet()) {
             String name = entry.getKey();
-            B3DUBODataBuffer buffer = entry.getValue();
+            GpuBuffer buffer = entry.getValue();
 
-            pass.setUniform(name, buffer.build());
+            pass.setUniform(name, buffer);
+            // LoggerProvider.get().info("Bound block {}", name);
         }
     }
 
@@ -113,25 +121,35 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
     }
 
     @Override
-    public void bindUniformBlock(String name, AbstractUBODataBuffer buffer) {
+    public void bindUniformBlock(String name, AbstractUBODataBuffer<?, ?> buffer) {
         if (!(buffer instanceof B3DUBODataBuffer b3dbuf)) {
             throw new IllegalArgumentException(
                 "UBO must be an instance of B3DUBODataBuffer"
             );
         }
 
-        uniformBlocks.put(name, b3dbuf);
+        uniformBlocks.put(name, b3dbuf.build());
     }
 
     @Override
     public void bindTexture(String name, int textureId, int slot) {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'bindTexture'");
     }
 
     @Override
     public void bindTextureArray(String name, int textureId, int slot) {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'bindTextureArray'");
+    }
+
+    @Override
+    public void setMesh(AbstractStaticMesh<?> mesh, int indexCount) {
+        if (mesh == null) {
+            throw new IllegalArgumentException("Mesh cannot be null");
+        }
+        if (!(mesh instanceof B3DMesh)) {
+            throw new IllegalArgumentException("Mesh must be a B3DMesh instance");
+        }
+        this.meshData = mesh;
+        this.indexCount = mesh.getIndexCount();
     }
 }

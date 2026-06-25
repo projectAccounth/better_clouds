@@ -1,15 +1,12 @@
-package net.not_thefirst.story_mode_clouds.utils.rendering.opengl;
+package net.not_thefirst.story_mode_clouds.utils.rendering.gl;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
-
 import org.joml.Matrix4f;
-import org.lwjgl.BufferUtils;
 
+import net.not_thefirst.lib.gl_render_system.alt.AbstractUBODataBuffer;
 import net.not_thefirst.lib.gl_render_system.shader.Std140BufferBuilder;
-import net.not_thefirst.story_mode_clouds.utils.rendering.AbstractUBODataBuffer;
 
-public class GLUBODataBuffer extends AbstractUBODataBuffer {
+public class GLUBODataBuffer extends AbstractUBODataBuffer<GLUBODataBuffer, ByteBuffer> {
 
     private Std140BufferBuilder bufferBuilder;
 
@@ -57,6 +54,12 @@ public class GLUBODataBuffer extends AbstractUBODataBuffer {
         return this;
     }
 
+    @Override
+    public void reset() {
+        bufferBuilder.reset();
+    }
+
+    @Override
     public ByteBuffer build() {
         return bufferBuilder.build();
     }

@@ -3,7 +3,6 @@ package net.not_thefirst.story_mode_clouds.utils.rendering.blaze3d;
 import java.util.List;
 import java.util.Map;
 
-import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.pipeline.BindGroupLayout;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
@@ -11,24 +10,28 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.shaders.UniformType;
 
+import net.not_thefirst.lib.gl_render_system.alt.AbstractPipeline;
+import net.not_thefirst.lib.gl_render_system.mesh.utils.GLPrimitive;
 import net.not_thefirst.lib.gl_render_system.state.BlendState;
 import net.not_thefirst.lib.gl_render_system.state.CullState;
 import net.not_thefirst.lib.gl_render_system.state.DepthTestState;
+import net.not_thefirst.lib.gl_render_system.state.FaceCullState;
 import net.not_thefirst.lib.gl_render_system.state.MaskState;
 import net.not_thefirst.lib.gl_render_system.vertex.VertexFormat;
 import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
-import net.not_thefirst.story_mode_clouds.utils.rendering.AbstractPipeline;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
 public class B3DPipeline extends AbstractPipeline {
     private RenderPipeline pipeline;
 
-    private IdentifierWrapper vertexShaderId;
-    private IdentifierWrapper fragmentShaderId;
+    private final IdentifierWrapper vertexShaderId;
+    private final IdentifierWrapper fragmentShaderId;
+    private final GLPrimitive primitive;
 
     public B3DPipeline(
-        final String name, 
+        final String name,
 
-        final List<String> uniforms, 
+        final List<String> uniforms,
         final Map<String, Integer> uniformBlocks,
         final List<String> textures,
         final List<String> textureArrays,
@@ -37,17 +40,35 @@ public class B3DPipeline extends AbstractPipeline {
         final CullState cullState,
         final MaskState maskState,
         final DepthTestState depthTestState,
-        
+        final FaceCullState faceCullState,
+
         final String vertexShader,
         final String fragmentShader,
         final String id,
-        final VertexFormat vertexFormat
+        final VertexFormat vertexFormat,
+        final GLPrimitive primitive
     ) {
         this.vertexShaderId = IdentifierWrapper.tryParse(vertexShader);
         this.fragmentShaderId = IdentifierWrapper.tryParse(fragmentShader);
         validateShader(vertexShader, fragmentShader);
         
-        super(name, uniforms, uniformBlocks, textures, textureArrays, blendState, cullState, maskState, depthTestState, vertexShader, fragmentShader, id, vertexFormat);
+        super(
+            name, 
+            uniforms, 
+            uniformBlocks, 
+            textures, 
+            textureArrays, 
+            blendState, 
+            cullState, 
+            maskState, 
+            depthTestState, 
+            faceCullState, 
+            vertexShader, 
+            fragmentShader, 
+            id, 
+            vertexFormat);
+
+        this.primitive = primitive;
     }
 
     public static void validateShader(String vertexPath, String fragmentPath) {
@@ -73,7 +94,8 @@ public class B3DPipeline extends AbstractPipeline {
     public void setup() {
         RenderPipeline.Builder builder = RenderPipeline.builder(B3DDefinitions.MATRICES_FOG_SNIPPET)
             .withVertexShader(vertexShaderId.getDelegate())
-            .withFragmentShader(fragmentShaderId.getDelegate());
+            .withFragmentShader(fragmentShaderId.getDelegate())
+            .withLocation(IdentifierWrapper.parse(id).getDelegate());
 
         CompareOp compareOp = B3DConversions.toCompareOp(depthTestState);
         
@@ -88,10 +110,11 @@ public class B3DPipeline extends AbstractPipeline {
         builder.withBindGroupLayout(bindGroupBuilder.build())
             .withDepthStencilState(depthStencilState)
             .withColorTargetState(colorTargetState)
-            .withPrimitiveTopology(PrimitiveTopology.QUADS)
+            .withPrimitiveTopology(B3DConversions.toPrimitiveTopology(primitive))
             .withVertexBinding(0, B3DConversions.toVanillaVertexFormat(vertexFormat));
 
         this.pipeline = builder.build();
+        LoggerProvider.get().info("Successfully setup pipeline {}", name);
     }
 
     @Override
@@ -109,8 +132,15 @@ public class B3DPipeline extends AbstractPipeline {
     }
     
     public static class Builder extends AbstractPipeline.Builder<B3DPipeline> {
+        private GLPrimitive primitive;
         public Builder(String name) {
             super(name);
+            primitive = GLPrimitive.TRIANGLES;
+        }
+
+        public B3DPipeline.Builder withPrimitive(GLPrimitive primitive) {
+            this.primitive = primitive;
+            return this;
         }
 
         @Override
@@ -125,11 +155,18 @@ public class B3DPipeline extends AbstractPipeline {
                 cullState, 
                 maskState, 
                 depthTestState, 
+                faceCullState,
                 vertexShader, 
                 fragmentShader,
                 id,
-                vertexFormat
+                vertexFormat,
+                primitive
             );
         }
+    }
+
+    @Override
+    public void cleanup() {
+        // nothing
     }
 }

@@ -1,4 +1,4 @@
-package net.not_thefirst.story_mode_clouds.utils.rendering.opengl;
+package net.not_thefirst.story_mode_clouds.utils.rendering.gl;
 
 import java.io.InputStream;
 
@@ -15,11 +15,8 @@ class GLShaderProvider implements ToStreamProvider {
 
     @Override
     public InputStream toStream(String path) {
-        IdentifierWrapper loc = IdentifierWrapper.tryParse(path);
         try {
-            return manager.getResource(loc.getDelegate()).orElseThrow(() -> 
-                new IllegalStateException("Failed to find shader resource: " + loc)
-            ).open();
+            return manager.open(IdentifierWrapper.tryParse(path).getDelegate());
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
