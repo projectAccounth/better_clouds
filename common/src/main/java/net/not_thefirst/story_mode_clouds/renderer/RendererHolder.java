@@ -1,9 +1,9 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 public class RendererHolder {
     private static CustomCloudRenderer renderer;
@@ -19,8 +19,7 @@ public class RendererHolder {
         Vec3 vec3,
         float partialTicks
     ) {
-        Minecraft client = Minecraft.getInstance();
-        if (client.level == null || client.levelRenderer == null) return;
+        if (ClientHelper.getLevel() == null || ClientHelper.getLevelRenderer() == null) return;
 
         if (renderer == null) {
             renderer = new CustomCloudRenderer();

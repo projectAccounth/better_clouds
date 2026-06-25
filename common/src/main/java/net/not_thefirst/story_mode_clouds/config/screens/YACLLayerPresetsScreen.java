@@ -2,7 +2,6 @@ package net.not_thefirst.story_mode_clouds.config.screens;
 
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.ComponentWrapper;
@@ -74,15 +73,11 @@ public class YACLLayerPresetsScreen {
                         newLayer.copy(loadedLayer);
                         config.getLayerHolder(dimension).addLayer(newLayer);
                         CloudsConfiguration.save();
-                        
-                        Minecraft mc = Minecraft.getInstance();
                         ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.literal("Loaded layer preset: " + preset.displayName)
                         );
                         // Refresh the presets screen (don't know if ts works)
-                        if (mc != null) {
-                            mc.setScreen(createLayerPresetsScreen(dimension, backScreen));
-                        }
+                        ClientHelper.setScreen(createLayerPresetsScreen(dimension, backScreen));
                     }
                 })
                 .build());
@@ -111,10 +106,7 @@ public class YACLLayerPresetsScreen {
                             loadedLayer, preset.id, dimension, backScreen
                         );
                         if (editScreen != null) {
-                            Minecraft mc = Minecraft.getInstance();
-                            if (mc != null) {
-                                mc.setScreen(editScreen);
-                            }
+                            ClientHelper.setScreen(editScreen);
                         }
                     }
                 })
@@ -126,13 +118,10 @@ public class YACLLayerPresetsScreen {
                 .description(OptionDescription.of(ComponentWrapper.literal("Delete this preset")))
                 .action((yacl, btn) -> {
                     if (LayerPresets.deleteLayerPreset(preset.id)) {
-                        Minecraft mc = Minecraft.getInstance();
                         ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.literal("Deleted layer preset: " + preset.displayName)
                         );
-                        if (mc != null) {
-                            mc.setScreen(createLayerPresetsScreen(dimension, backScreen));
-                        }
+                        ClientHelper.setScreen(createLayerPresetsScreen(dimension, backScreen));
                     }
                 })
                 .build());
@@ -188,12 +177,11 @@ public class YACLLayerPresetsScreen {
                         dimension.getId()
                     );
 
-                    Minecraft mc = Minecraft.getInstance();
-                    if (success && mc != null) {
+                    if (success) {
                         ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.literal("Layer preset imported successfully")
                         );
-                        mc.setScreen(null);
+                        ClientHelper.setScreen(null);
                     }
                 })
                 .build());

@@ -1,6 +1,5 @@
 plugins {
     id "java"
-    id "net.fabricmc.fabric-loom" version "1.15.5"
     id "maven-publish"
 }
 
@@ -14,8 +13,12 @@ group = project.maven_group
 
 
 dependencies {
+    implementation project(":common") 
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    implementation 'io.github.projectaccounth:opengl-grl:0.1.6'
+    include 'io.github.projectaccounth:opengl-grl:0.1.6'
 
     implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"

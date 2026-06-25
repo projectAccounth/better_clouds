@@ -2,7 +2,6 @@ package net.not_thefirst.story_mode_clouds.config;
 
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.*;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.FadeType;
@@ -41,13 +40,10 @@ public class YACLDataSettings {
                     newKeypoint.color = 0xFFFFFF;
                     colors.add(newKeypoint);
                     CloudsConfiguration.save();
-                    Minecraft mc = Minecraft.getInstance();
                     ClientHelper.sendLocalSystemMessage(
                         ComponentWrapper.literal("Added keypoint at time " + newKeypoint.time)
                     );
-                    if (mc != null) {
-                        mc.setScreen(null);
-                    }
+                    ClientHelper.setScreen(null);
                 }
             })
             .build());
@@ -81,13 +77,10 @@ public class YACLDataSettings {
                     .action((yacl, btn) -> {
                         if (colors.size() > 1 && colors.remove(kp)) {
                             CloudsConfiguration.save();
-                            Minecraft mc = Minecraft.getInstance();
                             ClientHelper.sendLocalSystemMessage(
                                 ComponentWrapper.literal("Removed keypoint")
                             );
-                            if (mc != null) {
-                                mc.setScreen(null);
-                            }
+                            ClientHelper.setScreen(null);
                         }
                     })
                     .build());
@@ -133,13 +126,10 @@ public class YACLDataSettings {
                 DiffuseLight newLight = new DiffuseLight();
                 lights.add(newLight);
                 CloudsConfiguration.save();
-                Minecraft mc = Minecraft.getInstance();
                 ClientHelper.sendLocalSystemMessage(
                     ComponentWrapper.literal("Added light source")
                 );
-                if (mc != null) {
-                    mc.setScreen(null);
-                }
+                ClientHelper.setScreen(null);
             })
             .build());
         
@@ -178,13 +168,10 @@ public class YACLDataSettings {
                     .action((yacl, btn) -> {
                         if (lights.size() > 1 && lights.remove(light)) {
                             CloudsConfiguration.save();
-                            Minecraft mc = Minecraft.getInstance();
                             ClientHelper.sendLocalSystemMessage(
                                 ComponentWrapper.literal("Removed light source")
                             );
-                            if (mc != null) {
-                                mc.setScreen(null);
-                            }
+                            ClientHelper.setScreen(null);
                         }
                     })
                     .build());
@@ -548,13 +535,10 @@ public class YACLDataSettings {
                 LayerConfiguration newLayer = new LayerConfiguration(layerHolder.layers.size());
                 layerHolder.addLayer(newLayer);
                 CloudsConfiguration.save();
-                Minecraft mc = Minecraft.getInstance();
                 ClientHelper.sendLocalSystemMessage(
                     ComponentWrapper.literal("Added layer " + layerHolder.layers.size() + " to " + dimension.getId())
                 );
-                if (mc != null) {
-                    mc.setScreen(null);
-                }
+                ClientHelper.setScreen(null);
             })
             .build());
         
@@ -575,12 +559,9 @@ public class YACLDataSettings {
                     .name(ComponentWrapper.translatable("cloudtweaks.option.edit"))
                     .description(OptionDescription.of(ComponentWrapper.literal("Edit all layer settings")))
                     .action((yacl, btn) -> {
-                        Screen editScreen = createLayerEditingScreen(dimension, layerIndex, Minecraft.getInstance().screen);
+                        Screen editScreen = createLayerEditingScreen(dimension, layerIndex, ClientHelper.getCurrentScreen());
                         if (editScreen != null) {
-                            Minecraft mc = Minecraft.getInstance();
-                            if (mc != null) {
-                                mc.setScreen(editScreen);
-                            }
+                            ClientHelper.setScreen(editScreen);
                         }
                     })
                     .build())
@@ -592,13 +573,10 @@ public class YACLDataSettings {
                         if (layerHolder.layers.size() > 1) {
                             layerHolder.removeLayer(layerIndex);
                             CloudsConfiguration.save();
-                            Minecraft mc = Minecraft.getInstance();
                             ClientHelper.sendLocalSystemMessage(
                                 ComponentWrapper.literal("Removed layer from " + dimension.getId())
                             );
-                            if (mc != null) {
-                                mc.setScreen(null);
-                            }
+                            ClientHelper.setScreen(null);
                         }
                     })
                     .build());
@@ -611,12 +589,9 @@ public class YACLDataSettings {
             .name(ComponentWrapper.literal("Layer Presets"))
             .description(OptionDescription.of(ComponentWrapper.literal("Import, export, and manage layer presets")))
             .action((yacl, btn) -> {
-                Screen presetsScreen = YACLLayerPresetsScreen.createLayerPresetsScreen(dimension, Minecraft.getInstance().screen);
+                Screen presetsScreen = YACLLayerPresetsScreen.createLayerPresetsScreen(dimension, ClientHelper.getCurrentScreen());
                 if (presetsScreen != null) {
-                    Minecraft mc = Minecraft.getInstance();
-                    if (mc != null) {
-                        mc.setScreen(presetsScreen);
-                    }
+                    ClientHelper.setScreen(presetsScreen);
                 }
             })
             .build());
@@ -678,13 +653,12 @@ public class YACLDataSettings {
                         layer,
                         dimension.getId()
                     );
-                    
-                    Minecraft mc = Minecraft.getInstance();
-                    if (success && mc != null) {
+
+                    if (success) {
                         ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.literal("Preset updated: " + saveData.displayName)
                         );
-                        mc.setScreen(backScreen);
+                        ClientHelper.setScreen(backScreen);
                     }
                 })
                 .build())
@@ -729,9 +703,8 @@ public class YACLDataSettings {
                         layer,
                         dimension.getId()
                     );
-                    
-                    Minecraft mc = Minecraft.getInstance();
-                    if (success && mc != null) {
+
+                    if (success) {
                         ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.literal("Layer preset saved: " + saveData.displayName)
                         );

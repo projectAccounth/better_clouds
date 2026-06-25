@@ -3,11 +3,11 @@ package net.not_thefirst.story_mode_clouds.config.screens;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.gui.YACLScreen;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.ComponentWrapper;
 import net.not_thefirst.story_mode_clouds.config.presets.*;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 import java.time.format.DateTimeFormatter;
 import java.time.Instant;
@@ -58,10 +58,7 @@ public class PresetEditorScreen {
         categoryBuilder.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.literal("Back"))
             .description(OptionDescription.of(ComponentWrapper.literal("Return to preset browser")))
-            .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null) mc.setScreen(backScreen);
-            })
+            .action((yacl, btn) -> ClientHelper.setScreen(backScreen))
             .build());
         
         builder.category(categoryBuilder.build());
@@ -123,10 +120,7 @@ public class PresetEditorScreen {
         categoryBuilder.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.literal("Back"))
             .description(OptionDescription.of(ComponentWrapper.literal("Return to preset browser (changes not saved)")))
-            .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null) mc.setScreen(backScreen);
-            })
+            .action((yacl, btn) -> ClientHelper.setScreen(backScreen))
             .build());
         
         builder.category(categoryBuilder.build());

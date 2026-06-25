@@ -2,7 +2,6 @@ package net.not_thefirst.story_mode_clouds.config.screens;
 
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.gui.YACLScreen;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.ComponentWrapper;
@@ -50,10 +49,7 @@ public class PresetBrowserScreen {
         categoryBuilder.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.literal("Back"))
             .description(OptionDescription.of(ComponentWrapper.literal("Return to presets menu")))
-            .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null) mc.setScreen(backScreen);
-            })
+            .action((yacl, btn) -> ClientHelper.setScreen(backScreen))
             .build());
         
         builder.category(categoryBuilder.build());
@@ -74,27 +70,19 @@ public class PresetBrowserScreen {
         group.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.literal("View"))
             .description(OptionDescription.of(ComponentWrapper.literal("View preset details")))
-            .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null) {
-                    mc.setScreen(PresetEditorScreen.createEditorScreen(
-                        PresetController.PresetCategory.COLORS, preset.id, backScreen
-                    ));
-                }
-            })
+            .action((yacl, btn) ->
+                ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
+                    PresetController.PresetCategory.COLORS, preset.id, backScreen
+                )))
             .build());
         
         group.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.literal("Edit"))
             .description(OptionDescription.of(ComponentWrapper.literal("Edit preset name and description")))
-            .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null) {
-                    mc.setScreen(PresetEditorScreen.createMetadataEditScreen(
-                        PresetController.PresetCategory.COLORS, preset.id, yacl
-                    ));
-                }
-            })
+            .action((yacl, btn) ->
+                ClientHelper.setScreen(PresetEditorScreen.createMetadataEditScreen(
+                    PresetController.PresetCategory.COLORS, preset.id, yacl
+                )))
             .build());
         
         group.option(ButtonOption.createBuilder()
@@ -118,13 +106,10 @@ public class PresetBrowserScreen {
                 .description(OptionDescription.of(ComponentWrapper.literal("Delete this preset")))
                 .action((yacl, btn) -> {
                     if (PresetController.deleteColorPreset(preset.id)) {
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null) {
-                            ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.literal("§aDeleted color preset: " + preset.displayName)
-                            );
-                            mc.setScreen(createBrowserScreen(PresetController.PresetCategory.COLORS, backScreen));
-                        }
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("§aDeleted color preset: " + preset.displayName)
+                        );
+                        ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.COLORS, backScreen));
                     }
                 })
                 .build());
@@ -147,27 +132,20 @@ public class PresetBrowserScreen {
         group.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.literal("View"))
             .description(OptionDescription.of(ComponentWrapper.literal("View preset details")))
-            .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null) {
-                    mc.setScreen(PresetEditorScreen.createEditorScreen(
-                        PresetController.PresetCategory.LIGHTING, preset.id, backScreen
-                    ));
-                }
-            })
+            .action((yacl, btn) ->
+                ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
+                    PresetController.PresetCategory.LIGHTING, preset.id, backScreen
+                ))
+            )
             .build());
         
         group.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.literal("Edit"))
             .description(OptionDescription.of(ComponentWrapper.literal("Edit preset name and description")))
-            .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null) {
-                    mc.setScreen(PresetEditorScreen.createMetadataEditScreen(
-                        PresetController.PresetCategory.LIGHTING, preset.id, yacl
-                    ));
-                }
-            })
+            .action((yacl, btn) ->
+                ClientHelper.setScreen(PresetEditorScreen.createMetadataEditScreen(
+                    PresetController.PresetCategory.LIGHTING, preset.id, yacl
+                )))
             .build());
         
         group.option(ButtonOption.createBuilder()
@@ -190,13 +168,10 @@ public class PresetBrowserScreen {
                 .description(OptionDescription.of(ComponentWrapper.literal("Delete this preset")))
                 .action((yacl, btn) -> {
                     if (PresetController.deleteLightingPreset(preset.id)) {
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null) {
-                            ClientHelper.sendLocalSystemMessage((
-                                ComponentWrapper.literal("Deleted lighting preset: " + preset.displayName)
-                            ));
-                            mc.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHTING, backScreen));
-                        }
+                        ClientHelper.sendLocalSystemMessage((
+                            ComponentWrapper.literal("Deleted lighting preset: " + preset.displayName)
+                        ));
+                        ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHTING, backScreen));
                     }
                 })
                 .build());
@@ -219,27 +194,19 @@ public class PresetBrowserScreen {
         group.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.literal("View"))
             .description(OptionDescription.of(ComponentWrapper.literal("View preset details")))
-            .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null) {
-                    mc.setScreen(PresetEditorScreen.createEditorScreen(
+            .action((yacl, btn) ->
+                ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
                         PresetController.PresetCategory.LIGHT_SOURCES, preset.id, backScreen
-                    ));
-                }
-            })
+                    )))
             .build());
         
         group.option(ButtonOption.createBuilder()
             .name(ComponentWrapper.literal("Edit"))
             .description(OptionDescription.of(ComponentWrapper.literal("Edit preset name and description")))
-            .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null) {
-                    mc.setScreen(PresetEditorScreen.createMetadataEditScreen(
-                        PresetController.PresetCategory.LIGHT_SOURCES, preset.id, yacl
-                    ));
-                }
-            })
+            .action((yacl, btn) ->
+                ClientHelper.setScreen(PresetEditorScreen.createMetadataEditScreen(
+                    PresetController.PresetCategory.LIGHT_SOURCES, preset.id, yacl
+                )))
             .build());
         
         group.option(ButtonOption.createBuilder()
@@ -262,13 +229,10 @@ public class PresetBrowserScreen {
                 .description(OptionDescription.of(ComponentWrapper.literal("Delete this preset")))
                 .action((yacl, btn) -> {
                     if (PresetController.deleteLightSourcesPreset(preset.id)) {
-                        Minecraft mc = Minecraft.getInstance();
-                        if (mc != null) {
-                            ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.literal("§aDeleted light sources preset: " + preset.displayName)
-                            );
-                            mc.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHT_SOURCES, backScreen));
-                        }
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("§aDeleted light sources preset: " + preset.displayName)
+                        );
+                        ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHT_SOURCES, backScreen));
                     }
                 })
                 .build());

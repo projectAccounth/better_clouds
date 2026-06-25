@@ -1,18 +1,18 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
-import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
+
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
 
 public class ClassicFastMeshBuilder implements MeshTypeBuilder {
     
-    public BufferBuilder build(
-        BufferBuilder bb,
+    public AbstractStaticMesh.Builder<?, ?> build(
+        AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
         int cx, int cz, float relY, 
         int currentLayer, int colorModifier) {
@@ -42,26 +42,26 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
 
-    private static void buildFlatCell(BufferBuilder bb, int cx, int cz, int currentLayer, float y, int colorModifier) {
+    private static void buildFlatCell(AbstractStaticMesh.Builder<?, ?> bb, int cx, int cz, int currentLayer, float y, int colorModifier) {
         float x0 = cx * MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float z0 = cz * MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float z1 = z0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
 
-        VertexBuilder.quad(bb, 
+        GLVertexBuilder.quad(bb, 
             x0, 0, z1,
             x1, 0, z1,
             x1, 0, z0,
             x0, 0, z0,
-            currentLayer, y, colorModifier
+            colorModifier
         );
 
-        VertexBuilder.quad(bb, 
+        GLVertexBuilder.quad(bb, 
             x0, 0, z0,
             x1, 0, z0,
             x1, 0, z1,
             x0, 0, z1,
-            currentLayer, y, colorModifier
+            colorModifier
         );
     }
 }

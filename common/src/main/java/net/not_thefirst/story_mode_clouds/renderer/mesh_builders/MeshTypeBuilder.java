@@ -1,11 +1,11 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
-import com.mojang.blaze3d.vertex.BufferBuilder;
 
 public interface MeshTypeBuilder {
-    BufferBuilder build(
-        BufferBuilder bb,
+    AbstractStaticMesh.Builder<?, ?> build(
+        AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
         int cx, int cz, float relY, 
         int currentLayer, int colorModifier);

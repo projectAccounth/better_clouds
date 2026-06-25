@@ -8,7 +8,8 @@
   "client": [
     "CloudRendererMixin",
     "ClientWorldMixin",
-    "LevelRendererMixin"
+    "LevelRendererMixin",
+    "ClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1

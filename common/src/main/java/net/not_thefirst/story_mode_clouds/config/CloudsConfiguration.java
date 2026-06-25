@@ -87,6 +87,17 @@ public class CloudsConfiguration {
             new DiffuseLight(new Vector3f(0.5f, -0.8f, 1.0f), 0.6f),
             new DiffuseLight(new Vector3f(-0.3f, -0.3f, 0.6f), 0.5f)
         ));
+
+        public void copy(LightingParameters other) {
+            this.AMBIENT_LIGHTING_STRENGTH = other.AMBIENT_LIGHTING_STRENGTH;
+            this.MAX_LIGHTING_SHADING = other.MAX_LIGHTING_SHADING;
+            this.SHADING_MODE = other.SHADING_MODE;
+            this.LIGHTING_TYPE = other.LIGHTING_TYPE;
+            this.DAY_START = other.DAY_START;
+            this.DAY_END = other.DAY_END;
+            this.DAY_NOON = other.DAY_NOON;
+            this.lights = new ArrayList<>(other.lights);
+        }
     }
 
     public static class WeatherColorConfig {
@@ -100,6 +111,13 @@ public class CloudsConfiguration {
         public int thunderColor = DEFAULT_THUNDER_COLOR;
         public float rainStrength = DEFAULT_RAIN_STRENGTH;
         public float thunderStrength = DEFAULT_THUNDER_STRENGTH;
+
+        public void copy(WeatherColorConfig other) {
+            this.rainColor = other.rainColor;
+            this.thunderColor = other.thunderColor;
+            this.rainStrength = other.rainStrength;
+            this.thunderStrength = other.thunderStrength;
+        }
     }
 
     public static class SkyColorKeypoint {
@@ -663,20 +681,9 @@ public class CloudsConfiguration {
         this.END_CLOUDS_RENDERED = other.END_CLOUDS_RENDERED;
         this.CLOUD_COLOR = new ArrayList<>(other.CLOUD_COLOR);
         this.COLOR_MODE = other.COLOR_MODE;
-        this.LIGHTING = new LightingParameters();
-        this.LIGHTING.AMBIENT_LIGHTING_STRENGTH = other.LIGHTING.AMBIENT_LIGHTING_STRENGTH;
-        this.LIGHTING.MAX_LIGHTING_SHADING = other.LIGHTING.MAX_LIGHTING_SHADING;
-        this.LIGHTING.SHADING_MODE = other.LIGHTING.SHADING_MODE;
-        this.LIGHTING.LIGHTING_TYPE = other.LIGHTING.LIGHTING_TYPE;
-        this.LIGHTING.DAY_START = other.LIGHTING.DAY_START;
-        this.LIGHTING.DAY_END = other.LIGHTING.DAY_END;
-        this.LIGHTING.DAY_NOON = other.LIGHTING.DAY_NOON;
+        this.LIGHTING.copy(other.LIGHTING);
         this.LIGHTING.lights = new ArrayList<>(other.LIGHTING.lights);
-        this.WEATHER_COLOR = new WeatherColorConfig();
-        this.WEATHER_COLOR.rainColor = other.WEATHER_COLOR.rainColor;
-        this.WEATHER_COLOR.thunderColor = other.WEATHER_COLOR.thunderColor;
-        this.WEATHER_COLOR.rainStrength = other.WEATHER_COLOR.rainStrength;
-        this.WEATHER_COLOR.thunderStrength = other.WEATHER_COLOR.thunderStrength;
+        this.WEATHER_COLOR.copy(other.WEATHER_COLOR);
         this.CLOUD_DISTANCE_CHUNKS = other.CLOUD_DISTANCE_CHUNKS;
         
         copyLayerHolder(this.LAYERS, other.LAYERS);

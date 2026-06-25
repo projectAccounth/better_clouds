@@ -1,14 +1,14 @@
 package net.not_thefirst.story_mode_clouds.mixin;
 
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.world.phys.Vec3;
 
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
-import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
+import net.not_thefirst.lib.utils.math.ARGB;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Mixin;
@@ -36,16 +36,15 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
     ) {
         ci.cancel();
 
-        Minecraft client = Minecraft.getInstance();
-        CloudStatus cloudStatus = client.options.getCloudStatus();
-        float partialTicks = client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
-        Vec3 camPos = client.gameRenderer.getMainCamera().position();
+        CloudStatus cloudStatus = ClientHelper.getOptions().getCloudStatus();
+        float partialTicks = ClientHelper.getClient().getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        Vec3 camPos = ClientHelper.CameraHelper.getCamera().position();
 
         RendererHolder.renderCloud(cloudStatus, camPos, partialTicks);
     }
 
     @ModifyExpressionValue(
-        method = "renderLevel",
+        method = "render",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/util/ARGB;alpha(I)I"

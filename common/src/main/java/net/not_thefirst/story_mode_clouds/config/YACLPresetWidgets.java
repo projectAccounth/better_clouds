@@ -1,7 +1,6 @@
 package net.not_thefirst.story_mode_clouds.config;
 
 import dev.isxander.yacl3.api.*;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
 import net.not_thefirst.story_mode_clouds.config.screens.PresetBrowserScreen;
@@ -116,9 +115,8 @@ public class YACLPresetWidgets {
             .name(ComponentWrapper.literal("Browse Presets (" + colorCount + ")"))
             .description(OptionDescription.of(ComponentWrapper.literal("Open preset browser to manage, edit, and load color presets")))
             .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null && parentScreen != null) {
-                    mc.setScreen(PresetBrowserScreen.createBrowserScreen(
+                if (parentScreen != null) {
+                    ClientHelper.setScreen(PresetBrowserScreen.createBrowserScreen(
                         PresetController.PresetCategory.COLORS, parentScreen
                     ));
                 }
@@ -136,9 +134,8 @@ public class YACLPresetWidgets {
             .name(ComponentWrapper.literal("Browse Presets (" + lightingCount + ")"))
             .description(OptionDescription.of(ComponentWrapper.literal("Open preset browser to manage, edit, and load lighting presets")))
             .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null && parentScreen != null) {
-                    mc.setScreen(PresetBrowserScreen.createBrowserScreen(
+                if (parentScreen != null) {
+                    ClientHelper.setScreen(PresetBrowserScreen.createBrowserScreen(
                         PresetController.PresetCategory.LIGHTING, parentScreen
                     ));
                 }
@@ -157,9 +154,8 @@ public class YACLPresetWidgets {
             .name(ComponentWrapper.literal("Browse Presets (" + lightSourcesCount + ")"))
             .description(OptionDescription.of(ComponentWrapper.literal("Open preset browser to manage, edit, and load light source presets")))
             .action((yacl, btn) -> {
-                Minecraft mc = Minecraft.getInstance();
-                if (mc != null && parentScreen != null) {
-                    mc.setScreen(PresetBrowserScreen.createBrowserScreen(
+                if (parentScreen != null) {
+                    ClientHelper.setScreen(PresetBrowserScreen.createBrowserScreen(
                         PresetController.PresetCategory.LIGHT_SOURCES, parentScreen
                     ));
                 }
