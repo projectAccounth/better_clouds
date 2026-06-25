@@ -34,7 +34,7 @@ dependencies {
     implementation "org.spongepowered:mixin:0.8.5"
     mappings loom.officialMojangMappings()
 
-    implementation 'io.github.projectaccounth:opengl-grl:0.1.5'
+    implementation 'io.github.projectaccounth:opengl-grl:0.1.6'
 
     // compile only, has no Fabric-specific mappings here
     modCompileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"

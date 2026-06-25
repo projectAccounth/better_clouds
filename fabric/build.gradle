@@ -43,9 +43,7 @@ dependencies {
 
     modApi "com.terraformersmc:modmenu:${project.modmenu_version}"
     modApi "dev.isxander:yet-another-config-lib:${project.yacl_version}"
-
-    implementation 'io.github.projectaccounth:opengl-grl:0.1.5'
-    include 'io.github.projectaccounth:opengl-grl:0.1.5'
+    include 'io.github.projectaccounth:opengl-grl:0.1.6'
 }
 
 loom {

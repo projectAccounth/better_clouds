@@ -54,8 +54,15 @@ public class GLUBODataBuffer extends AbstractUBODataBuffer<GLUBODataBuffer, Byte
         return this;
     }
 
+    @Override
     public void reset() {
         bufferBuilder.reset();
+    }
+
+    @Override
+    public void close() {
+        // find a way to dealloc a direct buffer later
+        reset();
     }
 
     public ByteBuffer build() {

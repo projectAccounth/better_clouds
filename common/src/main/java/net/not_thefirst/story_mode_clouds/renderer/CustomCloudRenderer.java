@@ -247,7 +247,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             if (needs) {
                 currentLayer.needsRebuild  = false;
                 currentLayer.prevStatus    = status;
-                tryBuildClouds(currentLayer, relY, layer, skyColor);
+                tryBuildClouds(currentLayer, relY, layer, ARGB.toRGBA(ARGB.WHITE)); // WHITE is the same (still FFFFFFFF), just to make it clear
             }
 
             int shaderColor = ColorUtils.getCloudShaderColor(layer, skyColor);

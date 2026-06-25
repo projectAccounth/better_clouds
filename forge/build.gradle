@@ -105,7 +105,7 @@ dependencies {
 
     modApi "me.shedaniel.cloth:cloth-config-forge:11.1.136"
 
-    include 'io.github.projectaccounth:opengl-grl:0.1.5'
+    include 'io.github.projectaccounth:opengl-grl:0.1.6'
 }
 
 processResources {
