@@ -1,31 +1,12 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
-import com.mojang.blaze3d.PrimitiveTopology;
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.buffers.Std140Builder;
-import com.mojang.blaze3d.buffers.Std140SizeCalculator;
-import com.mojang.blaze3d.buffers.GpuBufferSlice.MappedView;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTextureView;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
-
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
-import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.minecraft.client.CloudStatus;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MappableRingBuffer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.phys.Vec3;
@@ -42,23 +23,31 @@ import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
-import net.not_thefirst.story_mode_clouds.utils.math.ARGB;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractPipeline;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractRenderPass;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractUBODataBuffer;
+import net.not_thefirst.lib.gl_render_system.alt.PipelineManager;
+import net.not_thefirst.lib.gl_render_system.mesh.utils.GLPrimitive;
+import net.not_thefirst.lib.gl_render_system.shader.Std140SizeCalculator;
+import net.not_thefirst.lib.gl_render_system.vertex.VertexFormat;
+import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.ColorUtils;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider.WeatherState;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.DimensionProvider;
+import net.not_thefirst.story_mode_clouds.utils.rendering.blaze3d.B3DMesh;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
 
 public class CustomCloudRenderer implements AutoCloseable {
     private final List<LayerState> layers = new ArrayList<>();
@@ -66,12 +55,12 @@ public class CustomCloudRenderer implements AutoCloseable {
     protected static final IdentifierWrapper DEFAULT_TEXTURE_LOCATION = 
         IdentifierWrapper.of("minecraft", "textures/environment/clouds.png");
 
-    private final RenderSystem.AutoStorageIndexBuffer indices =
-            RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
-
     private Dimension previousDimension = null;
     private boolean textureInitialized = false;
     private boolean shouldReset = false;
+
+    private AbstractPipeline[] noDepthPipelines;
+    private AbstractPipeline[] depthPipelines;
 
     public CustomCloudRenderer() {
         super();
@@ -88,6 +77,8 @@ public class CustomCloudRenderer implements AutoCloseable {
         textureInitialized = false;
         shouldReset = false;
 
+        PipelineManager manager = PipelineManager.getInstance();
+
         int layerCount = CloudsConfiguration.getInstance().getLayerCount();
         for (int i = 0; i < layerCount; i++) {
             LayerState layerState = new LayerState();
@@ -96,6 +87,19 @@ public class CustomCloudRenderer implements AutoCloseable {
             layerState.cellInitialized = false;
             layerState.prevStatus = null;
             layers.add(layerState);
+            layerState.transforms = manager.createDataBuffer("CloudsTransforms", TRANSFORMS_SIZE);
+            layerState.cloudsInfo = manager.createDataBuffer("CloudsCloudInfo", CLOUDS_INFO_SIZE);
+            layerState.lighting = manager.createDataBuffer("CloudsLighting", LIGHTING_SIZE);
+            layerState.camera = manager.createDataBuffer("CloudsCamera", CAMERA_SIZE);
+
+            noDepthPipelines = new AbstractPipeline[] {
+                manager.getPipeline("POSITION_COLOR_NO_DEPTH")
+            };
+
+            depthPipelines = new AbstractPipeline[] {
+                manager.getPipeline("POSITION_COLOR_DEPTH_ONLY"),
+                manager.getPipeline("CUSTOM_POSITION_COLOR")
+            };
         }
 
         for (int i = 0; i < layerCount; i++) {
@@ -117,8 +121,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             return Texture.buildTexture(inputStream);
         }
         catch (IOException exception) {
-            exception.printStackTrace();
-            LoggerProvider.get().info("Failed to build cloud texture, discarding");
+            LoggerProvider.get().info("Failed to build cloud texture, discarding, error: {}", exception);
             return Optional.empty();
         }
     }
@@ -280,28 +283,25 @@ public class CustomCloudRenderer implements AutoCloseable {
             if (needs) {
                 currentLayer.needsRebuild  = false;
                 currentLayer.prevStatus    = status;
-                tryBuildClouds(currentLayer, relY, layer, ARGB.WHITE);
+                tryBuildClouds(currentLayer, relY, layer, ARGB.toRGBA(ARGB.WHITE));
             }
 
             int shaderColor = ColorUtils.getCloudShaderColor(layer, skyColor);
             try {
                 if (!type.doDepthWrite()) {
-                    drawLayer(new RenderPipeline[]{ModRenderPipelines.POSITION_COLOR_NO_DEPTH},
+                    drawLayer(noDepthPipelines,
                         offX, offY, offZ,
                         layer, shaderColor, relY, dayTime, cam);
                     continue;
                 }
 
                 drawLayer(
-                    new RenderPipeline[]{
-                        ModRenderPipelines.POSITION_COLOR_DEPTH,
-                        ModRenderPipelines.CUSTOM_POSITION_COLOR
-                    },
+                    depthPipelines,
                     offX, offY, offZ,
                     layer, shaderColor, relY, dayTime, cam);
             }
             catch (Exception e) {
-                e.printStackTrace();
+                LoggerProvider.get().error("Error while rendering: {}", e);
             }
         }
         finishRender();
@@ -312,53 +312,36 @@ public class CustomCloudRenderer implements AutoCloseable {
             currentLayer.buffer.close();
         }
 
-        try (MeshData mesh = buildMeshForLayer(
+        var mesh = buildMeshForLayer(
             currentLayer.texture,
             currentLayer.baseCellX, currentLayer.baseCellZ,
             currentLayer.prevStatus,
-            relY, layer, colorModifier)) {
+            relY, layer, colorModifier);
 
-            if (mesh == null) {
-                currentLayer.layerIndexCount = 0;
-            } else {
-                if (currentLayer.buffer != null && 
-                    !currentLayer.buffer.isClosed() &&
-                    currentLayer.buffer.size() >= mesh.vertexBuffer().remaining()) {
-                    RenderSystem.getDevice().createCommandEncoder()
-                            .writeToBuffer(currentLayer.buffer.slice(), mesh.vertexBuffer());
-                } else {
-                    if (currentLayer.buffer != null && !currentLayer.buffer.isClosed()) currentLayer.buffer.close();
-                    currentLayer.buffer = RenderSystem.getDevice().createBuffer(
-                            () -> "Cloud layer " + layer,
-                            GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_COPY_DST,
-                            mesh.vertexBuffer()
-                    );
-                }
-                currentLayer.layerIndexCount = mesh.drawState().indexCount();
-                LoggerProvider.get().info("Built cloud mesh for layer {} with {} vertices", layer, mesh.vertexBuffer().remaining() / 72);
-            }
-        }
+        if (mesh == null) throw new IllegalStateException("Mesh was null");
+        currentLayer.buffer = mesh;
+        currentLayer.layerIndexCount = mesh.getIndexCount();
+        LoggerProvider.get().info("Built cloud mesh for layer {} with {} vertices, {} indices", layer, mesh.getVertexCount(), mesh.getIndexCount());
     }
 
     @Nullable
-    private MeshData buildMeshForLayer(Texture.TextureData tex,
+    private AbstractStaticMesh<?> buildMeshForLayer(Texture.TextureData tex,
                                        int baseCx, int baseCz,
                                        CloudStatus status,
                                        float relYCenter, int currentLayer,
                                        int colorModifier) {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
                 CloudsConfiguration.getInstance().getLayer(currentLayer);
-
+        
         LayerState state = layers.get(currentLayer);
-        ByteBufferBuilder bb = new ByteBufferBuilder(1024 * 1024);
-        BufferBuilder mesh = new BufferBuilder(bb, PrimitiveTopology.QUADS, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+        AbstractStaticMesh.Builder<?, ?> mesh = new B3DMesh.Builder(VertexFormat.POSITION_COLOR_NORMAL, GLPrimitive.QUADS);
 
         MeshTypeBuilder builder = null;
         try {
             builder = MeshBuilderRegistry.getInstance().getObject(layerConfiguration.MODE);
         }
         catch (Exception exception) {
-            exception.printStackTrace();
+            LoggerProvider.get().error("Exception building mesh: {}", exception);
             return null;
         }
 
@@ -370,7 +353,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             currentLayer, 
             colorModifier);
 
-        return mesh.buildOrThrow();
+        return mesh.build();
     }
 
     private void startRender() {
@@ -417,13 +400,13 @@ public class CustomCloudRenderer implements AutoCloseable {
     @Override
     public void close() {
         for (LayerState layer : layers) {
-            if (layer.buffer != null && !layer.buffer.isClosed()) {
-                layer.buffer.close();
+            if (layer != null) {
+                layer.close();
             }
         }
     }
     
-    public static class LayerState implements AutoCloseable{
+    public static class LayerState implements Closeable {
         int index;
         float offsetX;
         float offsetZ;
@@ -432,7 +415,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         int baseCellZ;
 
         Texture.TextureData texture;
-        GpuBuffer buffer;
+        AbstractStaticMesh<?> buffer;
 
         boolean needsRebuild;
 
@@ -442,10 +425,10 @@ public class CustomCloudRenderer implements AutoCloseable {
         boolean bufferEmpty;
         int layerIndexCount;
 
-        MappableRingBuffer transformsBuffer = new MappableRingBuffer(() -> "Cloud Layer Transformation UBO", 130, TRANSFORMS_SIZE);
-        MappableRingBuffer cloudsInfoBuffer = new MappableRingBuffer(() -> "Cloud Layer Information UBO", 130, CLOUDS_INFO_SIZE);
-        MappableRingBuffer lightingBuffer   = new MappableRingBuffer(() -> "Cloud Layer Lighting UBO", 130, LIGHTING_SIZE);
-        MappableRingBuffer cameraBuffer     = new MappableRingBuffer(() -> "Cloud Layer Camera UBO", 130, CAMERA_SIZE);
+        AbstractUBODataBuffer<?, ?>  transforms;
+        AbstractUBODataBuffer<?, ?>  cloudsInfo;
+        AbstractUBODataBuffer<?, ?>  lighting;
+        AbstractUBODataBuffer<?, ?>  camera;
 
         public Texture.TextureData texture() { return this.texture; }
 
@@ -458,40 +441,41 @@ public class CustomCloudRenderer implements AutoCloseable {
         }
 
         void closeBuffers() {
-            transformsBuffer.close();
-            cloudsInfoBuffer.close();
-            lightingBuffer.close();
-            cameraBuffer.close();
+            transforms.close();
+            cloudsInfo.close();
+            lighting.close();
+            camera.close();
         }
 
         @Override
         public void close() {
-            if (buffer != null && !buffer.isClosed()) {
+            if (buffer != null) {
                 buffer.close();
             }
             closeBuffers();
         }
-
     }
 
     private static final int CAMERA_SIZE =
         new Std140SizeCalculator()
-            .putVec4()
-            .get();
+            .addVec4()
+            .finish().offset();
 
     private static final int TRANSFORMS_SIZE =
         new Std140SizeCalculator()
-            .putVec4()
-            .get();
+            .addVec4()
+            .addMat4()
+            .addMat4()
+            .finish().offset();
 
     private static final int CLOUDS_INFO_SIZE =
         new Std140SizeCalculator()
-            .putIVec4()
-            .putVec4()
-            .putVec4()
-            .putVec4()
-            .putVec4()
-            .get();
+            .addIVec4()
+            .addVec4()
+            .addVec4()
+            .addVec4()
+            .addVec4()
+            .finish().offset();
 
     private static final int LIGHTING_SIZE = 
         16 * CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT +
@@ -499,18 +483,20 @@ public class CustomCloudRenderer implements AutoCloseable {
         16;
 
     private void drawLayer(
-        RenderPipeline[] pipelines,
+        AbstractPipeline[] pipelines,
         float ox, float oy, float oz,
-        int layerIdx,
+        int layer,
         int skyColor,
         float relY,
         long timeTicks,
         Vec3 camPos) {
 
-        LayerState currentLayer = this.layers.get(layerIdx);
+        LayerState currentLayer = layers.get(layer);
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
-            CloudsConfiguration.getInstance().getLayer(layerIdx);
+            CloudsConfiguration.getInstance().getLayer(layer);
+
+        PipelineManager manager = PipelineManager.getInstance();
 
         CloudsConfiguration.LightingParameters lightingParameters = 
             CloudsConfiguration.getInstance().LIGHTING;
@@ -519,171 +505,118 @@ public class CustomCloudRenderer implements AutoCloseable {
         float lightAmbientFactor = lightingParameters.AMBIENT_LIGHTING_STRENGTH;
         float lightShadingStrength = lightingParameters.MAX_LIGHTING_SHADING;
 
+        currentLayer.transforms.reset();
+        currentLayer.cloudsInfo.reset();
+        currentLayer.lighting.reset();
+        currentLayer.camera.reset();
+
+        Matrix4f proj = RenderSystem.getModelViewMatrixCopy();
+        Matrix4f mv = RenderSystem.getModelViewMatrixCopy();
+
+        currentLayer.transforms.putVec4(-ox, oy, -oz, 1.0f);
+        currentLayer.transforms.putMat4(proj);
+        currentLayer.transforms.putMat4(mv);
+
         float heightInBlocks = MeshBuilder.HEIGHT_IN_BLOCKS *
                 (layerConfiguration.IS_ENABLED
                     ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE
                     : 1.0f);
 
-        // Setup transformation buffer
-        try (MappedView view = currentLayer.transformsBuffer.currentBuffer().map(/*read=*/false, /*write=*/true)) {
-
-            Std140Builder.intoBuffer(view.data())
-                .putVec4(-ox, oy, -oz, 1.0f);
-        }
-
-        // Setup cloud info buffer
-        try (MappedView view = currentLayer.cloudsInfoBuffer.currentBuffer().map(/*read=*/false, /*write=*/true)) {
-
-            Std140Builder.intoBuffer(view.data())
-
-                // ivec4 info0
-                .putIVec4(
-                    packConfig(layerIdx),
-                    (int) layerConfiguration.FOG.FOG_START_DISTANCE,
-                    (int) layerConfiguration.FOG.FOG_END_DISTANCE,
-                    layerConfiguration.APPEARANCE.BASE_ALPHA
-                )
-
-                // vec4 info1
-                .putVec4(
-                    layerConfiguration.FADE.FADE_ALPHA,
-                    layerConfiguration.FADE.TRANSITION_RANGE,
-                    heightInBlocks,
-                    relY
-                )
-
-                // vec4 skyColor
-                .putVec4(
-                    ARGB.redFloat(skyColor),
-                    ARGB.greenFloat(skyColor),
-                    ARGB.blueFloat(skyColor),
-                    1.0f
-                )
-
-                // vec4 fadeToColor
-                .putVec4(
-                    ARGB.redFloat(layerConfiguration.FADE.FADE_TO_COLOR),
-                    ARGB.greenFloat(layerConfiguration.FADE.FADE_TO_COLOR),
-                    ARGB.blueFloat(layerConfiguration.FADE.FADE_TO_COLOR),
-                    1.0f
-                )
-                
-                // vec4 fadeInfo (for static fade relative Y)
-                .putVec4(
-                    layerConfiguration.FADE.STATIC_FADE_REL_Y,
-                    0.0f, // unused
-                    0.0f, // unused
-                    0.0f  // unused
-                );
-        }
-
-        // Setup lighting buffer
-        try (MappedView view = currentLayer.lightingBuffer.currentBuffer().map(false, true)) {
-
-            Std140Builder builder = Std140Builder.intoBuffer(view.data());
-
-            int lightCount = Math.min(lights.size(), maxLightCount);
-            for (int i = 0; i < maxLightCount; i++) {
-                if (i < lightCount) {
-                    DiffuseLight l = lights.get(i);
-
-                    float x = l.getXDirection();
-                    float y = l.getYDirection();
-                    float z = l.getZDirection();
-
-                    if (CloudsConfiguration.getInstance().LIGHTING.LIGHTING_TYPE == LightingType.DYNAMIC) {
-                        float[] tmp = { x, y, z };
-                        l.evaluate(timeTicks, tmp);
-                        x = tmp[0];
-                        y = tmp[1];
-                        z = tmp[2];
-                    }
-
-                    builder.putVec4(x, y, z, l.intensity());
-                } else {
-                    builder.putVec4(0.0f, 0.0f, 0.0f, 0.0f);
-                }
-            }
-
-            for (int i = 0; i < maxLightCount; i++) {
-                if (i < lightCount) {
-                    Vector3f c = lights.get(i).color();
-                    builder.putVec4(c.x(), c.y(), c.z(), 1.0f);
-                } else {
-                    builder.putVec4(0.0f, 0.0f, 0.0f, 0.0f);
-                }
-            }
-
-            builder.putVec4(
-                lightCount,
-                lightShadingStrength,
-                lightAmbientFactor,
-                lightingParameters.SHADING_MODE == ShadingMode.GOURAUD ? 0 : 1
-            );
-        }
-
-        // Setup camera buffer
-        try (MappedView view = currentLayer.cameraBuffer.currentBuffer().map(false, true)) {
-
-            Std140Builder.intoBuffer(view.data())
-                .putVec4(
-                    (float) camPos.x,
-                    (float) camPos.y,
-                    (float) camPos.z,
-                    1.0f
-                );
-        }
-
-        GpuBuffer indexBuf = indices.getBuffer(currentLayer.layerIndexCount);
-        GpuBufferSlice slice = RenderSystem.getDynamicUniforms()
-				.writeTransform(RenderSystem.getModelViewMatrixCopy());
-
-        var encoder = RenderSystem.getDevice().createCommandEncoder();
-
-        RenderTarget rt = ClientHelper.GameRendererHelper.getRenderer().mainRenderTarget();
-        RenderTarget ct = ClientHelper.LevelRendererHelper.getRenderer().cloudsTarget();
-        GpuTextureView colorTex;
-        GpuTextureView depthTex;
-        
-        if (ct != null) {
-            colorTex = ct.getColorTextureView();
-            depthTex = ct.getDepthTextureView();
-        } else {
-            colorTex = rt.getColorTextureView();
-            depthTex = rt.getDepthTextureView();
-        }
-
-        RenderPass pass = encoder.createRenderPass(
-            () -> "Clouds",
-            colorTex,
-            Optional.empty(),
-            depthTex,
-            OptionalDouble.empty() 
+        // Info0
+        currentLayer.cloudsInfo.putIVec4(
+            packConfig(layer),
+            (int) layerConfiguration.FOG.FOG_START_DISTANCE,
+            (int) layerConfiguration.FOG.FOG_END_DISTANCE,
+            layerConfiguration.APPEARANCE.BASE_ALPHA
         );
 
-        try {
-            RenderSystem.bindDefaultUniforms(pass);
+        // Info1
+        currentLayer.cloudsInfo.putVec4(
+            layerConfiguration.FADE.FADE_ALPHA,
+            layerConfiguration.FADE.TRANSITION_RANGE,
+            heightInBlocks,
+            relY
+        );
 
-            pass.setUniform("Transforms", currentLayer.transformsBuffer.currentBuffer());
-            pass.setUniform("CloudInfo", currentLayer.cloudsInfoBuffer.currentBuffer());
-            pass.setUniform("Lighting", currentLayer.lightingBuffer.currentBuffer());
-            pass.setUniform("Camera", currentLayer.cameraBuffer.currentBuffer());
-            pass.setUniform("DynamicTransforms", slice);
+        currentLayer.cloudsInfo.putVec4(
+            ARGB.redFloat(skyColor),
+            ARGB.greenFloat(skyColor),
+            ARGB.blueFloat(skyColor),
+            1.0f
+        );
 
-            pass.setVertexBuffer(0, currentLayer.buffer.slice());
-            pass.setIndexBuffer(indexBuf, indices.type());
+        // vec4 fadeToColor
+        currentLayer.cloudsInfo.putVec4(
+            ARGB.redFloat(layerConfiguration.FADE.FADE_TO_COLOR),
+            ARGB.greenFloat(layerConfiguration.FADE.FADE_TO_COLOR),
+            ARGB.blueFloat(layerConfiguration.FADE.FADE_TO_COLOR),
+            1.0f
+        );
+                
+        // vec4 fadeInfo
+        currentLayer.cloudsInfo.putVec4(
+            layerConfiguration.FADE.STATIC_FADE_REL_Y,
+            0.0f, // unused
+            0.0f, // unused
+            0.0f  // unused
+        );
 
-            for (RenderPipeline pipeline : pipelines) {
-                pass.setPipeline(pipeline);
-                pass.drawIndexed(currentLayer.layerIndexCount, 1, 0, 0, 0);
+        int lightCount = Math.min(lights.size(), maxLightCount);
+        float[] lightPos = new float[3];
+
+        for (int i = 0; i < maxLightCount; i++) {
+            if (i < lightCount) {
+                DiffuseLight l = lights.get(i);
+                lightPos[0] = l.getXDirection();
+                lightPos[1] = l.getYDirection();
+                lightPos[2] = l.getZDirection();
+
+                if (CloudsConfiguration
+                        .getInstance().LIGHTING.LIGHTING_TYPE == LightingType.DYNAMIC)
+                    l.evaluate(timeTicks, lightPos);
+
+                currentLayer.lighting.putVec4(
+                    lightPos[0],
+                    lightPos[1],
+                    lightPos[2],
+                    l.intensity()
+                );
+            } else {
+                currentLayer.lighting.putVec4(0.0f, 0.0f, 0.0f, 0.0f);
             }
         }
-        catch (Exception exception) {
-            exception.printStackTrace();
+
+        // LightColors
+        for (int i = 0; i < maxLightCount; i++) {
+            if (i < lightCount) {
+                Vector3f c = lights.get(i).color();
+                currentLayer.lighting.putVec4(c.x(), c.y(), c.z(), 1.0f);
+            } else {
+                currentLayer.lighting.putVec4(0.0f, 0.0f, 0.0f, 0.0f);
+            }
         }
 
-        if (pass != null) {
-            pass.close();
+        // LightInformation
+        currentLayer.lighting.putVec4(
+            lightCount,
+            lightShadingStrength,
+            lightAmbientFactor,
+            lightingParameters.SHADING_MODE == ShadingMode.GOURAUD ? 0 : 1
+        );
+
+        currentLayer.camera.putVec4((float) camPos.x, (float) camPos.y, (float) camPos.z, 1.0f);
+
+        try (AbstractRenderPass<?> pass = manager.createRenderPass("Clouds", pipelines)) {
+            pass.setMesh(currentLayer.buffer, currentLayer.layerIndexCount);
+
+            pass.bindUniformBlock("Transforms", currentLayer.transforms);
+            pass.bindUniformBlock("CloudInfo", currentLayer.cloudsInfo);
+            pass.bindUniformBlock("Lighting", currentLayer.lighting);
+            pass.bindUniformBlock("Camera", currentLayer.camera);
+
+            pass.setup();
+            pass.render();
+            pass.cleanup();
         }
     }
 }
