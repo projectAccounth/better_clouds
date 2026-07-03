@@ -5,7 +5,8 @@ import dev.isxander.yacl3.api.controller.*;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.*;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.FadeType;
-import net.not_thefirst.story_mode_clouds.config.screens.LayerPresets;
+import net.not_thefirst.story_mode_clouds.config.presets.LayerPresets;
+import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
 import net.not_thefirst.story_mode_clouds.config.screens.YACLLayerPresetsScreen;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
@@ -31,8 +32,7 @@ public class YACLDataSettings {
         List<SkyColorKeypoint> colors = config.CLOUD_COLOR;
         
         builder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.add_keypoint"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.option.add_keypoint.description")))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.add_keypoint"))
             .action((yacl, btn) -> {
                 if (colors.size() < 32) {
                     SkyColorKeypoint newKeypoint = new SkyColorKeypoint();
@@ -41,7 +41,7 @@ public class YACLDataSettings {
                     colors.add(newKeypoint);
                     CloudsConfiguration.save();
                     ClientHelper.sendLocalSystemMessage(
-                        ComponentWrapper.literal("Added keypoint at time " + newKeypoint.time)
+                        ComponentWrapper.translatable("cloudtweaks.message.keypoint_added")
                     );
                     ClientHelper.setScreen(null);
                 }
@@ -52,7 +52,7 @@ public class YACLDataSettings {
             SkyColorKeypoint kp = colors.get(i);
             
             var groupBuilder = OptionGroup.createBuilder()
-                .name(ComponentWrapper.literal("Keypoint " + (i + 1) + " (Time: " + kp.time + ")"))
+                .name(ComponentWrapper.translatable("cloudtweaks.raw.keypoint"))
                 .option(Option.<Integer>createBuilder()
                     .name(ComponentWrapper.translatable("cloudtweaks.raw.time"))
                     .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.option.time_of_day")))
@@ -73,12 +73,12 @@ public class YACLDataSettings {
                 
                 .option(ButtonOption.createBuilder()
                     .name(ComponentWrapper.translatable("cloudtweaks.raw.remove"))
-                    .description(OptionDescription.of(ComponentWrapper.literal("Delete this keypoint")))
+                    .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc.delete_keypoint")))
                     .action((yacl, btn) -> {
                         if (colors.size() > 1 && colors.remove(kp)) {
                             CloudsConfiguration.save();
                             ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.literal("Removed keypoint")
+                                ComponentWrapper.translatable("cloudtweaks.presets.removed_keypoint")
                             );
                             ClientHelper.setScreen(null);
                         }
@@ -89,16 +89,16 @@ public class YACLDataSettings {
         }
         
         builder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("Save as Color Preset"))
-            .description(OptionDescription.of(ComponentWrapper.literal("Save current color settings as a preset")))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.save_color_preset"))
+            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.save_color_preset.tooltip")))
             .action((yacl, btn) -> {
                 String timestamp = String.valueOf(System.currentTimeMillis());
-                String presetName = "CloudPreset_" + formatTimestamp(System.currentTimeMillis());
-                if (net.not_thefirst.story_mode_clouds.config.presets.PresetController.saveColorPreset(timestamp, presetName, "Saved from Color settings", config)) {
+                String presetName = ComponentWrapper.translatable("cloudtweaks.presets.default_color_preset_name_prefix").getString() + formatTimestamp(System.currentTimeMillis());
+                if (PresetController.saveColorPreset(timestamp, presetName, ComponentWrapper.translatable("cloudtweaks.presets.default_color_preset_description").getString(), config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                     ClientHelper.sendLocalSystemMessage(
-                        ComponentWrapper.literal("Saved color preset: " + presetName)
+                        ComponentWrapper.translatable("cloudtweaks.message.saved_color_preset_prefix")
                     );
                 }
             })
@@ -120,14 +120,13 @@ public class YACLDataSettings {
         List<DiffuseLight> lights = config.LIGHTING.lights;
         
         builder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.raw.add_light"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc.add_light")))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.add_light"))
             .action((yacl, btn) -> {
                 DiffuseLight newLight = new DiffuseLight();
                 lights.add(newLight);
                 CloudsConfiguration.save();
                 ClientHelper.sendLocalSystemMessage(
-                    ComponentWrapper.literal("Added light source")
+                    ComponentWrapper.translatable("cloudtweaks.presets.added_light")
                 );
                 ClientHelper.setScreen(null);
             })
@@ -137,7 +136,7 @@ public class YACLDataSettings {
             DiffuseLight light = lights.get(i);
             
             var groupBuilder = OptionGroup.createBuilder()
-                .name(ComponentWrapper.literal("Light " + (i + 1)))
+                .name(ComponentWrapper.translatable("cloudtweaks.entry.light"))
                 .option(Option.<Float>createBuilder()
                     .name(ComponentWrapper.translatable("cloudtweaks.option.direction_x"))
                     .binding(light.getXDirection(), light::getXDirection, light::setXDirection)
@@ -169,7 +168,7 @@ public class YACLDataSettings {
                         if (lights.size() > 1 && lights.remove(light)) {
                             CloudsConfiguration.save();
                             ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.literal("Removed light source")
+                                ComponentWrapper.translatable("cloudtweaks.presets.removed_light")
                             );
                             ClientHelper.setScreen(null);
                         }
@@ -180,16 +179,16 @@ public class YACLDataSettings {
         }
         
         builder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("Save as Light Sources Preset"))
-            .description(OptionDescription.of(ComponentWrapper.literal("Save current light source settings as a preset")))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.save_light_sources_preset"))
+            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.save_light_sources_preset.tooltip")))
             .action((yacl, btn) -> {
                 String timestamp = String.valueOf(System.currentTimeMillis());
-                String presetName = "LightSourcesPreset_" + formatTimestamp(System.currentTimeMillis());
-                if (net.not_thefirst.story_mode_clouds.config.presets.PresetController.saveLightSourcesPreset(timestamp, presetName, "Saved from Light Sources settings", config)) {
+                String presetName = ComponentWrapper.translatable("cloudtweaks.presets.default_light_sources_preset_name_prefix").getString() + formatTimestamp(System.currentTimeMillis());
+                if (PresetController.saveLightSourcesPreset(timestamp, presetName, ComponentWrapper.translatable("cloudtweaks.presets.default_light_sources_preset_description").getString(), config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                     ClientHelper.sendLocalSystemMessage(
-                        ComponentWrapper.literal("§aSaved light sources preset: " + presetName)
+                        ComponentWrapper.translatable("cloudtweaks.message.saved_light_sources_preset_prefix")
                     );
                 }
             })
@@ -205,10 +204,9 @@ public class YACLDataSettings {
     public static Screen createLayerEditingScreen(CloudsConfiguration.Dimension dimension, int layerIndex, Screen backScreen) {
         CloudsConfiguration config = CloudsConfiguration.getInstance();
         LayerConfiguration layer = config.getLayerInDimension(dimension, layerIndex);
-        String dimensionName = dimension.getId().substring(0, 1).toUpperCase() + dimension.getId().substring(1);
         
         return YetAnotherConfigLib.createBuilder()
-            .title(ComponentWrapper.literal("Layer " + (layerIndex + 1) + " Settings (" + dimensionName + ")"))
+            .title(ComponentWrapper.translatable("cloudtweaks.layer.settings_title"))
             .save(CloudsConfiguration::save)
             
             .category(buildLayerBasicSettings(layer))
@@ -224,7 +222,7 @@ public class YACLDataSettings {
 
     private static ConfigCategory buildLayerBasicSettings(LayerConfiguration layer) {
         return ConfigCategory.createBuilder()
-            .name(ComponentWrapper.literal("Basic Settings"))
+            .name(ComponentWrapper.translatable("cloudtweaks.group.basic"))
             
             .option(Option.<String>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.name"))
@@ -271,7 +269,7 @@ public class YACLDataSettings {
 
     private static ConfigCategory buildLayerAppearanceSettings(LayerConfiguration layer) {
         return ConfigCategory.createBuilder()
-            .name(ComponentWrapper.literal("Appearance"))
+            .name(ComponentWrapper.translatable("cloudtweaks.group.appearance"))
             
             .option(Option.<Boolean>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.shading_enabled"))
@@ -385,7 +383,7 @@ public class YACLDataSettings {
 
     private static ConfigCategory buildLayerBevelSettings(LayerConfiguration layer) {
         return ConfigCategory.createBuilder()
-            .name(ComponentWrapper.literal("Bevel"))
+            .name(ComponentWrapper.translatable("cloudtweaks.group.bevel"))
             
             .option(Option.<Float>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.bevel_size"))
@@ -410,7 +408,7 @@ public class YACLDataSettings {
 
     private static ConfigCategory buildLayerFogSettings(LayerConfiguration layer) {
         return ConfigCategory.createBuilder()
-            .name(ComponentWrapper.literal("Fog"))
+            .name(ComponentWrapper.translatable("cloudtweaks.group.fog"))
             
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.fog_start"))
@@ -437,7 +435,7 @@ public class YACLDataSettings {
 
     private static ConfigCategory buildLayerFadeSettings(LayerConfiguration layer) {
         return ConfigCategory.createBuilder()
-            .name(ComponentWrapper.literal("Fade"))
+            .name(ComponentWrapper.translatable("cloudtweaks.group.fade"))
             
             .option(Option.<Boolean>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.fade_enabled"))
@@ -536,7 +534,7 @@ public class YACLDataSettings {
                 layerHolder.addLayer(newLayer);
                 CloudsConfiguration.save();
                 ClientHelper.sendLocalSystemMessage(
-                    ComponentWrapper.literal("Added layer " + layerHolder.layers.size() + " to " + dimension.getId())
+                    ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.added_layer_prefix").getString() + layerHolder.layers.size() + ComponentWrapper.translatable("cloudtweaks.message.added_layer_to").getString() + dimension.getId())
                 );
                 ClientHelper.setScreen(null);
             })
@@ -547,7 +545,7 @@ public class YACLDataSettings {
             final int layerIndex = i;
             
             var layerGroup = OptionGroup.createBuilder()
-                .name(ComponentWrapper.literal("Layer " + (i + 1) + ": " + layer.NAME))
+                .name(ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.layer.label_prefix").getString() + (i + 1) + ": " + layer.NAME))
                 
                 .option(Option.<String>createBuilder()
                     .name(ComponentWrapper.translatable("cloudtweaks.option.name"))
@@ -557,7 +555,7 @@ public class YACLDataSettings {
                 
                 .option(ButtonOption.createBuilder()
                     .name(ComponentWrapper.translatable("cloudtweaks.option.edit"))
-                    .description(OptionDescription.of(ComponentWrapper.literal("Edit all layer settings")))
+                    .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.option.edit_layer_settings")))
                     .action((yacl, btn) -> {
                         Screen editScreen = createLayerEditingScreen(dimension, layerIndex, ClientHelper.getCurrentScreen());
                         if (editScreen != null) {
@@ -574,7 +572,7 @@ public class YACLDataSettings {
                             layerHolder.removeLayer(layerIndex);
                             CloudsConfiguration.save();
                             ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.literal("Removed layer from " + dimension.getId())
+                                ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.removed_layer_prefix").getString() + dimension.getId())
                             );
                             ClientHelper.setScreen(null);
                         }
@@ -586,8 +584,8 @@ public class YACLDataSettings {
         
         // Add Layer Presets button
         builder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("Layer Presets"))
-            .description(OptionDescription.of(ComponentWrapper.literal("Import, export, and manage layer presets")))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.layer_presets_button"))
+            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.layer_presets_button.tooltip")))
             .action((yacl, btn) -> {
                 Screen presetsScreen = YACLLayerPresetsScreen.createLayerPresetsScreen(dimension, ClientHelper.getCurrentScreen());
                 if (presetsScreen != null) {
@@ -602,11 +600,11 @@ public class YACLDataSettings {
     public static Screen createLayerPresetEditingScreen(LayerConfiguration layer, String presetId, 
                                                          CloudsConfiguration.Dimension dimension, Screen backScreen) {
         return YetAnotherConfigLib.createBuilder()
-            .title(ComponentWrapper.literal("Edit Layer Preset - " + layer.NAME))
+            .title(ComponentWrapper.translatable("cloudtweaks.presets.edit_layer_prefix"))
             .save(() -> LayerPresets.saveLayerPreset(
                 presetId,
                 layer.NAME,
-                "Modified layer preset",
+                ComponentWrapper.translatable("cloudtweaks.presets.modified_layer_preset").getString(),
                 layer,
                     dimension.getId()
                 )
@@ -630,21 +628,21 @@ public class YACLDataSettings {
                                                                CloudsConfiguration.Dimension dimension, Screen backScreen) {
         var saveData = new Object() {
             String displayName = layer.NAME;
-            String description = "Layer preset";
+            String description = ComponentWrapper.translatable("cloudtweaks.presets.layer_preset_description").getString();
         };
 
         return ConfigCategory.createBuilder()
-            .name(ComponentWrapper.literal("Save Preset"))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.save_as_preset"))
 
             .option(Option.<String>createBuilder()
-                .name(ComponentWrapper.literal("Description"))
+                .name(ComponentWrapper.translatable("cloudtweaks.option.preset_desc"))
                 .binding(saveData.description, () -> saveData.description, v -> saveData.description = v)
                 .controller(StringControllerBuilder::create)
                 .build())
             
             .option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.literal("Update Preset"))
-                .description(OptionDescription.of(ComponentWrapper.literal("Save changes to this preset")))
+                .name(ComponentWrapper.translatable("cloudtweaks.presets.update_preset"))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.save_changes_description")))
                 .action((yacl, btn) -> {
                     boolean success = LayerPresets.saveLayerPreset(
                         presetId,
@@ -656,7 +654,7 @@ public class YACLDataSettings {
 
                     if (success) {
                         ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.literal("Preset updated: " + saveData.displayName)
+                            ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.updated_preset_prefix").getString() + saveData.displayName)
                         );
                         ClientHelper.setScreen(backScreen);
                     }
@@ -673,28 +671,28 @@ public class YACLDataSettings {
         var saveData = new Object() {
             String presetId = "layer_" + System.currentTimeMillis();
             String displayName = layer.NAME;
-            String description = "Custom layer preset";
+            String description = ComponentWrapper.translatable("cloudtweaks.presets.custom_layer_preset_description").getString();
         };
 
         return ConfigCategory.createBuilder()
-            .name(ComponentWrapper.literal("Save as Preset"))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.save_as_preset"))
             
             .option(Option.<String>createBuilder()
-                .name(ComponentWrapper.literal("Preset ID"))
-                .description(OptionDescription.of(ComponentWrapper.literal("Unique identifier for this preset")))
+                .name(ComponentWrapper.translatable("cloudtweaks.option.preset_id"))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.tooltip.preset_id")))
                 .binding(saveData.presetId, () -> saveData.presetId, v -> saveData.presetId = v)
                 .controller(StringControllerBuilder::create)
                 .build())
             
             .option(Option.<String>createBuilder()
-                .name(ComponentWrapper.literal("Description"))
+                .name(ComponentWrapper.translatable("cloudtweaks.option.preset_desc"))
                 .binding(saveData.description, () -> saveData.description, v -> saveData.description = v)
                 .controller(StringControllerBuilder::create)
                 .build())
             
             .option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.literal("Save as Preset"))
-                .description(OptionDescription.of(ComponentWrapper.literal("Save this layer as a preset for later use")))
+                .name(ComponentWrapper.translatable("cloudtweaks.presets.save_as_preset"))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.save_layer_as_preset_description")))
                 .action((yacl, btn) -> {
                     boolean success = LayerPresets.saveLayerPreset(
                         saveData.presetId,
@@ -706,7 +704,7 @@ public class YACLDataSettings {
 
                     if (success) {
                         ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.literal("Layer preset saved: " + saveData.displayName)
+                            ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.saved_layer_preset_prefix").getString() + saveData.displayName)
                         );
                     }
                 })

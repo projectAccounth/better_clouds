@@ -10,6 +10,8 @@ import java.util.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.ConfigSerializer;
@@ -73,10 +75,8 @@ public class PresetController {
             loadLightingPresets();
             loadLightSourcesPresets();
             
-            // Set initialized BEFORE creating defaults to prevent recursion in ensure()
             initialized = true;
             
-            // Create defaults if needed
             createDefaultPresets();
             
             LoggerProvider.get().info("Preset controller initialized successfully");
@@ -96,6 +96,10 @@ public class PresetController {
 
     public static boolean saveColorPresetDirect(CloudColorPreset preset) {
         ensure();
+        if (preset.colors != null) {
+            preset.sortColorsByTime();
+        }
+        preset.lastModified = System.currentTimeMillis();
         File presetFile = new File(COLORS_DIR, preset.id + ".json");
         
         try {
@@ -106,6 +110,232 @@ public class PresetController {
             return true;
         } catch (IOException e) {
             LoggerProvider.get().error("Failed to save color preset {}: {}", preset.id, e.getMessage());
+            return false;
+        }
+    }
+
+    public static String exportColorPresetAsBase64(String presetId) {
+        ensure();
+        CloudColorPreset preset = COLOR_PRESETS.get(presetId);
+        if (preset == null) {
+            LoggerProvider.get().warn("Color preset not found for export: {}", presetId);
+            return null;
+        }
+
+        try {
+            String json = GSON.toJson(preset);
+            return java.util.Base64.getEncoder().encodeToString(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to export color preset as Base64: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public static boolean importColorPresetFromPayload(String presetId, String displayName, String description, String payload) {
+        ensure();
+        try {
+            if (!new CloudColorPreset().validate(payload)) {
+                LoggerProvider.get().error("Color preset payload failed validation: {}", presetId);
+                return false;
+            }
+
+            String json = decodePresetPayload(payload);
+            if (json == null) return false;
+
+            CloudColorPreset preset = GSON.fromJson(json, CloudColorPreset.class);
+            if (preset == null) {
+                LoggerProvider.get().error("Failed to parse color preset payload");
+                return false;
+            }
+
+            preset.id = presetId;
+            preset.displayName = displayName;
+            preset.description = description;
+            preset.lastModified = System.currentTimeMillis();
+            preset.sortColorsByTime();
+
+            if (!preset.isValid()) {
+                LoggerProvider.get().error("Invalid color preset payload: {}", presetId);
+                return false;
+            }
+
+            return saveColorPresetDirect(preset);
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to import color preset payload: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public static String exportLightingPresetAsBase64(String presetId) {
+        ensure();
+        LightingPreset preset = LIGHTING_PRESETS.get(presetId);
+        if (preset == null) {
+            LoggerProvider.get().warn("Lighting preset not found for export: {}", presetId);
+            return null;
+        }
+
+        try {
+            String json = GSON.toJson(preset);
+            return java.util.Base64.getEncoder().encodeToString(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to export lighting preset as Base64: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public static boolean importLightingPresetFromPayload(String presetId, String displayName, String description, String payload) {
+        ensure();
+        try {
+            if (!new LightingPreset().validate(payload)) {
+                LoggerProvider.get().error("Lighting preset payload failed validation: {}", presetId);
+                return false;
+            }
+
+            String json = decodePresetPayload(payload);
+            if (json == null) return false;
+
+            LightingPreset preset = GSON.fromJson(json, LightingPreset.class);
+            if (preset == null) {
+                LoggerProvider.get().error("Failed to parse lighting preset payload");
+                return false;
+            }
+
+            preset.id = presetId;
+            preset.displayName = displayName;
+            preset.description = description;
+            preset.lastModified = System.currentTimeMillis();
+
+            if (!preset.isValid()) {
+                LoggerProvider.get().error("Invalid lighting preset payload: {}", presetId);
+                return false;
+            }
+
+            return saveLightingPresetDirect(preset);
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to import lighting preset payload: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public static String exportLightSourcesPresetAsBase64(String presetId) {
+        ensure();
+        LightSourcesPreset preset = LIGHT_SOURCES_PRESETS.get(presetId);
+        if (preset == null) {
+            LoggerProvider.get().warn("Light sources preset not found for export: {}", presetId);
+            return null;
+        }
+
+        try {
+            String json = GSON.toJson(preset);
+            return java.util.Base64.getEncoder().encodeToString(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to export light sources preset as Base64: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public static boolean importLightSourcesPresetFromPayload(String presetId, String displayName, String description, String payload) {
+        ensure();
+        try {
+            if (!new LightSourcesPreset().validate(payload)) {
+                LoggerProvider.get().error("Light sources preset payload failed validation: {}", presetId);
+                return false;
+            }
+
+            String json = decodePresetPayload(payload);
+            if (json == null) return false;
+
+            LightSourcesPreset preset = GSON.fromJson(json, LightSourcesPreset.class);
+            if (preset == null) {
+                LoggerProvider.get().error("Failed to parse light sources preset payload");
+                return false;
+            }
+
+            preset.id = presetId;
+            preset.displayName = displayName;
+            preset.description = description;
+            preset.lastModified = System.currentTimeMillis();
+
+            if (!preset.isValid()) {
+                LoggerProvider.get().error("Invalid light sources preset payload: {}", presetId);
+                return false;
+            }
+
+            return saveLightSourcesPresetDirect(preset);
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to import light sources preset payload: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private static String decodePresetPayload(String payload) {
+        if (payload == null) return null;
+        String trimmed = payload.trim();
+        if (trimmed.isEmpty()) return null;
+
+        if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+            if (!isValidJson(trimmed)) {
+                LoggerProvider.get().error("Invalid JSON preset payload");
+                return null;
+            }
+            return trimmed;
+        }
+
+        try {
+            byte[] decodedBytes = java.util.Base64.getDecoder().decode(trimmed);
+            String decoded = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8).trim();
+            if (!isValidJson(decoded)) {
+                LoggerProvider.get().error("Decoded Base64 payload is not valid JSON");
+                return null;
+            }
+            return decoded;
+        } catch (IllegalArgumentException e) {
+            LoggerProvider.get().error("Failed to decode preset payload as Base64: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private static boolean isValidJson(String json) {
+        try {
+            var element = JsonParser.parseString(json);
+            return element.isJsonObject();
+        } catch (JsonSyntaxException e) {
+            return false;
+        }
+    }
+
+    private static boolean validateColorPresetPayload(String json) {
+        try {
+            var obj = JsonParser.parseString(json).getAsJsonObject();
+            if (!obj.has("colors") || !obj.get("colors").isJsonArray()) return false;
+            if (!obj.has("colorMode")) return false;
+            return obj.getAsJsonArray("colors").size() > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean validateLightingPresetPayload(String json) {
+        try {
+            var obj = JsonParser.parseString(json).getAsJsonObject();
+            return obj.has("ambientStrength")
+                && obj.has("maxShadingStrength")
+                && obj.has("shadingMode")
+                && obj.has("lightingType")
+                && obj.has("dayStart")
+                && obj.has("dayEnd")
+                && obj.has("dayNoon");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static boolean validateLightSourcesPresetPayload(String json) {
+        try {
+            var obj = JsonParser.parseString(json).getAsJsonObject();
+            if (!obj.has("lights") || !obj.get("lights").isJsonArray()) return false;
+            return obj.getAsJsonArray("lights").size() > 0;
+        } catch (Exception e) {
             return false;
         }
     }
@@ -198,6 +428,7 @@ public class PresetController {
 
     public static boolean saveLightingPresetDirect(LightingPreset preset) {
         ensure();
+        preset.lastModified = System.currentTimeMillis();
         File presetFile = new File(LIGHTING_DIR, preset.id + ".json");
         
         try {
@@ -300,6 +531,7 @@ public class PresetController {
 
     public static boolean saveLightSourcesPresetDirect(LightSourcesPreset preset) {
         ensure();
+        preset.lastModified = System.currentTimeMillis();
         File presetFile = new File(LIGHT_SOURCES_DIR, preset.id + ".json");
         
         try {
@@ -487,6 +719,18 @@ public class PresetController {
     /**
      * Get count for a specific category
      */
+    public static boolean validatePresetPayload(PresetCategory category, String payload) {
+        if (payload == null || payload.isBlank()) {
+            return false;
+        }
+
+        return switch (category) {
+            case COLORS -> new CloudColorPreset().validate(payload);
+            case LIGHTING -> new LightingPreset().validate(payload);
+            case LIGHT_SOURCES -> new LightSourcesPreset().validate(payload);
+        };
+    }
+
     public static int getPresetCount(PresetCategory category) {
         ensure();
         return switch (category) {

@@ -1,5 +1,6 @@
 package net.not_thefirst.story_mode_clouds.config.presets;
 
+import com.google.gson.JsonObject;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
@@ -96,6 +97,21 @@ public class LightingPreset implements Preset {
         LoggerProvider.get().info("Applied lighting preset: {}", this.displayName);
     }
 
+    @Override
+    public boolean validate(String payload) {
+        String json = Preset.decodePayload(payload);
+        JsonObject obj = Preset.parseJsonObject(json);
+        if (obj == null) return false;
+
+        return obj.has("ambientStrength")
+            && obj.has("maxShadingStrength")
+            && obj.has("shadingMode")
+            && obj.has("lightingType")
+            && obj.has("dayStart")
+            && obj.has("dayEnd")
+            && obj.has("dayNoon");
+    }
+
     /**
      * Create a copy of this preset with a new ID
      */
@@ -110,5 +126,19 @@ public class LightingPreset implements Preset {
         copy.dayEnd = this.dayEnd;
         copy.dayNoon = this.dayNoon;
         return copy;
+    }
+
+    public boolean isValid() {
+        if (id == null || id.isBlank()) return false;
+        if (displayName == null || displayName.isBlank()) return false;
+        if (ambientStrength < 0f || ambientStrength > 2f) return false;
+        if (maxShadingStrength < 0f || maxShadingStrength > 2f) return false;
+        if (shadingMode == null) return false;
+        if (lightingType == null) return false;
+        if (dayStart < 0 || dayStart > CloudsConfiguration.LightingParameters.DAY_LENGTH) return false;
+        if (dayNoon < 0 || dayNoon > CloudsConfiguration.LightingParameters.DAY_LENGTH) return false;
+        if (dayEnd < 0 || dayEnd > CloudsConfiguration.LightingParameters.DAY_LENGTH) return false;
+        if (dayStart > dayNoon || dayNoon > dayEnd) return false;
+        return true;
     }
 }

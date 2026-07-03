@@ -3,6 +3,9 @@ package net.not_thefirst.story_mode_clouds.config.presets;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
@@ -85,5 +88,46 @@ public class CloudColorPreset implements Preset {
         copy.colors = new ArrayList<>(this.colors);
         copy.colorMode = this.colorMode;
         return copy;
+    }
+
+    public void sortColorsByTime() {
+        if (colors == null) return;
+        colors.sort((a, b) -> Integer.compare(a.time, b.time));
+    }
+
+    @Override
+    public boolean validate(String payload) {
+        String json = Preset.decodePayload(payload);
+        JsonObject obj = Preset.parseJsonObject(json);
+        if (obj == null) return false;
+        if (!obj.has("colors") || !obj.get("colors").isJsonArray()) return false;
+        if (!obj.has("colorMode")) return false;
+
+        JsonArray colorsArray = obj.getAsJsonArray("colors");
+        if (colorsArray.size() == 0) return false;
+
+        for (var element : colorsArray) {
+            if (!element.isJsonObject()) return false;
+            var colorObject = element.getAsJsonObject();
+            if (!colorObject.has("time") || !colorObject.has("color")) return false;
+        }
+
+        return true;
+    }
+
+    public boolean isValid() {
+        if (id == null || id.isBlank()) return false;
+        if (displayName == null || displayName.isBlank()) return false;
+        if (colors == null || colors.isEmpty()) return false;
+
+        for (CloudsConfiguration.SkyColorKeypoint kp : colors) {
+            if (kp == null) return false;
+            if (kp.time < 0 || kp.time > CloudsConfiguration.LightingParameters.DAY_LENGTH) return false;
+            if (kp.color < 0) return false; 
+            // any color format is valid, 
+            // as they're all valid 32-bit integers 
+            // (we only take the lower 24-bit for the RGB components, idfc about format corruption)
+        }
+        return true;
     }
 }

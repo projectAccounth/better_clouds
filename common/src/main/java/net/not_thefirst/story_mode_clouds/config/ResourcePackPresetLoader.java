@@ -67,8 +67,7 @@ public class ResourcePackPresetLoader {
             ResourceManager resourceManager,
             String namespace) {
         Map<String, CloudsConfiguration> presets = new HashMap<>();
-        // Note: In a full implementation, you'd scan the namespace for all preset files
-        // This requires resource pack introspection which is complex in Minecraft
+        // unimplemented
         LoggerProvider.get().info("Attempting to load presets from namespace: {}", namespace);
         return presets;
     }

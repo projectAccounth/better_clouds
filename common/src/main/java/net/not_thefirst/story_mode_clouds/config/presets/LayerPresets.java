@@ -1,9 +1,10 @@
-package net.not_thefirst.story_mode_clouds.config.screens;
+package net.not_thefirst.story_mode_clouds.config.presets;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,8 +14,12 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
@@ -137,9 +142,9 @@ public class LayerPresets {
      * Load a layer preset.
      *
      * @param presetId The preset to load
-     * @return The layer configuration, or null if not found
+     * @return The layer preset object, or null if not found
      */
-    public static LayerConfiguration loadLayerPreset(String presetId) {
+    public static LayerPreset loadLayerPreset(String presetId) {
         initialize();
         LayerPresetMetadata metadata = PRESETS.get(presetId);
         if (metadata == null) {
@@ -156,8 +161,22 @@ public class LayerPresets {
         try (FileReader reader = new FileReader(presetFile)) {
             LayerConfiguration layer = GSON.fromJson(reader, LayerConfiguration.class);
             if (layer != null) {
+                CloudsConfiguration.Dimension dimension = CloudsConfiguration.Dimension.fromId(metadata.dimension);
+                if (dimension == null) {
+                    LoggerProvider.get().error("Invalid dimension '{}' for layer preset {}", metadata.dimension, presetId);
+                    return null;
+                }
+
+                LayerPreset preset = LayerPreset.fromLayer(
+                    metadata.id,
+                    metadata.displayName,
+                    metadata.description,
+                    layer,
+                    dimension
+                );
+                preset.lastModified = metadata.lastModified;
                 LoggerProvider.get().info("Loaded layer preset: {}", presetId);
-                return layer;
+                return preset;
             }
         } catch (IOException e) {
             LoggerProvider.get().error("Failed to load layer preset: {}", e.getMessage());
@@ -173,12 +192,15 @@ public class LayerPresets {
      */
     public static String exportLayerPresetAsBase64(String presetId) {
         initialize();
-        LayerConfiguration layer = loadLayerPreset(presetId);
-        if (layer == null) return null;
+        LayerPreset preset = loadLayerPreset(presetId);
+        if (preset == null || preset.layer == null) return null;
 
         try {
-            String json = GSON.toJson(layer);
-            return java.util.Base64.getEncoder().encodeToString(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            JsonObject root = new JsonObject();
+            root.add("layer", GSON.toJsonTree(preset.layer));
+
+            String json = GSON.toJson(root);
+            return java.util.Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             LoggerProvider.get().error("Failed to export layer preset as Base64: {}", e.getMessage());
             return null;
@@ -197,21 +219,119 @@ public class LayerPresets {
      */
     public static boolean importLayerPresetFromBase64(String presetId, String displayName, String description,
                                                        String base64Data, String dimension) {
+        return importLayerPresetFromPayload(presetId, displayName, description, base64Data, dimension);
+    }
+
+    public static boolean importLayerPresetFromPayload(String presetId, String displayName, String description,
+                                                       String payload, String dimension) {
         initialize();
         try {
-            byte[] decodedBytes = java.util.Base64.getDecoder().decode(base64Data);
-            String json = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
-            LayerConfiguration layer = GSON.fromJson(json, LayerConfiguration.class);
-
-            if (layer != null) {
-                return saveLayerPreset(presetId, displayName, description, layer, dimension);
+            String json = decodePayload(payload);
+            if (json == null) {
+                LoggerProvider.get().error("Layer preset payload could not be decoded");
+                return false;
             }
-        } catch (IllegalArgumentException e) {
-            LoggerProvider.get().error("Invalid Base64 data for layer preset import: {}", e.getMessage());
+
+            JsonElement parsed = JsonParser.parseString(json);
+            JsonObject layerObj = null;
+            if (parsed.isJsonObject()) {
+                JsonObject root = parsed.getAsJsonObject();
+                if (root.has("layer") && root.get("layer").isJsonObject()) {
+                    layerObj = root.getAsJsonObject("layer");
+                    JsonObject meta = new JsonObject();
+                    meta.addProperty("id", presetId);
+                    meta.addProperty("displayName", displayName);
+                    meta.addProperty("description", description);
+                    meta.addProperty("lastModified", System.currentTimeMillis());
+                    meta.addProperty("dimension", dimension);
+                    root.add("metadata", meta);
+                } else {
+                    layerObj = root;
+                }
+            }
+
+            if (layerObj == null) {
+                LoggerProvider.get().error("Failed to parse layer preset payload: not a JSON object");
+                return false;
+            }
+
+            LayerConfiguration layer = GSON.fromJson(layerObj, LayerConfiguration.class);
+            if (layer == null) {
+                LoggerProvider.get().error("Failed to parse layer preset payload into LayerConfiguration");
+                return false;
+            }
+
+            if (!validateLayerConfiguration(layer)) {
+                LoggerProvider.get().error("Invalid layer preset payload: {}", presetId);
+                return false;
+            }
+
+            return saveLayerPreset(presetId, displayName, description, layer, dimension);
         } catch (Exception e) {
-            LoggerProvider.get().error("Failed to import layer preset from Base64: {}", e.getMessage());
+            LoggerProvider.get().error("Failed to import layer preset payload: {}", e.getMessage());
+            return false;
         }
-        return false;
+    }
+
+    private static String decodePayload(String payload) {
+        if (payload == null) return null;
+        String trimmed = payload.trim();
+        if (trimmed.isEmpty()) return null;
+        if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+            if (!isValidJson(trimmed)) {
+                LoggerProvider.get().error("Invalid JSON layer preset payload");
+                return null;
+            }
+            return trimmed;
+        }
+
+        try {
+            byte[] decodedBytes = java.util.Base64.getDecoder().decode(trimmed);
+            String decoded = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8).trim();
+            if (!isValidJson(decoded)) {
+                LoggerProvider.get().error("Decoded Base64 layer preset payload is not valid JSON");
+                return null;
+            }
+            return decoded;
+        } catch (IllegalArgumentException e) {
+            LoggerProvider.get().error("Failed to decode layer preset payload as Base64: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private static boolean isValidJson(String json) {
+        try {
+            var element = JsonParser.parseString(json);
+            return element.isJsonObject();
+        } catch (JsonSyntaxException e) {
+            return false;
+        }
+    }
+
+    static boolean validateLayerConfiguration(LayerConfiguration layer) {
+        if (layer == null) return false;
+        if (layer.NAME == null || layer.NAME.isBlank()) return false;
+        if (layer.LAYER_HEIGHT < 0) return false;
+        if (layer.FADE != null) {
+            if (layer.FADE.FADE_ALPHA < 0 || layer.FADE.FADE_ALPHA > 255) return false;
+            if (layer.FADE.TRANSITION_RANGE < 0) return false;
+        }
+        return true;
+    }
+
+    public static boolean validateLayerPresetPayload(String payload) {
+        String json = decodePayload(payload);
+        if (json == null) {
+            return false;
+        }
+
+        try {
+            LayerConfiguration layer = GSON.fromJson(json, LayerConfiguration.class);
+            return validateLayerConfiguration(layer);
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to validate layer preset payload: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**

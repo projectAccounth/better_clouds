@@ -37,7 +37,6 @@ public class CloudsConfiguration {
     private static long lastBackupTime = 0;
     private static final long BACKUP_THROTTLE_MS = 5000; // Minimum 5 seconds between main config backups
 
-    // Master mod enable/disable switch
     public boolean CLOUDS_RENDERED = true;
     
     // Per-dimension render toggles
@@ -669,29 +668,8 @@ public class CloudsConfiguration {
             StandardCopyOption.REPLACE_EXISTING);
         lastBackupTime = currentTime;
     }
-
-    /**
-     * Copy all settings from another configuration to this one.
-     * Useful for applying presets.
-     */
-    public void copyFrom(CloudsConfiguration other) {
-        this.CLOUDS_RENDERED = other.CLOUDS_RENDERED;
-        this.OVERWORLD_CLOUDS_RENDERED = other.OVERWORLD_CLOUDS_RENDERED;
-        this.NETHER_CLOUDS_RENDERED = other.NETHER_CLOUDS_RENDERED;
-        this.END_CLOUDS_RENDERED = other.END_CLOUDS_RENDERED;
-        this.CLOUD_COLOR = new ArrayList<>(other.CLOUD_COLOR);
-        this.COLOR_MODE = other.COLOR_MODE;
-        this.LIGHTING.copy(other.LIGHTING);
-        this.LIGHTING.lights = new ArrayList<>(other.LIGHTING.lights);
-        this.WEATHER_COLOR.copy(other.WEATHER_COLOR);
-        this.CLOUD_DISTANCE_CHUNKS = other.CLOUD_DISTANCE_CHUNKS;
-        
-        copyLayerHolder(this.LAYERS, other.LAYERS);
-        copyLayerHolder(this.NETHER_LAYERS, other.NETHER_LAYERS);
-        copyLayerHolder(this.END_LAYERS, other.END_LAYERS);
-    }
     
-    private void copyLayerHolder(LayerHolder dest, LayerHolder src) {
+    public static void copyLayerHolder(LayerHolder dest, LayerHolder src) {
         dest.clear();
         for (LayerConfiguration otherLayer : src.layers) {
             LayerConfiguration newLayer = new LayerConfiguration(otherLayer.getLayerIndex());

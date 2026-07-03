@@ -31,7 +31,9 @@ public class YACLPresetWidgets {
 
         CloudsConfiguration config = CloudsConfiguration.getInstance();
 
-        // Quick Actions section
+        /**
+         * qas
+         */
         var quickActionsBuilder = OptionGroup.createBuilder()
             .name(ComponentWrapper.translatable("cloudtweaks.presets.quick_actions"))
             .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.quick_actions.tooltip")))
@@ -46,7 +48,7 @@ public class YACLPresetWidgets {
                         CloudsConfiguration.save();
                         if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                         ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.literal("§aSaved color preset: " + presetName)
+                            ComponentWrapper.translatable("cloudtweaks.message.saved_color_preset_prefix")
                         );
                     }
                 })
@@ -62,7 +64,7 @@ public class YACLPresetWidgets {
                         CloudsConfiguration.save();
                         if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                         ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.literal("§aSaved lighting preset: " + presetName)
+                            ComponentWrapper.translatable("cloudtweaks.message.saved_lighting_preset_prefix")
                         );
                     }
                 })
@@ -78,7 +80,7 @@ public class YACLPresetWidgets {
                         CloudsConfiguration.save();
                         if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                         ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.literal("§aSaved light sources preset: " + presetName)
+                            ComponentWrapper.translatable("cloudtweaks.message.saved_light_sources_preset_prefix")
                         );
                     }
                 })
@@ -97,7 +99,7 @@ public class YACLPresetWidgets {
                         CloudsConfiguration.save();
                         if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                         ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.literal("§aReset to default presets")
+                            ComponentWrapper.translatable("cloudtweaks.presets.reset_to_default")
                         );
                     }
                 })
@@ -105,15 +107,16 @@ public class YACLPresetWidgets {
 
         builder.group(quickActionsBuilder.build());
 
-        // COLOR PRESETS SECTION
+        /**
+         * color presets
+         **/
         var colorPresetsBuilder = OptionGroup.createBuilder()
             .name(ComponentWrapper.translatable("cloudtweaks.presets.color_presets"))
             .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.color_presets.tooltip")));
         
-        int colorCount = PresetController.getPresetCount(PresetController.PresetCategory.COLORS);
         colorPresetsBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("Browse Presets (" + colorCount + ")"))
-            .description(OptionDescription.of(ComponentWrapper.literal("Open preset browser to manage, edit, and load color presets")))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.my_presets"))
+            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.color_presets.tooltip")))
             .action((yacl, btn) -> {
                 if (parentScreen != null) {
                     ClientHelper.setScreen(PresetBrowserScreen.createBrowserScreen(
@@ -129,10 +132,9 @@ public class YACLPresetWidgets {
             .name(ComponentWrapper.translatable("cloudtweaks.presets.lighting_presets"))
             .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.lighting_presets.tooltip")));
         
-        int lightingCount = PresetController.getPresetCount(PresetController.PresetCategory.LIGHTING);
         lightingPresetsBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("Browse Presets (" + lightingCount + ")"))
-            .description(OptionDescription.of(ComponentWrapper.literal("Open preset browser to manage, edit, and load lighting presets")))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.lighting_presets"))
+            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.lighting_presets.tooltip")))
             .action((yacl, btn) -> {
                 if (parentScreen != null) {
                     ClientHelper.setScreen(PresetBrowserScreen.createBrowserScreen(
@@ -144,15 +146,17 @@ public class YACLPresetWidgets {
         
         builder.group(lightingPresetsBuilder.build());
 
-        // LIGHT SOURCES PRESETS SECTION
+
+        /**
+         * light sources
+         */
         var lightSourcesPresetsBuilder = OptionGroup.createBuilder()
             .name(ComponentWrapper.translatable("cloudtweaks.presets.light_sources_presets"))
             .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.light_sources_presets.tooltip")));
         
-        int lightSourcesCount = PresetController.getPresetCount(PresetController.PresetCategory.LIGHT_SOURCES);
         lightSourcesPresetsBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.literal("Browse Presets (" + lightSourcesCount + ")"))
-            .description(OptionDescription.of(ComponentWrapper.literal("Open preset browser to manage, edit, and load light source presets")))
+            .name(ComponentWrapper.translatable("cloudtweaks.presets.light_sources_presets"))
+            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.light_sources_presets.tooltip")))
             .action((yacl, btn) -> {
                 if (parentScreen != null) {
                     ClientHelper.setScreen(PresetBrowserScreen.createBrowserScreen(

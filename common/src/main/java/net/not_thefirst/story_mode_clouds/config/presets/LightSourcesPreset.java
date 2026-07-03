@@ -3,6 +3,8 @@ package net.not_thefirst.story_mode_clouds.config.presets;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.gson.JsonObject;
+
 import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
@@ -93,6 +95,37 @@ public class LightSourcesPreset implements Preset {
             }
         }
         return copy;
+    }
+
+    @Override
+    public boolean validate(String payload) {
+        String json = Preset.decodePayload(payload);
+        JsonObject obj = Preset.parseJsonObject(json);
+        if (obj == null) return false;
+        if (!obj.has("lights") || !obj.get("lights").isJsonArray()) return false;
+
+        var lightsArray = obj.getAsJsonArray("lights");
+        if (lightsArray.size() == 0) return false;
+        for (var element : lightsArray) {
+            if (!element.isJsonObject()) return false;
+            var light = element.getAsJsonObject();
+            if (!light.has("directionX") || !light.has("directionY") || !light.has("directionZ") || !light.has("intensity")) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isValid() {
+        if (id == null || id.isBlank()) return false;
+        if (displayName == null || displayName.isBlank()) return false;
+        if (lights == null) return false;
+        for (DiffuseLight light : lights) {
+            if (light == null) return false;
+            if (light.intensity() < 0f || light.intensity() > 1f) return false;
+            if (Float.isNaN(light.direction().x()) || Float.isNaN(light.direction().y()) || Float.isNaN(light.direction().z())) return false;
+        }
+        return true;
     }
 
     /**
