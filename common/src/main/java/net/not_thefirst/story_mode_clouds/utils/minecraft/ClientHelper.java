@@ -1,5 +1,7 @@
 package net.not_thefirst.story_mode_clouds.utils.minecraft;
 
+import com.mojang.blaze3d.platform.ClipboardManager;
+
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
@@ -20,7 +22,6 @@ public class ClientHelper {
     }
 
     public static void setScreen(Screen screen) {
-        if (screen == null) return;
         getClient().gui.setScreen(screen);
     }
 
@@ -43,6 +44,10 @@ public class ClientHelper {
 
     public static LevelRenderer getLevelRenderer() {
         return getClient().levelRenderer;
+    }
+
+    public static long getGLFWHandle() {
+        return getClient().getWindow().handle();
     }
 
     public static class GameRendererHelper {
