@@ -3,11 +3,8 @@ package net.not_thefirst.story_mode_clouds.mixin;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.world.phys.Vec3;
-
-import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
-import net.not_thefirst.story_mode_clouds.utils.CloudRendererHolder;
-import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 import org.spongepowered.asm.mixin.Dynamic;
@@ -19,12 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 
 @Mixin(value = LevelRenderer.class, priority = 16384)
-public abstract class LevelRendererMixin implements CloudRendererHolder {
-
-    @Override
-    public CustomCloudRenderer getCustomCloudRenderer() {
-        return RendererHolder.get();
-    }
+public abstract class LevelRendererMixin {
 
     // Fabric
     @Dynamic
@@ -34,6 +26,8 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
     private void interceptCloudRender(
         CallbackInfo ci
     ) {
+        if (!CloudsConfiguration.getInstance().CLOUDS_RENDERED) 
+            return;
         ci.cancel();
 
         CloudStatus cloudStatus = ClientHelper.getOptions().getCloudStatus();
@@ -50,7 +44,10 @@ public abstract class LevelRendererMixin implements CloudRendererHolder {
             target = "Lnet/minecraft/util/ARGB;alpha(I)I"
         )
     )
-    private int forceAlphaCheckToPass(int originalColor) {
-        return Math.max(1, ARGB.alpha(originalColor));
+    private int forceAlphaCheckToPass(int originalAlpha) {
+        if (!CloudsConfiguration.getInstance().CLOUDS_RENDERED) {
+            return originalAlpha;
+        }
+        return Math.max(1, originalAlpha);
     }
 }
