@@ -1,7 +1,6 @@
 package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
-import net.not_thefirst.lib.utils.math.ARGB;
 
 public final class BevelWrappers {
 

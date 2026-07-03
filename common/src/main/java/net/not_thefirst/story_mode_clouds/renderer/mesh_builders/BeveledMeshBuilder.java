@@ -120,6 +120,9 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         int edgeSegments = layerConfiguration.BEVEL.BEVEL_EDGE_SEGMENTS;
         int cornerSegments = layerConfiguration.BEVEL.BEVEL_CORNER_SEGMENTS;
 
+        NeighborCache neighbors = new NeighborCache();
+        neighbors.cacheNeighbors(cellIdxX, cellIdxZ, state.texture());
+
         CubeBuilder.buildBeveledCube(
                 bb,
                 x0, x1,
@@ -129,8 +132,8 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 edgeSegments,
                 cornerSegments,
                 excluded,
-                currentLayer,
-                state, cellIdxX, cellIdxZ, ARGB.WHITE
+                state, cellIdxX, cellIdxZ, ARGB.WHITE,
+                neighbors
         );
     }
 }

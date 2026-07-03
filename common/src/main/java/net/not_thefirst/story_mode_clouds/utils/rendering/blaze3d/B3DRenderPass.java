@@ -7,7 +7,6 @@ import java.util.OptionalDouble;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
@@ -33,11 +32,8 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
 
         RenderTarget rt = ClientHelper.GameRendererHelper.getRenderer().mainRenderTarget();
-        GpuTextureView colorTex;
-        GpuTextureView depthTex;
-        
-        colorTex = rt.getColorTextureView();
-        depthTex = rt.getDepthTextureView();
+        GpuTextureView colorTex = rt.getColorTextureView();
+        GpuTextureView depthTex = rt.getDepthTextureView();
 
         pass = encoder.createRenderPass(
             () -> name,
@@ -92,9 +88,7 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
             pass.setIndexBuffer(indexBuf, indices.type());
 
             for (B3DPipeline pipeline : this.pipelines) {
-                RenderPipeline vanillaPipeline = pipeline.getPipeline();
-                
-                pass.setPipeline(vanillaPipeline);
+                pass.setPipeline(pipeline.getPipeline());
                 ((B3DMesh) meshData).draw(this, new RenderParams(1, 0, 0, 0));
             }
         }
@@ -109,7 +103,6 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
             GpuBuffer buffer = entry.getValue();
 
             pass.setUniform(name, buffer);
-            // LoggerProvider.get().info("Bound block {}", name);
         }
     }
 

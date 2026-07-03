@@ -2,8 +2,8 @@ package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
-import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
+import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.BeveledMeshBuilder.NeighborCache;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.EdgeDir;
 import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.Sign;
 
@@ -144,7 +144,8 @@ public class CubeBuilder {
         float yTop, float yBot,
         float radius,
         int segments,
-        int colorModifier
+        int layer,
+        float relY, int colorModifier
     ) {
         for (EdgeDir dir : EdgeDir.values()) {
             BevelWrappers.topEdge(
@@ -258,7 +259,7 @@ public class CubeBuilder {
         return (dir == EdgeDir.NORTH) ? z + r :
             (dir == EdgeDir.SOUTH) ? z - r : z;
     }
-
+    
     private static void emitHorizontalCornerCaps(
         AbstractStaticMesh.Builder<?, ?> bb,
         float minX, float maxX,
@@ -267,7 +268,8 @@ public class CubeBuilder {
         float radius,
         int segments,
         FaceMask excluded,
-        int colorModifier
+        int colorModifier,
+        NeighborCache neighborCache
     ) {
         for (CornerCap cap : CORNER_CAPS) {
             if (!excluded.has(cap.fx) || !excluded.has(cap.fz)) {
@@ -276,6 +278,10 @@ public class CubeBuilder {
 
             Sign sx = (cap.fx == FaceDir.POS_X) ? Sign.POS : Sign.NEG;
             Sign sz = (cap.fz == FaceDir.POS_Z) ? Sign.POS : Sign.NEG;
+
+            if (!shouldGenerateCorner(sx, sz, neighborCache)) {
+                continue;
+            }
 
             float x0 = cap0(sx, minX, maxX, radius);
             float x1 = cap1(sx, minX, maxX, radius);
@@ -311,6 +317,11 @@ public class CubeBuilder {
                 colorModifier
             );
         }
+    }
+
+    private static boolean shouldGenerateCorner(Sign sx, Sign sz, NeighborCache neighborCache) {
+        int index = (sx == Sign.POS ? 1 : 0) + (sz == Sign.POS ? 2 : 0);
+        return neighborCache.neighbors[index] == 0L;
     }
 
     private static final FaceDir[] INSET_FACES = {
@@ -527,10 +538,10 @@ public class CubeBuilder {
         int edgeSegments,
         int cornerSegments,
         FaceMask excludedFaces,
-        int layer,
         CustomCloudRenderer.LayerState state,
         int idxX, int idxY, 
-        int colorModifier
+        int colorModifier,
+        NeighborCache neighborCache
     ) {
 
         float yTop = hasFace(excludedFaces, FaceDir.POS_Y)
@@ -603,7 +614,8 @@ public class CubeBuilder {
             colorModifier
         );
 
-        if (state.texture().neighbors[idxX + idxY * state.texture().width] < 8) {
+        // Only emit corner caps if neighbor checking is available
+        if (neighborCache != null) {
             emitHorizontalCornerCaps(
                 bb, 
                 minX, maxX, 
@@ -612,7 +624,8 @@ public class CubeBuilder {
                 radius, 
                 cornerSegments, 
                 excludedFaces, 
-                colorModifier
+                colorModifier,
+                neighborCache
             );
         }
 

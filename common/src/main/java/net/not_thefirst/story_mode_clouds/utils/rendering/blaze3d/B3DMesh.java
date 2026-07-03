@@ -82,7 +82,7 @@ public class B3DMesh extends AbstractStaticMesh<B3DRenderPass> {
         public Builder(VertexFormat format, GLPrimitive primitive) {
             this.primitive = primitive;
 
-            backBuffer = new ByteBufferBuilder(1024 * 1024);
+            backBuffer = new ByteBufferBuilder(1024 * format.strideBytes());
             this.buildingMesh = new BufferBuilder(
                 backBuffer, 
                 B3DConversions.toPrimitiveTopology(primitive), 

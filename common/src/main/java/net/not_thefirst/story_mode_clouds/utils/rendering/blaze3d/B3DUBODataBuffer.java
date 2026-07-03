@@ -17,7 +17,7 @@ public class B3DUBODataBuffer extends AbstractUBODataBuffer<B3DUBODataBuffer, Gp
 
     public B3DUBODataBuffer(String name, int size) {
         super(name, size);
-        this.buffer = new MappableRingBuffer(() -> name, 130, size);
+        this.buffer = new MappableRingBuffer(() -> name, GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_MAP_WRITE, size);
     }
     
     public MappableRingBuffer getUBO() {
