@@ -73,9 +73,7 @@ public class ConfigConstants {
     public static final float DEFAULT_BEVEL_SIZE = 0.1f;
     public static final int DEFAULT_EDGE_SEGMENTS = 8;
     public static final int DEFAULT_CORNER_SEGMENTS = 8;
-    public static final int MIN_REBUILD_BUDGET_MS = 1;
-    public static final int MAX_REBUILD_BUDGET_MS = 100;
-    public static final int DEFAULT_REBUILD_BUDGET_MS = 2;
+    public static final float MAX_CLOUDS_OUTLINE_SIZE = 4.0f;
 
     public static final int MIN_CLOUD_DISTANCE_CHUNKS = 4;      // 12 chunks = 192 blocks -> 16 grid size
     public static final int MAX_CLOUD_DISTANCE_CHUNKS = 128;    // 384 chunks = 6144 blocks -> 512 grid size

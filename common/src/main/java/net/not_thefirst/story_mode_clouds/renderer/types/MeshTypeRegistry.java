@@ -8,6 +8,7 @@ public class MeshTypeRegistry extends NamedRegistry<MeshType> {
     public static final MeshType POPULATED;
     public static final MeshType POPULATED_ND;
     public static final MeshType NORMAL_FAST;
+    public static final MeshType NORMAL_OUTLINE;
 
     private static final MeshTypeRegistry INSTANCE = new MeshTypeRegistry();
     public static MeshTypeRegistry getInstance() {
@@ -15,10 +16,11 @@ public class MeshTypeRegistry extends NamedRegistry<MeshType> {
     }
 
     static {
-        NORMAL_FAST   = INSTANCE.register("NORMAL_FAST"  , () -> new MeshType("NORMAL_FAST"  , true ));
-        NORMAL        = INSTANCE.register("NORMAL"       , () -> new MeshType("NORMAL"       , true ));
-        BEVELED       = INSTANCE.register("BEVELED"      , () -> new MeshType("BEVELED"      , true ));
-        POPULATED     = INSTANCE.register("POPULATED"    , () -> new MeshType("POPULATED"    , true ));
-        POPULATED_ND  = INSTANCE.register("POPULATED_ND" , () -> new MeshType("POPULATED_ND" , false));
+        NORMAL_OUTLINE = INSTANCE.register("NORMAL_OUTLINE", () -> new MeshType("NORMAL_OUTLINE", true ));
+        NORMAL_FAST    = INSTANCE.register("NORMAL_FAST"   , () -> new MeshType("NORMAL_FAST"   , true ));
+        NORMAL         = INSTANCE.register("NORMAL"        , () -> new MeshType("NORMAL"        , true ));
+        BEVELED        = INSTANCE.register("BEVELED"       , () -> new MeshType("BEVELED"       , true ));
+        POPULATED      = INSTANCE.register("POPULATED"     , () -> new MeshType("POPULATED"     , true ));
+        POPULATED_ND   = INSTANCE.register("POPULATED_ND"  , () -> new MeshType("POPULATED_ND"  , false));
     }
 }

@@ -15,7 +15,7 @@ layout(std140) uniform CloudInfo {
     vec4  Info1;   // x=FadeAlpha, y=TransitionRange, z=CloudBlockHeight, w=relY
     vec4  CloudColor;
     vec4  FadeToColor;
-    vec4  FadeInfo; // x=StaticFadeRelY
+    vec4  Info2; // x=StaticFadeRelY
 };
 
 layout(std140) uniform Lighting {
@@ -77,11 +77,12 @@ void main() {
     float baseAlpha = usesCustomAlpha() ? BaseAlpha : Color.a;
     float finalAlpha = baseAlpha;
 
+    bool isOutline = length(Normal) < 0.001;
+
     if (FadeAlpha > 0.0) {
         if (useStaticFade()) {
             // Static fade
-            // This maintains vertical gradient without being camera-dependent
-            float staticRelY = FadeInfo.x;
+            float staticRelY = Info2.x;
             float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
             float dir = clamp(staticRelY / TransitionRange, -1.0, 1.0);
 
@@ -118,7 +119,7 @@ void main() {
 
     float lighting = 1.0;
 
-    if (shadingEnabled() && !UsePhong) {
+    if (shadingEnabled() && !UsePhong && !isOutline) {
         lighting = AmbientFactor;
 
         for (int i = 0; i < LightCount; i++) {

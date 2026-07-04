@@ -359,11 +359,17 @@ public class CloudsConfiguration {
             private static final boolean DEFAULT_TEXTURE_HORIZONTAL_FLIP = false;
             private static final boolean DEFAULT_TEXTURE_VERTICAL_FLIP = false;
             private static final boolean DEFAULT_PRESERVE_ORIGINAL_TEXTURE_COLOR = false;
+            private static final float DEFAULT_OUTLINE_SIZE = 0.7f;
+            private static final float DEFAULT_OUTLINE_ALPHA = 0.5f;
+            private static final float DEFAULT_OUTLINE_BRIGHTNESS = 1.0f;
+            private static final float DEFAULT_OUTLINE_COLOR = 0xFFFFFF;
+            private static final boolean DEFAULT_OUTLINE_CUSTOM_BRIGHTNESS = false;
 
             public boolean SHADING_ENABLED = DEFAULT_SHADING_ENABLED;
             public boolean USES_CUSTOM_ALPHA = DEFAULT_USES_CUSTOM_ALPHA;
             public boolean CUSTOM_BRIGHTNESS = DEFAULT_CUSTOM_BRIGHTNESS;
             public boolean USES_CUSTOM_COLOR = DEFAULT_USES_CUSTOM_COLOR;
+            public float OUTLINE_SIZE = DEFAULT_OUTLINE_SIZE;
             public int BASE_ALPHA = DEFAULT_BASE_ALPHA;
             public float BRIGHTNESS = DEFAULT_BRIGHTNESS;
             public int LAYER_COLOR = DEFAULT_LAYER_COLOR;
