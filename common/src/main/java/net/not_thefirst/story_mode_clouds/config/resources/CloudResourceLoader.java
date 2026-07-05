@@ -29,12 +29,21 @@ public class CloudResourceLoader {
             LoggerProvider.get().warn("ResourceManager is null, cannot load texture: {}:{}", namespace, textureName);
             return Optional.empty();
         }
+
+        // split texture name into directory (concatenated with "textures/") and file name
+        String directory = "textures";
+        String fileName = textureName;
+        String[] pathParts = textureName.split("/");
+        if (pathParts.length > 1) {
+            directory = "textures/" + String.join("/", java.util.Arrays.copyOf(pathParts, pathParts.length - 1));
+            fileName = pathParts[pathParts.length - 1];
+        } 
         
         var resources = ResourceHandler.getResourcesWithNameInDirectoryAndNamespace(
             resourceManager,
             namespace,
-            "textures",
-            textureName,
+            directory,
+            fileName,
             ".png"
         );
 
