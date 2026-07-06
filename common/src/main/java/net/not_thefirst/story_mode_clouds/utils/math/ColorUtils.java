@@ -1,6 +1,7 @@
 package net.not_thefirst.story_mode_clouds.utils.math;
 
 import net.minecraft.util.Mth;
+import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 
 public class ColorUtils {

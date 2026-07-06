@@ -1,14 +1,14 @@
 package net.not_thefirst.story_mode_clouds.utils.math;
 
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.attribute.EnvironmentAttributes;
-import net.minecraft.world.phys.Vec3;
+import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.WeatherColorConfig;
 import net.not_thefirst.story_mode_clouds.utils.interp.world.NumberSequence;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 public class CloudColorProvider {
     public static final int DAY_DURATION = 24000;
@@ -26,7 +26,7 @@ public class CloudColorProvider {
     private static NumberSequence colorSequence = new NumberSequence(DAY_DURATION);
 
     public static int getVanillaSkyColor(float partialTicks) {
-        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        Camera camera = ClientHelper.CameraHelper.getCamera();
         return camera.attributeProbe().getValue(EnvironmentAttributes.CLOUD_COLOR, partialTicks);
     }
 
