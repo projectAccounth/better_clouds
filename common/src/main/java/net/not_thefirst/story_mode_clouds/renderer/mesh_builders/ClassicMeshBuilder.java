@@ -1,23 +1,25 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
-
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
-import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
 
 public class ClassicMeshBuilder implements MeshTypeBuilder {
     
-    public BufferBuilder build(
-        BufferBuilder bb,
+    public AbstractStaticMesh.Builder<?, ?> build(
+        AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
         int cx, int cz, float relY, 
-        int currentLayer, int skyColor) {
+        int currentLayer, int colorModifier) {
+
+        CloudsConfiguration.LayerConfiguration layerConfiguration = 
+                CloudsConfiguration.getInstance().getLayer(currentLayer);
         
-        int range = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
+        int range = CloudsConfiguration.getInstance().getCloudGridRange();
         Texture.TextureData tex = state.texture();
         long[] cells = tex.cells;
         int w = tex.width;
@@ -29,8 +31,9 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
             for (int dx = -range; dx <= range; dx++) {
                 int cellIdx = wrapped.getCellIndex(dx, dz, range);
                 long cell = cells[cellIdx];
+                int color = Texture.getColor(cell);
                 if (cell != 0L) {
-                    buildExtrudedCell(bb, dx, dz, cell, relY, currentLayer, skyColor);
+                    buildExtrudedCell(bb, dx, dz, cell, relY, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
                 }
             }
         }
@@ -38,8 +41,8 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
 
-    private static void buildExtrudedCell(BufferBuilder bb,
-                                   int cx, int cz, long cell, float relY, int currentLayer, int skyColor) {
+    private static void buildExtrudedCell(AbstractStaticMesh.Builder<?, ?> bb,
+                                   int cx, int cz, long cell, float relY, int currentLayer, int colorModifier) {
         float x0 = cx * MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float y0 = 0.0F;
@@ -53,64 +56,64 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
         float scaledY1 = y1 * (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0f);        
         
         // Top face
-        VertexBuilder.quad(bb, 
+        GLVertexBuilder.quad(bb, 
             x0, scaledY1, z1,
             x1, scaledY1, z1,
             x1, scaledY1, z0,
             x0, scaledY1, z0,
-            currentLayer, relY, skyColor
+            colorModifier
         );
         
         // Bottom face
-        VertexBuilder.quad(bb, 
+        GLVertexBuilder.quad(bb, 
             x0, y0, z0,
             x1, y0, z0,
             x1, y0, z1,
             x0, y0, z1,
-            currentLayer, relY, skyColor
+            colorModifier
         );
 
         // S
         if (Texture.isSouthEmpty(cell)) {
-            VertexBuilder.quad(bb, 
+            GLVertexBuilder.quad(bb, 
                 x0, y0, z1,
                 x1, y0, z1,
                 x1, scaledY1, z1,
                 x0, scaledY1, z1,
-                currentLayer, relY, skyColor
+                colorModifier
             );
         }
 
         // W
         if (Texture.isWestEmpty(cell)) {
-            VertexBuilder.quad(bb, 
+            GLVertexBuilder.quad(bb, 
                 x0, y0, z0,
                 x0, y0, z1,
                 x0, scaledY1, z1,
                 x0, scaledY1, z0,
-                currentLayer, relY, skyColor
+                colorModifier
             );
         }
 
         // N
         if (Texture.isNorthEmpty(cell)) {
-            VertexBuilder.quad(bb, 
+            GLVertexBuilder.quad(bb, 
                 x1, y0, z0,
                 x0, y0, z0,
                 x0, scaledY1, z0,
                 x1, scaledY1, z0,
-                currentLayer, relY, skyColor
+                colorModifier
             );
         }
 
         // E
         if (Texture.isEastEmpty(cell)) {
-            VertexBuilder.quad(bb, 
+            GLVertexBuilder.quad(bb, 
                 x1, y0, z1,
                 x1, y0, z0,
                 x1, scaledY1, z0,
                 x1, scaledY1, z1,
-                currentLayer, relY, skyColor
+                colorModifier
             );
         }
     }
