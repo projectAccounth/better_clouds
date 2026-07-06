@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import com.mojang.blaze3d.platform.NativeImage;
 
+import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
 public class Texture {
@@ -177,9 +178,9 @@ public class Texture {
         }
     }
 
-    public static Optional<Texture.TextureData> buildTexture(InputStream imgStream) {
+    public static Optional<TextureData> buildTexture(InputStream imgStream, boolean flipX, boolean flipY) {
         try (NativeImage nativeImage = NativeImage.read(imgStream)) {
-
+            
             int w = nativeImage.getWidth();
             int h = nativeImage.getHeight();
 
@@ -188,16 +189,19 @@ public class Texture {
 
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
-                    int idx = x + y * w;
+                    int gridCoordX = flipX ? (w - 1 - x) : x;
+                    int gridCoordY = flipY ? (h - 1 - y) : y;
+                    int idx = idx(gridCoordX, gridCoordY, w, h);
                     int pixelRGBA = nativeImage.getPixel(x, y);
 
-                    int b = (pixelRGBA >> 16) & 0xFF;
-                    int g = (pixelRGBA >> 8) & 0xFF;
-                    int r = (pixelRGBA) & 0xFF;
                     int a = (pixelRGBA >> 24) & 0xFF;
+                    int r = (pixelRGBA >> 16) & 0xFF;
+                    int g = (pixelRGBA >> 8) & 0xFF;
+                    int b = (pixelRGBA) & 0xFF;
+
                     int pixel = ARGB.color(a, r, g, b);
 
-                    if (ARGB.alpha(pixel) < 10) {
+                    if (a < 5) {
                         cells[idx] = 0L;
                         neighbors[idx] = 0;
                         continue;
@@ -217,10 +221,10 @@ public class Texture {
                         }
                     }
 
-                    boolean n  = !isSolid(nativeImage, x,     y - 1, w, h);
-                    boolean e  = !isSolid(nativeImage, x + 1, y,     w, h);
-                    boolean s  = !isSolid(nativeImage, x,     y + 1, w, h);
-                    boolean w0 = !isSolid(nativeImage, x - 1, y,     w, h);
+                    boolean n  = !isSolid(nativeImage, x, flipY ? y + 1 : y - 1, w, h);
+                    boolean e  = !isSolid(nativeImage, flipX ? x - 1 : x + 1, y, w, h);
+                    boolean s  = !isSolid(nativeImage, x, flipY ? y - 1 : y + 1, w, h);
+                    boolean w0 = !isSolid(nativeImage, flipX ? x + 1 : x - 1, y, w, h);
 
                     cells[idx] = packCellData(pixel, n, e, s, w0);
                     neighbors[idx] = (byte)count;
@@ -232,9 +236,13 @@ public class Texture {
             );
 
         } catch (IOException e) {
-            LoggerProvider.get().error("Failed to load cloud texture: " + e);
+            LoggerProvider.get().error("Failed to load texture: {}", e.getMessage());
             return Optional.empty();
         }
+    }
+
+    public static Optional<Texture.TextureData> buildTexture(InputStream imgStream) {
+        return buildTexture(imgStream, false, false);
     }
 
     private static boolean isSolid(NativeImage img, int x, int y, int w, int h) {
@@ -248,7 +256,7 @@ public class Texture {
         int a = (pixelRGBA >> 24) & 0xFF;
         int pixel = ARGB.color(a, r, g, b);
 
-        return ARGB.alpha(pixel) >= 10;
+        return ARGB.alpha(pixel) >= 5;
     }
 
     private static long packCellData(int color, boolean north, boolean east, boolean south, boolean west) {
