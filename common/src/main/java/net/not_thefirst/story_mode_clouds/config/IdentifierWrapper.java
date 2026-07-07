@@ -1,6 +1,5 @@
 package net.not_thefirst.story_mode_clouds.config;
 
-
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.resources.ResourceLocation;
@@ -42,7 +41,7 @@ public class IdentifierWrapper {
      * @return A new IdentifierWrapper, or null if invalid
      */
     public static @Nullable IdentifierWrapper tryParse(String string) {
-        ResourceLocation id = ResourceLocation.tryParse(string);
+        ResourceLocation id = net.minecraft.resources.ResourceLocation.tryParse(string);
         return id != null ? new IdentifierWrapper(id) : null;
     }
 

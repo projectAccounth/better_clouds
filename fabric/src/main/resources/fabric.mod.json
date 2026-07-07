@@ -25,7 +25,7 @@
     "fabric": "*"
   },
   "suggests": {
-    "cloth-config": "*",
+    "yacl": "*",
     "modmenu": "*"
   }
 }

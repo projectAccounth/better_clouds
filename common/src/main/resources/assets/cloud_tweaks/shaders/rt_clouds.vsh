@@ -11,6 +11,8 @@ in vec3 Normal;
 
 layout(std140) uniform Transforms {
     vec4 MOffset;
+    mat4 M0;
+    mat4 M1;
 };
 
 layout(std140) uniform CloudInfo {
