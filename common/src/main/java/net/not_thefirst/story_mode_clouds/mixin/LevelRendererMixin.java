@@ -3,6 +3,7 @@ package net.not_thefirst.story_mode_clouds.mixin;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.world.phys.Vec3;
+import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
@@ -43,10 +44,10 @@ public abstract class LevelRendererMixin {
             target = "Lnet/minecraft/util/ARGB;alpha(I)I"
         )
     )
-    private int forceAlphaCheckToPass(int originalAlpha) {
+    private int forceAlphaCheckToPass(int color) {
         if (!CloudsConfiguration.getInstance().CLOUDS_RENDERED) {
-            return originalAlpha;
+            return ARGB.alpha(color);
         }
-        return Math.max(1, originalAlpha);
+        return Math.max(1, ARGB.alpha(color));
     }
 }
