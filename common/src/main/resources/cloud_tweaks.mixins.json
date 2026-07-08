@@ -6,8 +6,8 @@
   "mixins": [
   ],
   "client": [
-    "LevelRendererMixin",
     "ClientWorldMixin",
+    "LevelRendererMixin",
     "ClientMixin"
   ],
   "injectors": {

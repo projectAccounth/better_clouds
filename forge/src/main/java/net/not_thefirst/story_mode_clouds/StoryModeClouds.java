@@ -3,7 +3,6 @@ package net.not_thefirst.story_mode_clouds;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.compat.ForgeModChecker;
 import net.not_thefirst.story_mode_clouds.config.YACLConfigScreen;

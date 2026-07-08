@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.Nullable;
 
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
+
 public abstract class NamedRegistry<T> {
 
     protected Map<String, T> registry;
@@ -87,7 +89,7 @@ public abstract class NamedRegistry<T> {
         try {
             return getObject(name);
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            LoggerProvider.get().error("Error getting object, returning null: {}", e);
             return null;
         }
     }

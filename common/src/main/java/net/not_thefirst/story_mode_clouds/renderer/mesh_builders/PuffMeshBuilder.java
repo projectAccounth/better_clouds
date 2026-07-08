@@ -3,15 +3,13 @@ package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
-
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
 import net.minecraft.util.Mth;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder.PuffMode;
-import net.not_thefirst.lib.gl_render_system.mesh.BuildingMesh;
-import net.not_thefirst.story_mode_clouds.renderer.render_system.vertex.VertexBuilder;
 import net.not_thefirst.story_mode_clouds.utils.MiscUtils.CacheKey;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
@@ -199,22 +197,22 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
     @SuppressWarnings("unused")
     @Override
-    public BuildingMesh build(
-        BuildingMesh bb,
+    public AbstractStaticMesh.Builder<?, ?> build(
+        AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
         int cx, int cz, float relY, 
-        int currentLayer, int skyColor) {
+        int currentLayer, int colorModifier) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
             CloudsConfiguration.getInstance().getLayer(currentLayer);
         
-        final int RANGE = CloudsConfiguration.getInstance().CLOUD_GRID_SIZE;
+        final int RANGE = CloudsConfiguration.getInstance().getCloudGridRange();
         final int PUFFS_PER_CELL = 6;
         final float PUFF_MIN_SIZE = 1.8f;
         final float PUFF_MAX_SIZE = 5.2f;
         final float PUFF_HEIGHT_FACTOR = 0.45f;
 
-        Texture.TextureData tex = state.texture;
+        Texture.TextureData tex = state.texture();
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
@@ -239,6 +237,8 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                 float baseX = dx * cellSize;
                 float baseZ = dz * cellSize;
 
+                int color = Texture.getColor(cell);
+
                 for (int p = 0; p < PUFFS_PER_CELL; p++) {
                     PuffDesc description = puffs[p];
                     if (description == null) continue;
@@ -258,11 +258,11 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
                     switch (MeshBuilder.SHAPE) {
                         case CROSS:
-                            drawCross(bb, px, py, pz, hr, vr, currentLayer, relY, skyColor);
+                            drawCross(bb, px, py, pz, hr, vr, currentLayer, relY, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
                             break;
                         case CUBE:
                         default:
-                            drawCube(bb, px, py, pz, hr, vr, currentLayer, relY, skyColor);
+                            drawCube(bb, px, py, pz, hr, vr, currentLayer, relY, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
                             break;
                     }
                 }
@@ -273,10 +273,10 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
     }
 
     private static void drawCube(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        int layer, float relY, int skyColor) {
+        int layer, float relY, int colorModifier) {
 
         float x0 = cx - hr; 
         float x1 = cx + hr;
@@ -285,84 +285,84 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         float z0 = cz - hr; 
         float z1 = cz + hr;
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x0, y1, z1,
                 x1, y1, z1,
                 x1, y1, z0,
                 x0, y1, z0,
-                layer, relY, skyColor
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x0, y0, z0,
                 x1, y0, z0,
                 x1, y0, z1,
                 x0, y0, z1,
-                layer, relY, skyColor
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x0, y0, z1,
                 x1, y0, z1,
                 x1, y1, z1,
                 x0, y1, z1,
-                layer, relY, skyColor
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x1, y0, z0,
                 x0, y0, z0,
                 x0, y1, z0,
                 x1, y1, z0,
-                layer, relY, skyColor
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x0, y0, z0,
                 x0, y0, z1,
                 x0, y1, z1,
                 x0, y1, z0,
-                layer, relY, skyColor
+                colorModifier
         );
 
-        VertexBuilder.quad(
+        GLVertexBuilder.quad(
                 bb,
                 x1, y0, z1,
                 x1, y0, z0,
                 x1, y1, z0,
                 x1, y1, z1,
-                layer, relY, skyColor
+                colorModifier
         );
     }
 
     private static void drawCross(
-        BuildingMesh bb,
+        AbstractStaticMesh.Builder<?, ?> bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        int layer, float relY, int skyColor) {
+        int layer, float relY, int colorModifier) {
 
         float y0 = cy;
         float y1 = cy + vr;
 
-        VertexBuilder.quad(bb, 
+        GLVertexBuilder.quad(bb, 
             cx - hr, y0, cz,
             cx + hr, y0, cz,
             cx + hr, y1, cz,
             cx - hr, y1, cz,
-            layer, relY, skyColor
+            colorModifier
         );
 
-        VertexBuilder.quad(bb, 
+        GLVertexBuilder.quad(bb, 
             cx, y0, cz - hr,
             cx, y0, cz + hr,
             cx, y1, cz + hr,
             cx, y1, cz - hr,
-            layer, relY, skyColor
+            colorModifier
         );
     }
 }

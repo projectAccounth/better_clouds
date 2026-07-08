@@ -1,4 +1,5 @@
 plugins {
+    id "java"
     id "maven-publish"
     id "fabric-loom" version "1.14-SNAPSHOT"
     id "com.gradleup.shadow" version "9.2.2"
@@ -22,12 +23,6 @@ configurations {
     developmentFabric.extendsFrom common
 }
 
-configurations.all {
-    resolutionStrategy {
-        force "net.fabricmc:fabric-loader:${project.loader_version}"
-    }
-}
-
 version = project.mod_version
 group = project.maven_group
 
@@ -35,16 +30,14 @@ group = project.maven_group
 dependencies {
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
     shadowCommon(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
-
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    modApi "com.terraformersmc:modmenu:${project.modmenu_version}"
-    modApi "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+    include implementation('io.github.projectaccounth:opengl-grl:0.1.6')
 
-    implementation 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.2-alpha.1'
-    include 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.2-alpha.1'
+    modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+    modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 }
 
 loom {
@@ -53,12 +46,28 @@ loom {
             sourceSet sourceSets.main
         }
     }
+
+    mixin {
+        useLegacyMixinAp = false
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("../common/src/main/java")
+        }
+        resources {
+            srcDir("../common/src/main/resources")
+        }
+    }
 }
 
 processResources {
     inputs.property "version", rootProject.version
     inputs.property "minecraft_version", project.minecraft_version
     inputs.property "loader_version", project.loader_version
+    duplicatesStrategy = 'include'
 
     filteringCharset = "UTF-8"
 
@@ -87,13 +96,18 @@ java {
     withSourcesJar()
 }
 
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = 'include'
+}
+
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
     it.options.release.set(Integer.parseInt(rootProject.java_version))
 }
 
 jar {
+    archiveClassifier = "fabric"
     from("LICENSE") {
-        rename { "fabric_${it}_${project.archiveNames}" }
+        rename { "LICENSE-${project.archivesName}" }
     }
 }

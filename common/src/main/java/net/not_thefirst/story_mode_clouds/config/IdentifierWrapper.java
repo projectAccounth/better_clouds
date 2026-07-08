@@ -1,6 +1,5 @@
 package net.not_thefirst.story_mode_clouds.config;
 
-
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.resources.ResourceLocation;
@@ -31,7 +30,11 @@ public class IdentifierWrapper {
      * @throws IllegalArgumentException if the string is not a valid identifier
      */
     public static IdentifierWrapper parse(String string) {
-        return new IdentifierWrapper(ResourceLocation.tryParse(string));
+        try {
+            return new IdentifierWrapper(ResourceLocation.tryParse(string));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid identifier string: " + string, e);
+        }
     }
 
     /**
@@ -42,7 +45,7 @@ public class IdentifierWrapper {
      * @return A new IdentifierWrapper, or null if invalid
      */
     public static @Nullable IdentifierWrapper tryParse(String string) {
-        ResourceLocation id = ResourceLocation.tryParse(string);
+        ResourceLocation id = net.minecraft.resources.ResourceLocation.tryParse(string);
         return id != null ? new IdentifierWrapper(id) : null;
     }
 
