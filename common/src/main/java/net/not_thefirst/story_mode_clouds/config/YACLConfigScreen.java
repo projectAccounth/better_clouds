@@ -4,12 +4,18 @@ import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.*;
+import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
+import net.not_thefirst.story_mode_clouds.config.presets.LayerPresets;
+import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
 import java.awt.Color;
-/**
- * Config migration
- */
+import java.time.format.DateTimeFormatter;
+import java.time.Instant;
+import java.time.ZoneId;
+
 public class YACLConfigScreen {
+    private YACLConfigScreen() {}
 
     private static ConfigCategory buildPresetsSettings() {
         return YACLPresetWidgets.createPresetsCategory();
@@ -17,7 +23,8 @@ public class YACLConfigScreen {
 
     public static Screen createConfigScreen(Screen parent) {
         var config = CloudsConfiguration.getInstance();
-        ConfigPresets.initialize();
+        PresetController.initialize();
+        LayerPresets.initialize();
         YACLPresetWidgets.setParentScreen(parent);
         
         return YetAnotherConfigLib.createBuilder()
@@ -30,6 +37,8 @@ public class YACLConfigScreen {
             .category(YACLDataSettings.buildSkyColorSettings(config))
             .category(YACLDataSettings.buildLightSourcesSettings(config))
             .category(YACLDataSettings.buildLayersSettings(config))
+            .category(YACLDataSettings.buildNetherLayersSettings(config))
+            .category(YACLDataSettings.buildEndLayersSettings(config))
             
             .build()
             .generateScreen(parent);
@@ -42,15 +51,16 @@ public class YACLConfigScreen {
             .tooltip(ComponentWrapper.translatable("cloudtweaks.desc.global"))
             
             .option(Option.<Boolean>createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.option.clouds_rendered"))
+                .name(ComponentWrapper.translatable("cloudtweaks.option.clouds_mod_enabled"))
                 .binding(config.CLOUDS_RENDERED, () -> config.CLOUDS_RENDERED, v -> config.CLOUDS_RENDERED = v)
                 .controller(BooleanControllerBuilder::create)
                 .build())
             
             .option(Option.<Integer>createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.option.grid_size"))
-                .binding(config.CLOUD_GRID_SIZE, () -> config.CLOUD_GRID_SIZE, v -> config.CLOUD_GRID_SIZE = v)
-                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_GRID_SIZE, ConfigConstants.MAX_GRID_SIZE).step(ConfigConstants.GRID_SIZE_STEP))
+                .name(ComponentWrapper.translatable("cloudtweaks.option.cloud_distance"))
+                .description(OptionDescription.of(ComponentWrapper.literal("Cloud render distance in chunks (automatically converted to grid range)")))
+                .binding(config.getCloudDistanceChunks(), config::getCloudDistanceChunks, v -> config.CLOUD_DISTANCE_CHUNKS = v)
+                .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_CLOUD_DISTANCE_CHUNKS, ConfigConstants.MAX_CLOUD_DISTANCE_CHUNKS).step(ConfigConstants.CLOUD_DISTANCE_STEP))
                 .build())
             
             .build();
@@ -103,7 +113,7 @@ public class YACLConfigScreen {
                     () -> new Color(weather.rainColor | 0xFF000000),
                     v -> weather.rainColor = v.getRGB() & 0xFFFFFF
                 )
-                .controller(opt -> ColorControllerBuilder.create(opt))
+                .controller(ColorControllerBuilder::create)
                 .build())
             
             .option(Option.<Color>createBuilder()
@@ -114,7 +124,7 @@ public class YACLConfigScreen {
                     () -> new Color(weather.thunderColor | 0xFF000000),
                     v -> weather.thunderColor = v.getRGB() & 0xFFFFFF
                 )
-                .controller(opt -> ColorControllerBuilder.create(opt))
+                .controller(ColorControllerBuilder::create)
                 .build())
             
             .option(Option.<Float>createBuilder()
@@ -127,8 +137,29 @@ public class YACLConfigScreen {
                 .name(ComponentWrapper.translatable("cloudtweaks.option.thunder_strength"))
                 .binding(weather.thunderStrength, () -> weather.thunderStrength, v -> weather.thunderStrength = v)
                 .controller(opt -> FloatSliderControllerBuilder.create(opt).range(0.0f, 1.0f).step(0.01f))
+                .build())
+            
+            .option(ButtonOption.createBuilder()
+                .name(ComponentWrapper.literal("Save as Lighting Preset"))
+                .description(OptionDescription.of(ComponentWrapper.literal("Save current lighting settings as a preset")))
+                .action((yacl, btn) -> {
+                    String timestamp = String.valueOf(System.currentTimeMillis());
+                    String presetName = "LightingPreset_" + formatTimestamp(System.currentTimeMillis());
+                    if (PresetController.saveLightingPreset(timestamp, presetName, "Saved from Lighting settings", config)) {
+                        CloudsConfiguration.save();
+                        RendererHolder.get().markForRebuild();
+                        ClientHelper.sendLocalSystemMessage(
+                            ComponentWrapper.literal("Saved lighting preset: " + presetName)
+                        );
+                    }
+                })
                 .build());
         
         return builder.build();
+    }
+    
+    private static String formatTimestamp(long millis) {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss").withZone(ZoneId.systemDefault());
+        return formatter.format(Instant.ofEpochMilli(millis));
     }
 }

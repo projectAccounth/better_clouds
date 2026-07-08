@@ -28,15 +28,15 @@ subprojects {
     }
 
     repositories {
+        mavenLocal()
         maven { url "https://maven.neoforged.net/releases/" }
-        maven { url 'https://jitpack.io' }
     }
 }
 
 allprojects {
     apply plugin: 'java'
     apply plugin: 'architectury-plugin'
-
+    
     version = rootProject.mod_version + "+" + rootProject.minecraft_version
 
     base {
@@ -47,7 +47,7 @@ allprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.encoding = "UTF-8"
-        options.release = 21
+        options.release = Integer.parseInt(rootProject.java_version)
     }
 
     tasks.withType(JavaExec).configureEach {

@@ -6,9 +6,11 @@
   "mixins": [
   ],
   "client": [
-    "LevelRendererMixin",
+    "CloudRendererMixin",
     "ClientWorldMixin",
-    "ClientMixin"
+    "LevelRendererMixin",
+    "ClientMixin",
+    "DimensionMixin"
   ],
   "injectors": {
     "defaultRequire": 1
