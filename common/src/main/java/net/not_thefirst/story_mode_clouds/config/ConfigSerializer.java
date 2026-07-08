@@ -12,6 +12,8 @@ import com.google.gson.JsonSyntaxException;
  * Supports Base64 encoding for compact shareable strings.
  */
 public class ConfigSerializer {
+    private ConfigSerializer() {}
+
     private static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .create();

@@ -1,4 +1,5 @@
 plugins {
+    id "java"
     id "maven-publish"
     id "com.gradleup.shadow" version "9.2.2"
 }
@@ -89,7 +90,7 @@ configurations {
 
 repositories {
     maven { url "https://maven.minecraftforge.net/" }
-    maven { url "https://maven.architectury.dev/" }
+    maven { url "https://maven.isxander.dev/releases" }
     maven { url "https://files.minecraftforge.net/maven/" }
 }
 
@@ -102,13 +103,14 @@ dependencies {
 
     forge "net.minecraftforge:forge:${rootProject.minecraft_version}-${project.forge_version}"
 
-    modApi "me.shedaniel.cloth:cloth-config-forge:11.1.136"
+    implementation "org.spongepowered:mixin:0.8.5"
+    include 'io.github.projectaccounth:opengl-grl:0.1.6'
 
-    include 'com.github.projectAccounth.MinecraftGLWrapper:opengl-grl:0.1.1-beta.1'
 }
 
 processResources {
     filteringCharset = "UTF-8"
+    duplicatesStrategy = 'include'
     
     filesMatching("META-INF/mods.toml") {
         expand(
@@ -122,7 +124,7 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
-    options.release.set(21)
+    options.release.set(Integer.parseInt(rootProject.java_version))
 }
 
 shadowJar {
@@ -136,6 +138,13 @@ shadowJar {
 tasks.named("build").configure {
     dependsOn("buildAll")
 }
+
+loom {
+    mixin {
+        useLegacyMixinAp = false
+    } 
+}
+
 
 remapJar {
     input.set(shadowJar.archiveFile)

@@ -2,12 +2,6 @@
 
 #define MAX_LIGHT 32
 
-layout(std140) uniform Transforms {
-    mat4 ProjMat;
-    mat4 ModelViewMat;
-    vec4 MOffset;
-};
-
 layout(std140) uniform CloudInfo {
     ivec4 Info0;
     vec4  Info1;
@@ -63,12 +57,12 @@ void main() {
             vec3 lightPos = LightDefinitions[i].xyz;
             float intensity = LightDefinitions[i].w;
 
-            vec3 L = normalize(lightPos);
+            vec3 L = normalize(lightPos - vWorldPos);
 
-            float ndl = max(dot(N, -L), 0.0);
+            float ndl = max(dot(N, L), 0.0);
             lighting += ndl * intensity;
             
-            float backLight = max(dot(L, V), 0.0);
+            float backLight = max(dot(-L, V), 0.0);
             float edge = 1.0 - ndl;
 
             float viewGrazing = pow(1.0 - max(dot(N, V), 0.0), 2.0);

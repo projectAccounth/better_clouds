@@ -7,9 +7,9 @@ layout(location = 2) in vec3 Normal;
 #define MAX_LIGHT 32
 
 layout(std140) uniform Transforms {
+    vec4 MOffset;
     mat4 ProjMat;
     mat4 ModelViewMat;
-    vec4 MOffset;
 };
 
 layout(std140) uniform CloudInfo {
@@ -65,10 +65,6 @@ float lerpf(float a, float b, float t) {
     return a + t * (b - a);
 }
 
-vec3 lerpv3(vec3 a, vec3 b, float t) {
-    return a + t * (b - a);
-}
-
 void main() {
     vec3 pos = Position + MOffset.xyz;
     gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);
@@ -81,6 +77,8 @@ void main() {
 
     if (FadeAlpha > 0.0) {
         if (useStaticFade()) {
+            // Static fade
+            // This maintains vertical gradient without being camera-dependent
             float staticRelY = FadeInfo.x;
             float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
             float dir = clamp(staticRelY / TransitionRange, -1.0, 1.0);
@@ -123,13 +121,14 @@ void main() {
 
         for (int i = 0; i < LightCount; i++) {
             vec3 lightPos = LightDefinitions[i].xyz;
-            vec3 L = normalize(lightPos); // those are fucking directions, not positions
-            lighting += max(dot(N, -L), 0.0) * LightDefinitions[i].w;
+            vec3 L = normalize(lightPos - pos);
+            lighting += max(dot(N, L), 0.0) * LightDefinitions[i].w;
         }
 
         lighting = clamp(lighting, 0.0, MaxShading);
     }
 
+    // interpolate baseColor towards FadeToColor (RGB only) if enabled)
     if (fadeEnabled() && colorFade()) {
         float ratio = (baseAlpha > 0.0) ? (finalAlpha / baseAlpha) : 0.0;
         float colorFadeFactor = 1.0 - ratio;
