@@ -7,7 +7,7 @@ layout(std140) uniform CloudInfo {
     vec4  Info1;
     vec4  CloudColor;
     vec4  FadeToColor;
-    vec4  FadeInfo; // x=StaticFadeRelY
+    vec4  Info2; // x=StaticFadeRelY
 };
 
 layout(std140) uniform Lighting {
@@ -46,7 +46,7 @@ float linearFog(float d, float a, float b) {
 void main() {
     vec4 color = vColor;
 
-    if (UsePhong && shadingEnabled()) {
+    if (UsePhong && shadingEnabled() && length(vNormal) > 0.0) {
         vec3 N = normalize(cross(dFdx(vWorldPos), dFdy(vWorldPos)));
         vec3 V = normalize(CameraPosition.xyz - vWorldPos);
 

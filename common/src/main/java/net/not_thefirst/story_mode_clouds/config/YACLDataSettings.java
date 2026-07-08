@@ -346,6 +346,11 @@ public class YACLDataSettings {
                 .binding(layer.APPEARANCE.LAYER_SPEED_Z, () -> layer.APPEARANCE.LAYER_SPEED_Z, v -> layer.APPEARANCE.LAYER_SPEED_Z = v)
                 .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-ConfigConstants.MAX_AXIS_VELOCITY, ConfigConstants.MAX_AXIS_VELOCITY).step(0.01f))
                 .build())
+            .option(Option.<Float>createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.outline_size"))
+                .binding(layer.APPEARANCE.OUTLINE_SIZE, () -> layer.APPEARANCE.OUTLINE_SIZE, v -> layer.APPEARANCE.OUTLINE_SIZE = v)
+                .controller(opt -> FloatSliderControllerBuilder.create(opt).range(0.0f, ConfigConstants.MAX_CLOUDS_OUTLINE_SIZE).step(0.01f))
+                .build())
             
             .option(Option.<Float>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.height_offset"))
