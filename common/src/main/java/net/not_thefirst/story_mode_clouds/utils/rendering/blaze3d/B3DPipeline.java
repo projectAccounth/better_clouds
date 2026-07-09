@@ -10,7 +10,6 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.shaders.UniformType;
 
-import net.minecraft.client.renderer.RenderPipelines;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractPipeline;
 import net.not_thefirst.lib.gl_render_system.mesh.utils.GLPrimitive;
 import net.not_thefirst.lib.gl_render_system.state.BlendState;

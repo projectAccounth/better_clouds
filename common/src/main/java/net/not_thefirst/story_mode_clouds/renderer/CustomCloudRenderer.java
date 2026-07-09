@@ -553,7 +553,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             1.0f
         );
                 
-        // vec4 fadeInfo
+        // vec4 info2
         currentLayer.cloudsInfo.putVec4(
             layerConfiguration.FADE.STATIC_FADE_REL_Y,
             0.0f, // unused

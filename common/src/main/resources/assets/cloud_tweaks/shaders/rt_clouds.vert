@@ -8,6 +8,8 @@ layout(location = 2) in vec3 Normal;
 
 layout(std140) uniform Transforms {
     vec4 MOffset;
+    mat4 ProjMat;
+    mat4 ModelViewMat;
 };
 
 layout(std140) uniform CloudInfo {
@@ -60,10 +62,6 @@ float fog_spherical_distance(vec3 pos) {
 }
 
 float lerp(float a, float b, float t) {
-    return a + t * (b - a);
-}
-
-float lerp(vec3 a, vec3 b, float t) {
     return a + t * (b - a);
 }
 

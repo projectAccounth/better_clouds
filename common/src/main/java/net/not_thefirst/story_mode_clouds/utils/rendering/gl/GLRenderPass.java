@@ -29,7 +29,6 @@ public class GLRenderPass extends AbstractRenderPass<GLPipeline> {
         new HashMap<>();
 
     private GLStateGuard stateGuard;
-    private int vanilla;
 
     public GLRenderPass(String name, GLPipeline... pipelines) {
         super(name, pipelines);
@@ -38,8 +37,7 @@ public class GLRenderPass extends AbstractRenderPass<GLPipeline> {
     @Override
     public void setup() {
         super.setup();
-        vanilla = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
-        // stateGuard = new GLStateGuard();
+        stateGuard = new GLStateGuard();
     }
 
     @Override
@@ -78,8 +76,7 @@ public class GLRenderPass extends AbstractRenderPass<GLPipeline> {
     @Override
     public void cleanup() {
         super.cleanup();
-        GL30.glBindVertexArray(vanilla);
-        // stateGuard.close();
+        stateGuard.close();
     }
 
     private void bindUniforms(GLPipeline pipeline) {
