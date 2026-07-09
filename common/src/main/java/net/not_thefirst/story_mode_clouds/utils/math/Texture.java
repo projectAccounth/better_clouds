@@ -192,14 +192,14 @@ public class Texture {
                     int gridCoordX = flipX ? (w - 1 - x) : x;
                     int gridCoordY = flipY ? (h - 1 - y) : y;
                     int idx = idx(gridCoordX, gridCoordY, w, h);
-                    int pixelRGBA = nativeImage.getPixel(x, y);
+                    int pixelARGB = nativeImage.getPixel(x, y);
 
-                    int a = (pixelRGBA >> 24) & 0xFF;
-                    int r = (pixelRGBA >> 16) & 0xFF;
-                    int g = (pixelRGBA >> 8) & 0xFF;
-                    int b = (pixelRGBA) & 0xFF;
+                    int a = (pixelARGB >> 24) & 0xFF;
+                    int r = (pixelARGB >> 16) & 0xFF;
+                    int g = (pixelARGB >> 8) & 0xFF;
+                    int b = (pixelARGB) & 0xFF;
 
-                    int pixel = ARGB.color(a, r, g, b);
+                    int pixel = ARGB.toRGBA(pixelARGB);
 
                     if (a < 5) {
                         cells[idx] = 0L;
@@ -246,17 +246,12 @@ public class Texture {
     }
 
     private static boolean isSolid(NativeImage img, int x, int y, int w, int h) {
-        int pixelRGBA = img.getPixel(
+        int pixelARGB = img.getPixel(
             Math.floorMod(x, w),
             Math.floorMod(y, h));
 
-        int b = (pixelRGBA >> 16) & 0xFF;
-        int g = (pixelRGBA >> 8) & 0xFF;
-        int r = (pixelRGBA) & 0xFF;
-        int a = (pixelRGBA >> 24) & 0xFF;
-        int pixel = ARGB.color(a, r, g, b);
-
-        return ARGB.alpha(pixel) >= 5;
+        int a = (pixelARGB >> 24) & 0xFF;
+        return a >= 5;
     }
 
     private static long packCellData(int color, boolean north, boolean east, boolean south, boolean west) {
