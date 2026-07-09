@@ -362,14 +362,20 @@ public class CloudsConfiguration {
             private static final float DEFAULT_OUTLINE_SIZE = 0.7f;
             private static final float DEFAULT_OUTLINE_ALPHA = 0.5f;
             private static final float DEFAULT_OUTLINE_BRIGHTNESS = 1.0f;
-            private static final float DEFAULT_OUTLINE_COLOR = 0xFFFFFF;
+            private static final int DEFAULT_OUTLINE_COLOR = 0xFFFFFF;
             private static final boolean DEFAULT_OUTLINE_CUSTOM_BRIGHTNESS = false;
+            private static final boolean DEFAULT_OUTLINE_OVERRIDE_TEXTURE_COLOR = true;
 
             public boolean SHADING_ENABLED = DEFAULT_SHADING_ENABLED;
             public boolean USES_CUSTOM_ALPHA = DEFAULT_USES_CUSTOM_ALPHA;
             public boolean CUSTOM_BRIGHTNESS = DEFAULT_CUSTOM_BRIGHTNESS;
             public boolean USES_CUSTOM_COLOR = DEFAULT_USES_CUSTOM_COLOR;
             public float OUTLINE_SIZE = DEFAULT_OUTLINE_SIZE;
+            public float OUTLINE_ALPHA = DEFAULT_OUTLINE_ALPHA;
+            public float OUTLINE_BRIGHTNESS = DEFAULT_OUTLINE_BRIGHTNESS;
+            public int OUTLINE_COLOR = DEFAULT_OUTLINE_COLOR;
+            public boolean OUTLINE_CUSTOM_BRIGHTNESS = DEFAULT_OUTLINE_CUSTOM_BRIGHTNESS;
+            public boolean OUTLINE_OVERRIDE_TEXTURE_COLOR = DEFAULT_OUTLINE_OVERRIDE_TEXTURE_COLOR;
             public int BASE_ALPHA = DEFAULT_BASE_ALPHA;
             public float BRIGHTNESS = DEFAULT_BRIGHTNESS;
             public int LAYER_COLOR = DEFAULT_LAYER_COLOR;
@@ -404,6 +410,12 @@ public class CloudsConfiguration {
                 this.TEXTURE_HORIZONTAL_FLIP = other.TEXTURE_HORIZONTAL_FLIP;
                 this.TEXTURE_VERTICAL_FLIP = other.TEXTURE_VERTICAL_FLIP;
                 this.PRESERVE_ORIGINAL_TEXTURE_COLOR = other.PRESERVE_ORIGINAL_TEXTURE_COLOR;
+                this.OUTLINE_SIZE = other.OUTLINE_SIZE;
+                this.OUTLINE_ALPHA = other.OUTLINE_ALPHA;
+                this.OUTLINE_BRIGHTNESS = other.OUTLINE_BRIGHTNESS;
+                this.OUTLINE_COLOR = other.OUTLINE_COLOR;
+                this.OUTLINE_CUSTOM_BRIGHTNESS = other.OUTLINE_CUSTOM_BRIGHTNESS;
+                this.OUTLINE_OVERRIDE_TEXTURE_COLOR = other.OUTLINE_OVERRIDE_TEXTURE_COLOR;
             }
         }
 

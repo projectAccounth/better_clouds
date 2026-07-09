@@ -23,6 +23,11 @@ public class GLPipelines {
     public static final IdentifierWrapper CLOUD_SHADER_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/rt_clouds.frag");
 
+    public static final IdentifierWrapper CLOUD_OUTLINE_SHADER_VERT = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/rt_clouds_outline.vert");
+    public static final IdentifierWrapper CLOUD_OUTLINE_SHADER_FRAG = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/rt_clouds_outline.frag");
+
     private static GLPipeline.Builder base = (GLPipeline.Builder) new GLPipeline.Builder("CUSTOM_POSITION_COLOR")
         .withBlendState(BlendState.TRANSLUCENT)
         .withCullState(CullState.CULL)
@@ -41,24 +46,37 @@ public class GLPipelines {
         .withId("NONE")
         .withName("NONE")
         .withMaskState(MaskState.NONE)
+        .withBlendState(BlendState.NONE)
         .build();
 
     public static final GLPipeline CUSTOM_POSITION_COLOR = base
         .withId("CUSTOM_POSITION_COLOR")
         .withName("CUSTOM_POSITION_COLOR")
         .withMaskState(MaskState.COLOR_DEPTH)
+        .withBlendState(BlendState.TRANSLUCENT)
         .build();
 
     public static final GLPipeline POSITION_COLOR_NO_DEPTH = base
         .withId("POSITION_COLOR_NO_DEPTH")
         .withName("POSITION_COLOR_NO_DEPTH")
         .withMaskState(MaskState.COLOR_NO_DEPTH)
+        .withBlendState(BlendState.TRANSLUCENT)
         .build();
 
     public static final GLPipeline POSITION_COLOR_DEPTH_ONLY = base
         .withId("POSITION_COLOR_DEPTH_ONLY")
         .withName("POSITION_COLOR_DEPTH_ONLY")
         .withMaskState(MaskState.DEPTH_ONLY)
+        .withBlendState(BlendState.NONE)
+        .build();
+
+    public static final GLPipeline OUTLINE_PIPELINE = base
+        .withId("OUTLINE_PIPELINE")
+        .withName("OUTLINE_PIPELINE")
+        .withVertexShader(CLOUD_OUTLINE_SHADER_VERT.toString())
+        .withFragmentShader(CLOUD_OUTLINE_SHADER_FRAG.toString())
+        .withFaceCull(FaceCullState.FRONT)
+        .withBlendState(BlendState.TRANSLUCENT)
         .build();
 
 
