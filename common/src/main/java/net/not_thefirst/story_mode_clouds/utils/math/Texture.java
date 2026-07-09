@@ -192,14 +192,16 @@ public class Texture {
                     int gridCoordX = flipX ? (w - 1 - x) : x;
                     int gridCoordY = flipY ? (h - 1 - y) : y;
                     int idx = idx(gridCoordX, gridCoordY, w, h);
-                    int pixelRGBA = nativeImage.getPixelRGBA(x, y);
 
-                    int r = (pixelRGBA >>> 24) & 0xFF;
-                    int g = (pixelRGBA >>> 16) & 0xFF;
-                    int b = (pixelRGBA >>> 8) & 0xFF;
-                    int a = (pixelRGBA) & 0xFF;
+                    // shit was abgr for whatever reason
+                    int pixelABGR = nativeImage.getPixelRGBA(x, y);
 
-                    int pixel = ARGB.color(a, r, g, b);
+                    int a = (pixelABGR >>> 24) & 0xFF;
+                    int b = (pixelABGR >>> 16) & 0xFF;
+                    int g = (pixelABGR >>> 8) & 0xFF;
+                    int r = (pixelABGR) & 0xFF;
+                    
+                    int pixel = ARGB.toRGBA(ARGB.color(a, r, g, b));
 
                     if (a < 5) {
                         cells[idx] = 0L;
@@ -246,11 +248,11 @@ public class Texture {
     }
 
     private static boolean isSolid(NativeImage img, int x, int y, int w, int h) {
-        int pixelRGBA = img.getPixelRGBA(
+        int pixelABGR = img.getPixelRGBA(
             Math.floorMod(x, w),
             Math.floorMod(y, h));
 
-        int a = pixelRGBA & 0xFF;
+        int a = (pixelABGR >>> 24) & 0xFF;
         return a >= 5;
     }
 
