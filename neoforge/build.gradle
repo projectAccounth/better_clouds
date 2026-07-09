@@ -115,7 +115,7 @@ processResources {
     filteringCharset = "UTF-8"
     duplicatesStrategy = 'include'
     
-    filesMatching("META-INF/neoforge.mods.toml") {
+    filesMatching("META-INF/mods.toml") {
         expand(
             "version": rootProject.version,
             "forge_loader_version": project.neoforge_version

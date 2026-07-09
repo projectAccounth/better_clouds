@@ -194,9 +194,9 @@ public class Texture {
                     int idx = idx(gridCoordX, gridCoordY, w, h);
                     int pixelRGBA = nativeImage.getPixelRGBA(x, y);
 
-                    int r = (pixelRGBA >> 24) & 0xFF;
-                    int g = (pixelRGBA >> 16) & 0xFF;
-                    int b = (pixelRGBA >> 8) & 0xFF;
+                    int r = (pixelRGBA >>> 24) & 0xFF;
+                    int g = (pixelRGBA >>> 16) & 0xFF;
+                    int b = (pixelRGBA >>> 8) & 0xFF;
                     int a = (pixelRGBA) & 0xFF;
 
                     int pixel = ARGB.color(a, r, g, b);
@@ -250,13 +250,8 @@ public class Texture {
             Math.floorMod(x, w),
             Math.floorMod(y, h));
 
-        int g = (pixelRGBA >> 16) & 0xFF;
-        int b = (pixelRGBA >> 8) & 0xFF;
-        int a = (pixelRGBA) & 0xFF;
-        int r = (pixelRGBA >> 24) & 0xFF;
-        int pixel = ARGB.color(a, r, g, b);
-
-        return ARGB.alpha(pixel) >= 5;
+        int a = pixelRGBA & 0xFF;
+        return a >= 5;
     }
 
     private static long packCellData(int color, boolean north, boolean east, boolean south, boolean west) {
