@@ -201,7 +201,7 @@ public class Texture {
 
                     int pixel = ARGB.color(a, r, g, b);
 
-                    if (a < 5) {
+                    if (!isPixelSolid(a)) {
                         cells[idx] = 0L;
                         neighbors[idx] = 0;
                         continue;
@@ -245,18 +245,18 @@ public class Texture {
         return buildTexture(imgStream, false, false);
     }
 
+    private static boolean isPixelSolid(int alpha) {
+        return alpha >= 5;
+    }
+
+
     private static boolean isSolid(NativeImage img, int x, int y, int w, int h) {
         int pixelRGBA = img.getPixel(
             Math.floorMod(x, w),
             Math.floorMod(y, h));
 
-        int b = (pixelRGBA >> 16) & 0xFF;
-        int g = (pixelRGBA >> 8) & 0xFF;
-        int r = (pixelRGBA) & 0xFF;
         int a = (pixelRGBA >> 24) & 0xFF;
-        int pixel = ARGB.color(a, r, g, b);
-
-        return ARGB.alpha(pixel) >= 5;
+        return isPixelSolid(a);
     }
 
     private static long packCellData(int color, boolean north, boolean east, boolean south, boolean west) {

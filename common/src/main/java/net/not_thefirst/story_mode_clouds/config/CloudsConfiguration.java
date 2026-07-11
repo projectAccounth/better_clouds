@@ -66,7 +66,7 @@ public class CloudsConfiguration {
             // no-op
         }
         private static final float DEFAULT_AMBIENT_LIGHTING = 0.7f;
-        private static final float DEFAULT_MAX_LIGHTING_SHADING = 0.8f;
+        private static final float DEFAULT_MAX_LIGHTING_SHADING = 1.0f;
         private static final int DEFAULT_DAY_START = 0;
         private static final int DEFAULT_DAY_END = 13000;
         private static final int DEFAULT_DAY_NOON = 6000;
@@ -83,8 +83,11 @@ public class CloudsConfiguration {
         public int DAY_NOON = DEFAULT_DAY_NOON;
 
         public List<DiffuseLight> lights = new ArrayList<>(Arrays.asList(
-            new DiffuseLight(new Vector3f(0.5f, -0.8f, 1.0f), 0.6f),
-            new DiffuseLight(new Vector3f(-0.3f, -0.3f, 0.6f), 0.5f)
+            new DiffuseLight(new Vector3f(0.0f, -1.0f, 1.0f), 0.3f),
+            new DiffuseLight(new Vector3f(-1.0f, 0.0f, 0.0f), 0.2f),
+            new DiffuseLight(new Vector3f(1.0f, 0.0f, 0.0f), 0.2f),
+            new DiffuseLight(new Vector3f(0.0f, 0.0f, 1.0f), 0.1f),
+            new DiffuseLight(new Vector3f(0.0f, 0.0f, -1.0f), 0.1f)
         ));
 
         public void copy(LightingParameters other) {

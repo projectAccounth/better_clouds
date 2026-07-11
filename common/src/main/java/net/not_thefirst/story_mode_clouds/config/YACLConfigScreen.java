@@ -58,9 +58,20 @@ public class YACLConfigScreen {
             
             .option(Option.<Integer>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.cloud_distance"))
-                .description(OptionDescription.of(ComponentWrapper.literal("Cloud render distance in chunks (automatically converted to grid range)")))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.option.cloud_distance.tooltip")))
                 .binding(config.getCloudDistanceChunks(), config::getCloudDistanceChunks, v -> config.CLOUD_DISTANCE_CHUNKS = v)
                 .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(ConfigConstants.MIN_CLOUD_DISTANCE_CHUNKS, ConfigConstants.MAX_CLOUD_DISTANCE_CHUNKS).step(ConfigConstants.CLOUD_DISTANCE_STEP))
+                .build())
+
+            .option(ButtonOption.createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.rebuild_clouds"))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc.rebuild_clouds")))
+                .action((yacl, btn) -> {
+                    CloudsConfiguration.save();
+                    RendererHolder.get().markForRebuild();
+                    ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.raw.cloud_rebuilt"));
+                    ClientHelper.setScreen(null);
+                })
                 .build())
             
             .build();

@@ -39,11 +39,12 @@
   "cloudtweaks.option.clouds_mod_enabled": "Clouds Mod Enabled",
   "cloudtweaks.tooltip.clouds_mod_enabled": "Enable or disable the cloud rendering mod entirely. Disabling will revert to vanilla clouds.",
 
-
+  "cloudtweaks.option.rebuild_clouds" : "Rebuild Clouds",
+  "cloudtweaks.raw.clouds_rebuilt": "Rebuilt.",
 
   "cloudtweaks.option.clouds_rendered": "Clouds Rendered",
   "cloudtweaks.option.cloud_distance": "Cloud Distance (chunks)",
-  "cloudtweaks.option.cloud_distance.tooltip": "Cloud render distance in chunks, converted to mesh range.",
+  "cloudtweaks.option.cloud_distance.tooltip": "Cloud render distance in chunks.",
   "cloudtweaks.option.dimension_clouds_rendered": "Render Clouds in this Dimension",
 
   "cloudtweaks.option.ambient_strength": "Ambient Strength",
@@ -121,6 +122,8 @@
 
   "cloudtweaks.tooltip.shading_enabled": "Enable shading when the sun is behind clouds",
 
+  "cloudtweaks.message.imported_preset": "Imported preset",
+
   "cloudtweaks.group.cloud_colors": "Cloud Colors",
   "cloudtweaks.group.light": "Light",
   "cloudtweaks.group.basic": "Basic Settings",
@@ -130,6 +133,16 @@
   "cloudtweaks.group.fog": "Fog",
   "cloudtweaks.group.bevel": "Bevel",
   "cloudtweaks.group.performance": "Performance",
+  "cloudtweaks.group.texture": "Texture",
+  "cloudtweaks.group.outline": "Outline",
+
+  "cloudtweaks.option.outline_size": "Outline Size",
+  "cloudtweaks.option.outline_color": "Outline Color",
+  "cloudtweaks.option.outline_brightness": "Outline Brightness",
+  "cloudtweaks.option.outline_custom_brightness": "Outline Custom Brightness",
+  "cloudtweaks.desc.outline_custom_brightness": "Whether outline is affected by the time-based cloud color. Separate from the cloud's brightness settings",
+  "cloudtweaks.option.outline_override_texture_color": "Follows texture color",
+  "cloudtweaks.desc.outline_override_texture_color": "Whether the outline color is following the Preserve Original Texture Color setting.",
 
   "cloudtweaks.option.height_offset": "Height Offset",
   "cloudtweaks.option.custom_texture_namespace": "Custom Texture Namespace",
@@ -328,8 +341,6 @@
   "cloudtweaks.preview.actions": "Actions",
   "cloudtweaks.preview.total_layers": "Total Layers",
   "cloudtweaks.preview.total_layers.tooltip": "Number of cloud layers in this preset",
-  "cloudtweaks.preview.cloud_distance": "Cloud Distance (chunks)",
-  "cloudtweaks.preview.cloud_distance.tooltip": "Cloud render distance in chunks (converted to grid range)",
   "cloudtweaks.preview.ambient": "Ambient Brightness",
   "cloudtweaks.preview.ambient.tooltip": "Base global lighting level",
   "cloudtweaks.preview.max_shading": "Max Lighting Shading",

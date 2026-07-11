@@ -1,18 +1,15 @@
 #version 330 core
 
-#moj_import <minecraft:dynamictransforms.glsl>
-#moj_import <minecraft:projection.glsl>
-
-in vec3 Position;
-in vec4 Color;
-in vec3 Normal;
+layout(location = 0) in vec3 Position;
+layout(location = 1) in vec4 Color;
+layout(location = 2) in vec3 Normal;
 
 #define MAX_LIGHT 32
 
 layout(std140) uniform Transforms {
     vec4 MOffset;
-    mat4 M0;
-    mat4 M1;
+    mat4 ProjMat;
+    mat4 ModelViewMat;
 };
 
 layout(std140) uniform CloudInfo {
@@ -21,6 +18,7 @@ layout(std140) uniform CloudInfo {
     vec4  CloudColor;
     vec4  FadeToColor;
     vec4  Info2; // x=StaticFadeRelY
+    vec4  SkyColor;
 };
 
 layout(std140) uniform Lighting {
@@ -31,6 +29,11 @@ layout(std140) uniform Lighting {
 
 layout(std140) uniform Camera {
     vec4 CameraPosition;
+};
+
+layout(std140) uniform Outline {
+    vec4 OutlineColor; // outline color
+    vec4 OutlineInfo1; // x=outlineConfig, y=outlineBrightness, z=outlineAlpha, w=unused
 };
 
 int   LightCount         = int(min(LightInformation.x, float(MAX_LIGHT)));
@@ -52,8 +55,20 @@ bool customBrightness()  { return (Config & (1 << 3)) != 0; }
 bool usesCustomColor()   { return (Config & (1 << 4)) != 0; }
 bool fadeEnabled()       { return (Config & (1 << 5)) != 0; }
 bool colorFade()         { return (Config & (1 << 6)) != 0; }
-bool invertedFade()      { return (Config & (1 << 7)) != 0; } // inverts both the fade color and alpha
-bool useStaticFade()     { return (Config & (1 << 8)) != 0; } // static fade instead of dynamic positional fade
+bool invertedFade()      { return (Config & (1 << 7)) != 0; }
+bool useStaticFade()     { return (Config & (1 << 8)) != 0; }
+
+bool outlineCustomBrightness() { return (int(OutlineInfo1.x) & (1 << 0)) != 0; }
+bool outlineOverrideTextureColor() { return (int(OutlineInfo1.x) & (1 << 1)) != 0; }
+
+vec3 computeOutlineColor(vec3 baseColor) {
+    vec3 skyFactor = outlineCustomBrightness() ? vec3(1.0) : SkyColor.rgb;
+    return baseColor * OutlineColor.rgb * skyFactor * OutlineInfo1.y;
+}
+
+float computeOutlineAlpha(float alpha) {
+    return alpha * OutlineInfo1.z;
+}
 
 out float vDistance;
 out vec4  vColor;
@@ -69,6 +84,8 @@ float lerp(float a, float b, float t) {
 }
 
 void main() {
+    
+
     vec3 pos = Position + MOffset.xyz;
     gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);
 
@@ -77,11 +94,11 @@ void main() {
 
     float baseAlpha = usesCustomAlpha() ? BaseAlpha : Color.a;
     float finalAlpha = baseAlpha;
-
     bool isOutline = length(Normal) < 0.001;
 
     if (FadeAlpha > 0.0) {
         if (useStaticFade()) {
+            // Static fade
             float staticRelY = Info2.x;
             float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
             float dir = clamp(staticRelY / TransitionRange, -1.0, 1.0);
@@ -97,7 +114,7 @@ void main() {
 
             finalAlpha *= 1.0 - fadeFactor;
         } else {
-            // Dynamic positional fade: based on camera position relative to layer
+            // Dynamic positional fade
             float ny = clamp(Position.y / CloudBlockHeight, 0.0, 1.0);
             float dir = clamp(relY / TransitionRange, -1.0, 1.0);
 
@@ -113,26 +130,28 @@ void main() {
             finalAlpha *= 1.0 - fadeFactor;
         }
     }
-
-    vec3 baseColor = Color.rgb * CloudColor.rgb;
-    vec3 N = normalize(Normal);
+    
+    vec3 baseColor = isOutline ?
+        (outlineOverrideTextureColor() ? Color.rgb : vec3(1.0)) :
+        Color.rgb * CloudColor.rgb;
+    vec3 N = isOutline ? vec3(0.0) : normalize(Normal);
 
     float lighting = 1.0;
 
-    if (shadingEnabled() && !UsePhong && !isOutline) {
+    if (!isOutline && shadingEnabled() && !UsePhong) {
         lighting = AmbientFactor;
 
         for (int i = 0; i < LightCount; i++) {
-            vec3 lightDir = LightDefinitions[i].xyz;
-            vec3 L = normalize(-lightDir);
+            vec3 lightPos = LightDefinitions[i].xyz;
+            vec3 L = normalize(lightPos - pos);
             lighting += max(dot(N, L), 0.0) * LightDefinitions[i].w;
         }
 
         lighting = clamp(lighting, 0.0, MaxShading);
     }
 
-    // bottom being the actual base color, top being the mixed color
-    if (fadeEnabled() && colorFade()) {
+    // interpolate baseColor towards FadeToColor (RGB only) if enabled)
+    if (fadeEnabled() && colorFade() && !isOutline) {
         float ratio = (baseAlpha > 0.0) ? (finalAlpha / baseAlpha) : 0.0;
         float colorFadeFactor = 1.0 - ratio;
 
@@ -144,5 +163,12 @@ void main() {
     }
 
     vNormal = N;
-    vColor  = vec4(baseColor * lighting, fadeEnabled() ? finalAlpha : baseAlpha);
+
+    if (isOutline) {
+        vec3 outlineColor = computeOutlineColor(baseColor);
+        float outlineAlpha = computeOutlineAlpha(fadeEnabled() ? finalAlpha : baseAlpha);
+        vColor = vec4(outlineColor * lighting, outlineAlpha);
+    } else {
+        vColor = vec4(baseColor * lighting, fadeEnabled() ? finalAlpha : baseAlpha);
+    }
 }
