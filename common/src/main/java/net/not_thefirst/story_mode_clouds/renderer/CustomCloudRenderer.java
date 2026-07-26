@@ -16,10 +16,10 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LightingTyp
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.ShadingMode;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.FadeType;
 import net.not_thefirst.story_mode_clouds.config.resources.CloudResourceLoader;
-import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshBuilderRegistry;
-import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.MeshTypeBuilder;
-import net.not_thefirst.story_mode_clouds.renderer.types.MeshType;
-import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.MeshBuilderRegistry;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.MeshTypeBuilder;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshType;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.utils.glfw.GLFWWindowHelper;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractPipeline;

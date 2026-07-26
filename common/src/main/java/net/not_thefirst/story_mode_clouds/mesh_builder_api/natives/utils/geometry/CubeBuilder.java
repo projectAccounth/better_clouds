@@ -1,11 +1,11 @@
-package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
+package net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.utils.geometry;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.BeveledMeshBuilder.NeighborCache;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.utils.geometry.BevelWrappers.EdgeDir;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.utils.geometry.BevelWrappers.Sign;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer;
-import net.not_thefirst.story_mode_clouds.renderer.mesh_builders.BeveledMeshBuilder.NeighborCache;
-import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.EdgeDir;
-import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.BevelWrappers.Sign;
 
 public class CubeBuilder {
     public enum FaceDir {

@@ -1,4 +1,4 @@
-package net.not_thefirst.story_mode_clouds.renderer.utils.geometry;
+package net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.utils.geometry;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;

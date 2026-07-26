@@ -10,7 +10,7 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfig
 import net.not_thefirst.story_mode_clouds.config.presets.LayerPresets;
 import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
-import net.not_thefirst.story_mode_clouds.renderer.types.MeshTypeRegistry;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.utils.math.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;

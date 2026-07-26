@@ -17,8 +17,9 @@ dependencies {
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    implementation 'io.github.projectaccounth:opengl-grl:0.1.6'
-    include 'io.github.projectaccounth:opengl-grl:0.1.6'
+    implementation 'io.github.projectaccounth:opengl-grl:0.1.8'
+    include 'io.github.projectaccounth:opengl-grl:0.1.8'
+    include 'org.luaj:luaj-jse:3.0.1'
 
     implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"

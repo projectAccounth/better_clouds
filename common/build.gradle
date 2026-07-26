@@ -20,9 +20,9 @@ dependencies {
     minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
     implementation "org.spongepowered:mixin:0.8.5"
 
-    implementation 'io.github.projectaccounth:opengl-grl:0.1.6'
-
-    // compile only, has no Fabric-specific mappings here
+    implementation 'io.github.projectaccounth:opengl-grl:0.1.8'
+    implementation 'org.luaj:luaj-jse:3.0.1'
+    
     compileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 }
 

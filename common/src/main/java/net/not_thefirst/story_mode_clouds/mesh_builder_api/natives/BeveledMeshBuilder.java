@@ -1,13 +1,13 @@
-package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
+package net.not_thefirst.story_mode_clouds.mesh_builder_api.natives;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh.Builder;
 import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
-import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder;
-import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder.FaceDir;
-import net.not_thefirst.story_mode_clouds.renderer.utils.geometry.CubeBuilder.FaceMask;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.utils.geometry.CubeBuilder;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.utils.geometry.CubeBuilder.FaceDir;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.natives.utils.geometry.CubeBuilder.FaceMask;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 

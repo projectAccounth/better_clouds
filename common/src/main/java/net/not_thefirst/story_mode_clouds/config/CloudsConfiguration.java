@@ -11,7 +11,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.IntFunction;
 
 import com.google.gson.Gson;
@@ -87,19 +89,7 @@ public class CloudsConfiguration {
         new SkyColorKeypoint(23999, 0xFFD8A8)
     );
 
-    public List<SkyColorKeypoint> CLOUD_COLOR = new ArrayList<>(Arrays.asList(
-        new SkyColorKeypoint(0, 0xFFD8A8),
-        new SkyColorKeypoint(3000, 0xFFFFFF),
-        new SkyColorKeypoint(6000, 0xFFFFFF),
-        new SkyColorKeypoint(9000, 0xF4F6F8),
-        new SkyColorKeypoint(12000, 0xFF9E5E),
-        new SkyColorKeypoint(13000, 0xFFB37A),
-        new SkyColorKeypoint(14000, 0x7A86A8),
-        new SkyColorKeypoint(18000, 0x2A2F45),
-        new SkyColorKeypoint(22000, 0x4A567A),
-        new SkyColorKeypoint(23999, 0xFFD8A8)
-    ));
-  
+    public List<SkyColorKeypoint> CLOUD_COLOR = new ArrayList<>(DEFAULT_COLORS);
     public CloudColorProviderMode COLOR_MODE = CloudColorProviderMode.VANILLA;
 
     public LightingParameters LIGHTING        = new LightingParameters();
@@ -110,8 +100,11 @@ public class CloudsConfiguration {
     private LayerHolder LAYERS = new LayerHolder();
     private LayerHolder NETHER_LAYERS = new LayerHolder();  
     private LayerHolder END_LAYERS = new LayerHolder();  
+
+    private final Map<Dimension, LayerHolder> DIMENSION_LAYERS = new HashMap<>(); 
+
     public static final class Dimension {
-        public final String id;
+        private final String id;
 
         public Dimension(String id) {
             this.id = id;
@@ -155,6 +148,17 @@ public class CloudsConfiguration {
                 return END;
             }
             return null;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Dimension d)) return false;
+            return this.id == d.id;
+        }
+
+        @Override
+        public int hashCode() {
+            return this.id.hashCode();
         }
     }
     
@@ -433,6 +437,36 @@ public class CloudsConfiguration {
      * Multiple layers can be stacked to create complex cloud effects.
      */
     public static class LayerConfiguration {
+        public BevelParameters       BEVEL       = new BevelParameters();
+        public AppearanceParameters  APPEARANCE  = new AppearanceParameters();
+        public FadeParameters        FADE        = new FadeParameters();
+        public FogParameters         FOG         = new FogParameters();
+
+        private int LAYER_IDX;
+
+        public String  NAME                  = "Minecraft";
+        public boolean FOG_ENABLED           = true;
+        public boolean IS_ENABLED            = true;
+        public boolean LAYER_RENDERED        = true;
+        public int     LAYER_HEIGHT          = 128;
+
+        public String MODE = "NORMAL";
+
+        public int getLayerIndex() { return LAYER_IDX; }
+
+        public void copy(LayerConfiguration other) {
+            this.NAME = other.NAME;
+            this.FOG_ENABLED = other.FOG_ENABLED;
+            this.IS_ENABLED = other.IS_ENABLED;
+            this.LAYER_RENDERED = other.LAYER_RENDERED;
+            this.LAYER_HEIGHT = other.LAYER_HEIGHT;
+            this.MODE = other.MODE;
+            this.BEVEL.copy(other.BEVEL);
+            this.APPEARANCE.copy(other.APPEARANCE);
+            this.FADE.copy(other.FADE);
+            this.FOG.copy(other.FOG);
+        }
+
         public LayerConfiguration(int idx) {
             LAYER_IDX = idx; 
         }
@@ -595,37 +629,6 @@ public class CloudsConfiguration {
                 this.FADE_TYPE = other.FADE_TYPE;
                 this.STATIC_FADE_REL_Y = other.STATIC_FADE_REL_Y;
             }
-        }
-
-        public BevelParameters       BEVEL       = new BevelParameters();
-        public AppearanceParameters  APPEARANCE  = new AppearanceParameters();
-        public FadeParameters        FADE        = new FadeParameters();
-        public FogParameters         FOG         = new FogParameters();
-
-        private int LAYER_IDX;
-
-        public String  NAME                  = "Minecraft";
-        public boolean FOG_ENABLED           = true;
-        public boolean IS_ENABLED            = true;
-        public boolean LAYER_RENDERED        = true;
-        
-        public int     LAYER_HEIGHT          = 128;
-
-        public String MODE = "NORMAL";
-
-        public int getLayerIndex() { return LAYER_IDX; }
-
-        public void copy(LayerConfiguration other) {
-            this.NAME = other.NAME;
-            this.FOG_ENABLED = other.FOG_ENABLED;
-            this.IS_ENABLED = other.IS_ENABLED;
-            this.LAYER_RENDERED = other.LAYER_RENDERED;
-            this.LAYER_HEIGHT = other.LAYER_HEIGHT;
-            this.MODE = other.MODE;
-            this.BEVEL.copy(other.BEVEL);
-            this.APPEARANCE.copy(other.APPEARANCE);
-            this.FADE.copy(other.FADE);
-            this.FOG.copy(other.FOG);
         }
     }
 
