@@ -4,7 +4,7 @@ import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import net.not_thefirst.story_mode_clouds.compat.Compat;
 import net.not_thefirst.story_mode_clouds.compat.ForgeModChecker;
-import net.not_thefirst.story_mode_clouds.config.YACLConfigScreen;
+import net.not_thefirst.story_mode_clouds.config.screens.YACLConfigScreen;
 
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 

@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh.Builder;
 import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
 import net.minecraft.util.Mth;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -17,6 +18,11 @@ import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
 public class PuffMeshBuilder implements MeshTypeBuilder {
     private static final long PHI = 0x9E3779B97F4A7C15L;
     private static final int SPLITMIX_TABLE_SIZE = 1 << 10;
+
+    private static final int CHUNKS_PER_CELL = 6;
+    private static final float CHUNK_MIN_SIZE = 1.8f;
+    private static final float CHUNK_MAX_SIZE = 5.2f;
+    private static final float CHUNK_HEIGHT_FACTOR = 0.45f;
 
     // ture
     private static final float[] sinTable = new float[SPLITMIX_TABLE_SIZE];
@@ -98,17 +104,11 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
             }
             // else regenerate
         
-
-        // Build new cache
-        final int PUFFS_PER_CELL = 6;
-        final float PUFF_MIN_SIZE = 1.8f;
-        final float PUFF_MAX_SIZE = 5.2f;
-        final float PUFF_HEIGHT_FACTOR = 0.45f;
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
             CloudsConfiguration.getInstance().getLayer(currentLayer);
         final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0f);
 
-        LayerCache pc = new LayerCache(tex.width, tex.height, cellsRef, PUFFS_PER_CELL, currentLayer);
+        LayerCache pc = new LayerCache(tex.width, tex.height, cellsRef, CHUNKS_PER_CELL, currentLayer);
 
         long[] cells = tex.cells;
         int w = tex.width;
@@ -122,14 +122,14 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     pc.puffByCell[idx] = null;
                     continue;
                 }
-                PuffDesc[] arr = new PuffDesc[PUFFS_PER_CELL];
+                PuffDesc[] arr = new PuffDesc[CHUNKS_PER_CELL];
 
                 long cellSeed = ((tx & 0xFFFFL) << 32) |
                                 ((tz & 0xFFFFL) << 16) |
                                 (currentLayer & 0xFFFFL);
 
                 // precompute cluster centers
-                for (int p = 0; p < PUFFS_PER_CELL; p++) {
+                for (int p = 0; p < CHUNKS_PER_CELL; p++) {
                     long puffSeed = cellSeed + (p * PHI);
 
                     long s0 = splitmix64(puffSeed);
@@ -139,8 +139,8 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     long s2 = splitmix64(s1);
                     float rr2 = uint64ToFloat01(s2);
 
-                    float hr = Mth.lerp(rr0, PUFF_MIN_SIZE, PUFF_MAX_SIZE);
-                    float vr = hr * PUFF_HEIGHT_FACTOR;                    
+                    float hr = Mth.lerp(rr0, CHUNK_MIN_SIZE, CHUNK_MAX_SIZE);
+                    float vr = hr * CHUNK_HEIGHT_FACTOR;                    
 
                     float localX; 
                     float localZ;
@@ -207,10 +207,6 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
             CloudsConfiguration.getInstance().getLayer(currentLayer);
         
         final int RANGE = CloudsConfiguration.getInstance().getCloudGridRange();
-        final int PUFFS_PER_CELL = 6;
-        final float PUFF_MIN_SIZE = 1.8f;
-        final float PUFF_MAX_SIZE = 5.2f;
-        final float PUFF_HEIGHT_FACTOR = 0.45f;
 
         Texture.TextureData tex = state.texture();
         long[] cells = tex.cells;
@@ -239,7 +235,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
                 int color = Texture.getColor(cell);
 
-                for (int p = 0; p < PUFFS_PER_CELL; p++) {
+                for (int p = 0; p < CHUNKS_PER_CELL; p++) {
                     PuffDesc description = puffs[p];
                     if (description == null) continue;
 
@@ -364,5 +360,11 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
             cx, y1, cz - hr,
             colorModifier
         );
+    }
+
+    @Override
+    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz, float relY, int currentLayer,
+            int colorModifier) {
+        return bb;
     }
 }

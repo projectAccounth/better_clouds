@@ -5,9 +5,9 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 
-import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
+import net.not_thefirst.story_mode_clouds.utils.math.DiffuseLight;
 
 /**
  * Represents a light sources preset containing directional light configurations.

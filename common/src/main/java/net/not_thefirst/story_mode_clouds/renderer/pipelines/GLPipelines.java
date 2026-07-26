@@ -11,12 +11,14 @@ import net.not_thefirst.lib.gl_render_system.state.FaceCullState;
 import net.not_thefirst.lib.gl_render_system.state.MaskState;
 import net.not_thefirst.lib.gl_render_system.vertex.VertexFormat;
 import net.not_thefirst.story_mode_clouds.Initializer;
-import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
-import net.not_thefirst.story_mode_clouds.utils.rendering.gl.GLPipeline;
-import net.not_thefirst.story_mode_clouds.utils.rendering.gl.GLResourceHandler;
-import net.not_thefirst.story_mode_clouds.utils.rendering.gl.factories.GLRenderPassFactory;
-import net.not_thefirst.story_mode_clouds.utils.rendering.gl.factories.GLUBODataBufferFactory;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.IdentifierWrapper;
+import net.not_thefirst.story_mode_clouds.renderer.platform.gl.GLPipeline;
+import net.not_thefirst.story_mode_clouds.renderer.platform.gl.GLRenderPassFactory;
+import net.not_thefirst.story_mode_clouds.renderer.platform.gl.GLRenderTargetFactory;
+import net.not_thefirst.story_mode_clouds.renderer.platform.gl.GLResourceHandler;
+import net.not_thefirst.story_mode_clouds.renderer.platform.gl.GLTextureFactory;
+import net.not_thefirst.story_mode_clouds.renderer.platform.gl.GLUBODataBufferFactory;
 
 public class GLPipelines {
     private GLPipelines() {}
@@ -26,10 +28,22 @@ public class GLPipelines {
     public static final IdentifierWrapper CLOUD_SHADER_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/rt_clouds.frag");
 
+    public static final IdentifierWrapper CLOUD_SHADER_OUTLINE_VERT = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/rt_clouds_outline.vert");
+    public static final IdentifierWrapper CLOUD_SHADER_OUTLINE_FRAG = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/rt_clouds_outline.frag");
+
     public static final IdentifierWrapper NO_OP_VERT = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/no_op.vert");
     public static final IdentifierWrapper NO_OP_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/no_op.frag");
+
+    public static final IdentifierWrapper SCREENQUAD = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/screenquad.vert");
+    public static final IdentifierWrapper STENCIL_FRAG = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/stencil.frag");
+    public static final IdentifierWrapper BLIT_FRAG = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/blit.frag");
 
     private static GLPipeline.Builder base = (GLPipeline.Builder) new GLPipeline.Builder("CUSTOM_POSITION_COLOR")
         .withBlendState(BlendState.TRANSLUCENT)
@@ -77,16 +91,48 @@ public class GLPipelines {
         .withBlendState(BlendState.NONE)
         .build();
 
+    public static final GLPipeline OUTLINE = base
+        .withId("OUTLINE")
+        .withName("OUTLINE")
+        .withVertexShader(CLOUD_SHADER_OUTLINE_VERT.toString())
+        .withFragmentShader(CLOUD_SHADER_OUTLINE_FRAG.toString())
+        .withMaskState(MaskState.COLOR_NO_DEPTH)
+        .withBlendState(BlendState.TRANSLUCENT)
+        .build();
+
+    public static final GLPipeline STENCIL = new GLPipeline.Builder("STENCIL")
+        .withId("STENCIL")
+        .withVertexShader(SCREENQUAD.toString())
+        .withFragmentShader(STENCIL_FRAG.toString())
+        .withBlendState(BlendState.TRANSLUCENT)
+        .withDepthTestState(DepthTestState.ALWAYS)
+        .withMaskState(MaskState.COLOR_DEPTH)
+        .build();
+
+    public static final GLPipeline BLIT = new GLPipeline.Builder("BLIT")
+        .withId("BLIT")
+        .withVertexShader(SCREENQUAD.toString())
+        .withFragmentShader(BLIT_FRAG.toString())
+        .withBlendState(BlendState.TRANSLUCENT)
+        .withDepthTestState(DepthTestState.ALWAYS)
+        .withMaskState(MaskState.COLOR_DEPTH)
+        .build();
+
     public static void init() {
         var manager = PipelineManager.getInstance();
 
         GLResourceHandler.init(ClientHelper.getClient().getResourceManager());
         manager.registerDataBufferFactory(PipelineProvider.DEFAULT, GLUBODataBufferFactory::new);
         manager.registerRenderPassFactory(PipelineProvider.DEFAULT, GLRenderPassFactory::new);
+        manager.registerTextureFactory(PipelineProvider.DEFAULT, GLTextureFactory::new);
+        manager.registerRenderTargetFactory(PipelineProvider.DEFAULT, GLRenderTargetFactory::new);
 
         manager.registerPipeline(CUSTOM_POSITION_COLOR, PipelineProvider.DEFAULT);
         manager.registerPipeline(POSITION_COLOR_NO_DEPTH, PipelineProvider.DEFAULT);
         manager.registerPipeline(POSITION_COLOR_DEPTH_ONLY, PipelineProvider.DEFAULT);
+        manager.registerPipeline(OUTLINE, PipelineProvider.DEFAULT);
         manager.registerPipeline(NONE, PipelineProvider.DEFAULT);
+        manager.registerPipeline(STENCIL, PipelineProvider.DEFAULT);
+        manager.registerPipeline(BLIT, PipelineProvider.DEFAULT);
     }
 }

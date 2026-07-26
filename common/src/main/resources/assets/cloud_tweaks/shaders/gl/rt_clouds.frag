@@ -21,11 +21,6 @@ layout(std140) uniform Camera {
     vec4 CameraPosition;
 };
 
-layout(std140) uniform Outline {
-    vec4 OutlineColor; // RGBA
-    vec4 OutlineInfo1; // x=outlineConfig, y=outlineBrightness, z=outlineAlpha, w=unused
-};
-
 int   LightCount    = int(min(LightInformation.x, float(MAX_LIGHT)));
 float MaxShading    = LightInformation.y;
 float AmbientFactor = LightInformation.z;
@@ -52,7 +47,7 @@ float linearFog(float d, float a, float b) {
 void main() {
     vec4 color = vColor;
 
-    if (UsePhong && shadingEnabled() && length(vNormal) > 0.001) {
+    if (UsePhong && shadingEnabled()) {
         vec3 N = normalize(cross(dFdx(vWorldPos), dFdy(vWorldPos)));
         vec3 V = normalize(CameraPosition.xyz - vWorldPos);
 

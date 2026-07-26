@@ -32,7 +32,7 @@ public class LightingPreset implements Preset {
         // Initialize with defaults
         this.ambientStrength = 0.7f;
         this.maxShadingStrength = 0.8f;
-        this.shadingMode = CloudsConfiguration.ShadingMode.GOURAUD;
+        this.shadingMode = CloudsConfiguration.ShadingMode.FLAT;
         this.lightingType = CloudsConfiguration.LightingType.STATIC;
         this.dayStart = 0;
         this.dayEnd = 13000;

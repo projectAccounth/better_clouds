@@ -1,6 +1,7 @@
 package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh.Builder;
 import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
@@ -135,5 +136,11 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 state, cellIdxX, cellIdxZ, ARGB.WHITE,
                 neighbors
         );
+    }
+
+    @Override
+    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz, float relY, int currentLayer,
+            int colorModifier) {
+        return bb;
     }
 }

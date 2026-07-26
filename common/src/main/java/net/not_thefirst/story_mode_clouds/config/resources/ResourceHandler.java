@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.not_thefirst.story_mode_clouds.config.IdentifierWrapper;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.IdentifierWrapper;
 
 // fancy wrapper
 public class ResourceHandler {

@@ -14,7 +14,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.config.ConfigSerializer;
+import net.not_thefirst.story_mode_clouds.config.resources.ConfigSerializer;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
 public class PresetController {

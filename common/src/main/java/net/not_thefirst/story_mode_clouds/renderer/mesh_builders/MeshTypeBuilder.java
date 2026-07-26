@@ -9,4 +9,10 @@ public interface MeshTypeBuilder {
         LayerState state,
         int cx, int cz, float relY, 
         int currentLayer, int colorModifier);
+
+    AbstractStaticMesh.Builder<?, ?> buildOutline(
+        AbstractStaticMesh.Builder<?, ?> bb,
+        LayerState state,
+        int cx, int cz, float relY, 
+        int currentLayer, int colorModifier);
 }

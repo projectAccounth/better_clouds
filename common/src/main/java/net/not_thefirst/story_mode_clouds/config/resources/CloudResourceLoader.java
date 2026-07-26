@@ -5,10 +5,10 @@ import java.io.InputStream;
 import java.util.Optional;
 
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.not_thefirst.story_mode_clouds.config.ComponentWrapper;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;
 
 public class CloudResourceLoader {
     private CloudResourceLoader() {}

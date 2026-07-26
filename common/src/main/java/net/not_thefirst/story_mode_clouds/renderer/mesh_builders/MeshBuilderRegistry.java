@@ -9,7 +9,6 @@ public class MeshBuilderRegistry extends NamedRegistry<MeshTypeBuilder> {
     public static final MeshTypeBuilder NORMAL;
     public static final MeshTypeBuilder BEVELED;
     public static final MeshTypeBuilder NORMAL_FAST;
-    public static final MeshTypeBuilder NORMAL_OUTLINE;
 
     public static final MeshBuilderRegistry INSTANCE =
         new MeshBuilderRegistry();
@@ -22,10 +21,6 @@ public class MeshBuilderRegistry extends NamedRegistry<MeshTypeBuilder> {
         NORMAL_FAST = INSTANCE.register(
             "NORMAL_FAST",
             ClassicFastMeshBuilder::new
-        );
-        NORMAL_OUTLINE = INSTANCE.register(
-            "NORMAL_OUTLINE",
-            ClassicOutlineMeshBuilder::new
         );
         POPULATED = INSTANCE.register("POPULATED", PuffMeshBuilder::new);
         POPULATED_ND = INSTANCE.register("POPULATED_ND", PuffMeshBuilder::new);

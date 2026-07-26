@@ -31,11 +31,6 @@ layout(std140) uniform Camera {
     vec4 CameraPosition;
 };
 
-layout(std140) uniform Outline {
-    vec4 OutlineColor; // outline color
-    vec4 OutlineInfo1; // x=outlineConfig, y=outlineBrightness, z=outlineAlpha, w=unused
-};
-
 int   LightCount         = int(min(LightInformation.x, float(MAX_LIGHT)));
 float MaxShading         = LightInformation.y;
 float AmbientFactor      = LightInformation.z;
@@ -57,18 +52,6 @@ bool fadeEnabled()       { return (Config & (1 << 5)) != 0; }
 bool colorFade()         { return (Config & (1 << 6)) != 0; }
 bool invertedFade()      { return (Config & (1 << 7)) != 0; }
 bool useStaticFade()     { return (Config & (1 << 8)) != 0; }
-
-bool outlineCustomBrightness() { return (int(OutlineInfo1.x) & (1 << 0)) != 0; }
-bool outlineOverrideTextureColor() { return (int(OutlineInfo1.x) & (1 << 1)) != 0; }
-
-vec3 computeOutlineColor(vec3 baseColor) {
-    vec3 skyFactor = outlineCustomBrightness() ? vec3(1.0) : SkyColor.rgb;
-    return baseColor * OutlineColor.rgb * skyFactor * OutlineInfo1.y;
-}
-
-float computeOutlineAlpha(float alpha) {
-    return alpha * OutlineInfo1.z;
-}
 
 out float vDistance;
 out vec4  vColor;
@@ -94,7 +77,6 @@ void main() {
 
     float baseAlpha = usesCustomAlpha() ? BaseAlpha : Color.a;
     float finalAlpha = baseAlpha;
-    bool isOutline = length(Normal) < 0.001;
 
     if (FadeAlpha > 0.0) {
         if (useStaticFade()) {
@@ -131,14 +113,12 @@ void main() {
         }
     }
     
-    vec3 baseColor = isOutline ?
-        (outlineOverrideTextureColor() ? Color.rgb : vec3(1.0)) :
-        Color.rgb * CloudColor.rgb;
-    vec3 N = isOutline ? vec3(0.0) : normalize(Normal);
+    vec3 baseColor = Color.rgb * CloudColor.rgb;
+    vec3 N = normalize(Normal);
 
     float lighting = 1.0;
 
-    if (!isOutline && shadingEnabled() && !UsePhong) {
+    if (shadingEnabled() && !UsePhong) {
         lighting = AmbientFactor;
 
         for (int i = 0; i < LightCount; i++) {
@@ -151,7 +131,7 @@ void main() {
     }
 
     // interpolate baseColor towards FadeToColor (RGB only) if enabled)
-    if (fadeEnabled() && colorFade() && !isOutline) {
+    if (fadeEnabled() && colorFade()) {
         float ratio = (baseAlpha > 0.0) ? (finalAlpha / baseAlpha) : 0.0;
         float colorFadeFactor = 1.0 - ratio;
 
@@ -163,12 +143,5 @@ void main() {
     }
 
     vNormal = N;
-
-    if (isOutline) {
-        vec3 outlineColor = computeOutlineColor(baseColor);
-        float outlineAlpha = computeOutlineAlpha(fadeEnabled() ? finalAlpha : baseAlpha);
-        vColor = vec4(outlineColor * lighting, outlineAlpha);
-    } else {
-        vColor = vec4(baseColor * lighting, fadeEnabled() ? finalAlpha : baseAlpha);
-    }
+    vColor = vec4(baseColor * lighting, fadeEnabled() ? finalAlpha : baseAlpha);
 }

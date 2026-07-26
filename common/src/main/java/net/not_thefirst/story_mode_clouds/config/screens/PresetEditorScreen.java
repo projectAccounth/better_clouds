@@ -5,11 +5,11 @@ import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.gui.YACLScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.config.ComponentWrapper;
 import net.not_thefirst.story_mode_clouds.config.ConfigConstants;
 import net.not_thefirst.story_mode_clouds.config.presets.*;
-import net.not_thefirst.story_mode_clouds.renderer.utils.DiffuseLight;
+import net.not_thefirst.story_mode_clouds.utils.math.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;
 
 import java.awt.Color;
 

@@ -2,6 +2,7 @@ package net.not_thefirst.story_mode_clouds.renderer.mesh_builders;
 
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh.Builder;
 import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
@@ -63,5 +64,11 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
             x0, 0, z1,
             colorModifier
         );
+    }
+
+    @Override
+    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz, float relY, int currentLayer,
+            int colorModifier) {
+        return bb;
     }
 }
