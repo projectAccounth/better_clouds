@@ -2,7 +2,11 @@ package net.not_thefirst.story_mode_clouds.mesh_builder_api.utils;
 
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+
+import net.not_thefirst.story_mode_clouds.config.ConfigInstance;
+
 import java.lang.reflect.Field;
+import java.util.Map; 
 
 public class LuaStructMapper {
 
@@ -30,7 +34,12 @@ public class LuaStructMapper {
         LuaTable table = LuaValue.tableOf();
         try {
             for (Field field : clazz.getDeclaredFields()) {
-                field.setAccessible(true);
+                try {
+                    if (!field.canAccess(obj)) continue;
+                }
+                catch (Exception e) {
+                    if (!field.canAccess(null)) continue;
+                }
                 
                 String name = field.getName();
                 Object value = field.get(obj);
@@ -39,6 +48,18 @@ public class LuaStructMapper {
             }
         } catch (IllegalAccessException e) {
             throw new RuntimeException("Failed to map struct field to LuaJ table", e);
+        }
+        
+        return table;
+    }
+
+    public static LuaValue fromMap(Map<String, ConfigInstance<?>> map) {
+        if (map == null) return LuaValue.NIL;
+        
+
+        LuaTable table = LuaValue.tableOf();
+        for (var entry : map.entrySet()) {
+            table.set(entry.getKey(), toLua(entry.getValue().value()));
         }
         
         return table;
