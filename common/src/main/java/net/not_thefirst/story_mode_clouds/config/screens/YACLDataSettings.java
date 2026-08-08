@@ -271,9 +271,22 @@ public class YACLDataSettings {
             .build();
     }
 
+    private static ConfigCategory buildTypeSpecificCategory(LayerConfiguration layer) {
+        ConfigCategory.Builder builder = ConfigCategory.createBuilder();
+
+        
+
+        return builder.build();
+    }
+
     private static ConfigCategory buildOutlineCategory(LayerConfiguration layer) {
         return ConfigCategory.createBuilder()
             .name(ComponentWrapper.translatable("cloudtweaks.group.outline"))
+            .option(Option.<Boolean>createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.outline_enabled"))
+                .binding(layer.APPEARANCE.OUTLINE_ENABLED, () -> layer.APPEARANCE.OUTLINE_ENABLED, v -> layer.APPEARANCE.OUTLINE_ENABLED = v)
+                .controller(BooleanControllerBuilder::create)
+                .build())
             .option(Option.<Float>createBuilder()
                 .name(ComponentWrapper.translatable("cloudtweaks.option.outline_size"))
                 .binding(layer.APPEARANCE.OUTLINE_SIZE, () -> layer.APPEARANCE.OUTLINE_SIZE, v -> layer.APPEARANCE.OUTLINE_SIZE = v)

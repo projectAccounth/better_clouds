@@ -91,6 +91,37 @@ public class ResourceHandler {
     }
 
     /**
+     * Get all resources with the specified name and suffix in the given directory and namespace.
+     * Expects resources to be located at: <assets/data>/<namespace>/<directory>/<name><suffix>
+     * @param resourceManager Resource manager
+     * @param namespace Namespace to filter by, leave blank to match any namespace
+     * @param directory Directory
+     * @param name  File name without suffix, leave blank to match any name
+     * @param suffix  File suffix (e.g. ".json"), leave blank to match any suffix
+     * @return Map of resource identifiers to resources
+     */
+    public static Map<IdentifierWrapper, Resource> getResourcesInDirectoryAndNamespace(
+        ResourceManager resourceManager, 
+        String namespace, 
+        String directory,
+        String suffix) {
+
+        var resources = resourceManager.listResources(directory, path -> {
+            if (!path.getNamespace().isEmpty() && !path.getNamespace().equals(namespace)) {
+                return false;
+            }
+            String fileName = path.getPath().substring(path.getPath().lastIndexOf("/") + 1);
+            return fileName.endsWith(suffix);
+        });
+        Map<IdentifierWrapper, Resource> result = new HashMap<>();
+        resources.forEach((id, resource) -> {
+            IdentifierWrapper wrapper = IdentifierWrapper.of(id.getNamespace(), id.getPath());
+            result.put(wrapper, resource);
+        });
+        return result;
+    }
+
+    /**
      * Get all resources with the specified name and suffix across all namespaces.
      * gotta find a way to make this work
      * @param resourceManager Resource manager

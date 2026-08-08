@@ -7,6 +7,7 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.ConfigConstants;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.*;
 import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.Starter;
 import net.not_thefirst.story_mode_clouds.config.presets.LayerPresets;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
@@ -72,7 +73,19 @@ public class YACLConfigScreen {
                 .action((yacl, btn) -> {
                     CloudsConfiguration.save();
                     RendererHolder.get().markForRebuild();
-                    ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.raw.cloud_rebuilt"));
+                    ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.raw.clouds_rebuilt"));
+                    ClientHelper.setScreen(null);
+                })
+                .build())
+
+            .option(ButtonOption.createBuilder()
+                .name(ComponentWrapper.translatable("cloudtweaks.option.recompile_scripts"))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc.recompile_scripts")))
+                .action((yacl, btn) -> {
+                    CloudsConfiguration.save();
+                    Starter.reloadScript();
+                    RendererHolder.get().markForRebuild();
+                    ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.raw.reloaded_scripts"));
                     ClientHelper.setScreen(null);
                 })
                 .build())
