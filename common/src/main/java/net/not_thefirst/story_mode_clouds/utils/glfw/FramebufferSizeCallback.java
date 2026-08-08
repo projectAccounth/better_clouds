@@ -7,7 +7,6 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
 
 public class FramebufferSizeCallback extends GLFWFramebufferSizeCallback {
-    // A flat list prevents recursive stack frames
     private final List<GLFWFramebufferSizeCallback> chain = new ArrayList<>();
 
     public static FramebufferSizeCallback intercept(long window, GLFWFramebufferSizeCallback newCallback) {

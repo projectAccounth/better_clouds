@@ -210,10 +210,10 @@ public final class GLFramebuffer extends AbstractRenderTarget {
     }
 
     @Override
-    public void combineColor(AbstractRenderTarget other) {
+    public void copyColorFrom(AbstractRenderTarget other) {
         if (closed) return;
 
-        super.combineColor(other);
+        super.copyColorFrom(other);
 
         if (!(other instanceof GLFramebuffer)) {
             throw new IllegalArgumentException("Can only combine with another GLFramebufferRenderTarget");
@@ -236,10 +236,10 @@ public final class GLFramebuffer extends AbstractRenderTarget {
     }
 
     @Override
-    public void combineDepth(AbstractRenderTarget other) {
+    public void copyDepthFrom(AbstractRenderTarget other) {
         if (closed) return;
 
-        super.combineDepth(other);
+        super.copyDepthFrom(other);
 
         if (!(other instanceof GLFramebuffer)) {
             throw new IllegalArgumentException("Can only combine with another GLFramebufferRenderTarget");
@@ -262,10 +262,10 @@ public final class GLFramebuffer extends AbstractRenderTarget {
     }
 
     @Override
-    public void combine(AbstractRenderTarget other) {
+    public void copyFrom(AbstractRenderTarget other) {
         if (closed) return;
 
-        super.combine(other);
+        super.copyFrom(other);
 
         if (!(other instanceof GLFramebuffer)) {
             throw new IllegalArgumentException("Can only combine with another GLFramebufferRenderTarget");
@@ -335,7 +335,7 @@ public final class GLFramebuffer extends AbstractRenderTarget {
     }
 
     @Override
-    public void combineTo(AbstractPipeline pipeline, AbstractRenderTarget other) {
+    public void renderTo(AbstractPipeline pipeline, AbstractRenderTarget other) {
         if (quad == null) {
             quad = new GLMesh.Builder(VertexFormat.POSITION_TEX, GLPrimitive.TRIANGLES)
                 .addVertex(0, 0, 0).setUv(0, 0)
@@ -349,27 +349,19 @@ public final class GLFramebuffer extends AbstractRenderTarget {
         if (!(other instanceof GLFramebuffer))
             throw new IllegalArgumentException();
 
-        GLFramebuffer otherTarget = (GLFramebuffer) other;
+        GLFramebuffer targ = (GLFramebuffer) other;
 
         try (AbstractRenderPass<?> pass = PipelineManager.getInstance().createRenderPass("Blit", new AbstractPipeline[]{pipeline})) {
-            pass.setRenderTarget(otherTarget);
+            pass.setRenderTarget(targ);
             pass.setMesh(quad, quad.getIndexCount());
 
-            otherTarget.getColorAttachment().bind(0);
-            otherTarget.getDepthAttachment().bind(1);
-
-            this.getColorAttachment().bind(2);
-            this.getDepthAttachment().bind(3);
-
-            pass.bindTexture("colorTex0", otherTarget.getColorAttachment().getId(), 0);
-            pass.bindTexture("depthTex0", otherTarget.getDepthAttachment().getId(), 1);
-
-            pass.bindTexture("colorTex1", this.getColorAttachment().getId(), 2);
-            pass.bindTexture("depthTex1", this.getDepthAttachment().getId(), 3);
+            pass.bindTexture("overrideColorTex", this.getColorAttachment(), 0);
+            pass.bindTexture("overrideDepthTex", this.getDepthAttachment(), 1);
+            pass.bindTexture("baseColorTex", targ.getColorAttachment(), 2);
+            pass.bindTexture("baseDepthTex", targ.getDepthAttachment(), 3);
 
             pass.setup();
             pass.render();
-            pass.cleanup();
         }
     }
 }

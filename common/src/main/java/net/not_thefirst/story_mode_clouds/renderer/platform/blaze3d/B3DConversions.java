@@ -37,7 +37,19 @@ class B3DConversions {
     }
 
     public static ColorTargetState toColorTargetState(BlendState blendState) {
-        return blendState == BlendState.TRANSLUCENT ? B3DDefinitions.TRANSLUCENT_BLEND_COLOR_TARGET : B3DDefinitions.NONE;
+        if (blendState == BlendState.TRANSLUCENT)
+            return B3DDefinitions.TRANSLUCENT_BLEND_COLOR_TARGET;
+        else if (blendState == BlendState.OPAQUE)
+            return B3DDefinitions.OPAQUE;
+        else if (blendState == BlendState.PREMULTIPLIED_ALPHA)
+            return B3DDefinitions.PREMULTIPLIED_COLOR_TARGET;
+        else if (blendState == BlendState.ADDITIVE)
+            return B3DDefinitions.ADDITIVE_COLOR_TARGET;
+        else if (blendState == BlendState.ADD)
+            return B3DDefinitions.ADD_COLOR_TARGET;
+        else if (blendState == BlendState.SCREEN)
+            return B3DDefinitions.SCREEN_COLOR_TARGET;
+        return null;
     }
 
     public static com.mojang.blaze3d.vertex.VertexFormat toVanillaVertexFormat(VertexFormat vertexFormat) {

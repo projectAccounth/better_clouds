@@ -65,7 +65,7 @@ public class GLPipelines {
         .withId("NONE")
         .withName("NONE")
         .withMaskState(MaskState.NONE)
-        .withBlendState(BlendState.NONE)
+        .withBlendState(BlendState.OPAQUE)
         .build();
 
     public static final GLPipeline CUSTOM_POSITION_COLOR = base
@@ -88,7 +88,7 @@ public class GLPipelines {
         .withVertexShader(NO_OP_VERT.toString())
         .withFragmentShader(NO_OP_FRAG.toString())
         .withMaskState(MaskState.DEPTH_ONLY)
-        .withBlendState(BlendState.NONE)
+        .withBlendState(BlendState.OPAQUE)
         .build();
 
     public static final GLPipeline OUTLINE = base
@@ -104,7 +104,7 @@ public class GLPipelines {
         .withId("STENCIL")
         .withVertexShader(SCREENQUAD.toString())
         .withFragmentShader(STENCIL_FRAG.toString())
-        .withBlendState(BlendState.TRANSLUCENT)
+        .withBlendState(BlendState.OPAQUE)
         .withDepthTestState(DepthTestState.ALWAYS)
         .withMaskState(MaskState.COLOR_DEPTH)
         .build();
@@ -113,8 +113,8 @@ public class GLPipelines {
         .withId("BLIT")
         .withVertexShader(SCREENQUAD.toString())
         .withFragmentShader(BLIT_FRAG.toString())
-        .withBlendState(BlendState.TRANSLUCENT)
-        .withDepthTestState(DepthTestState.ALWAYS)
+        .withBlendState(BlendState.ADD)
+        .withDepthTestState(DepthTestState.LEQUAL)
         .withMaskState(MaskState.COLOR_DEPTH)
         .build();
 

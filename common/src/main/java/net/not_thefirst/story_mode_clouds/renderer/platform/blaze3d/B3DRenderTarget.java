@@ -78,7 +78,7 @@ public class B3DRenderTarget extends AbstractRenderTarget {
     }
 
     @Override
-    public void combineTo(AbstractPipeline pipeline, AbstractRenderTarget other) {
+    public void renderTo(AbstractPipeline pipeline, AbstractRenderTarget other) {
         if (quad == null) {
             quad = new B3DMesh.Builder(VertexFormat.POSITION_TEX, GLPrimitive.TRIANGLES)
                 .addVertex(0, 0, 0).setUv(0, 0)

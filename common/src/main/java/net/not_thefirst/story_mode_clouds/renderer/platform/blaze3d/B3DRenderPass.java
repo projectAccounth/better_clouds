@@ -17,6 +17,7 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractRenderPass;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractTexture;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractUBODataBuffer;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
@@ -126,7 +127,7 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
     }
 
     @Override
-    public void bindTexture(String name, int textureId, int slot) {
+    public void bindTexture(String name, AbstractTexture tex, int slot) {
         throw new UnsupportedOperationException("Unimplemented method 'bindTexture'");
     }
 

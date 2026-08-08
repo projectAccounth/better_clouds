@@ -13,6 +13,7 @@ import org.lwjgl.opengl.GL31;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractRenderPass;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractTexture;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractUBODataBuffer;
 import net.not_thefirst.lib.gl_render_system.alt.UniformValue;
 import net.not_thefirst.lib.gl_render_system.shader.GLProgram;
@@ -24,17 +25,21 @@ public class GLRenderPass extends AbstractRenderPass<GLPipeline> {
 
     private final Map<String, ByteBuffer> uniformBlocks = new HashMap<>();
     private final Map<Integer, GLTextureBinding> textureBindings = new HashMap<>();
+    private final Map<Integer, AbstractTexture> boundTextureObjects = new HashMap<>();
     private final Map<String, Integer> samplerBindings = new HashMap<>();
 
     private GLStateGuard stateGuard;
 
-    GLRenderPass(String name, GLPipeline... pipelines) {
+    public GLRenderPass(String name, GLPipeline... pipelines) {
         super(name, pipelines);
     }
 
     @Override
     public void setup() {
         super.setup();
+        boundTextureObjects.forEach((slot, tex) -> {
+            tex.bind(slot);
+        });
         // stateGuard = new GLStateGuard();
     }
 
@@ -101,6 +106,9 @@ public class GLRenderPass extends AbstractRenderPass<GLPipeline> {
     @Override
     public void cleanup() {
         super.cleanup();
+        boundTextureObjects.forEach((slot, tex) -> {
+            tex.unbind(slot);
+        });
         // stateGuard.close();
     }
 
@@ -207,15 +215,18 @@ public class GLRenderPass extends AbstractRenderPass<GLPipeline> {
     }
 
     @Override
-    public void bindTexture(String name, int textureId, int slot) {
+    public void bindTexture(String name, AbstractTexture tex, int slot) {
         if (name == null) {
             throw new IllegalArgumentException("Texture sampler name cannot be null");
         }
         if (slot < 0) {
             throw new IllegalArgumentException("Texture slot cannot be negative");
         }
+        if (!(tex instanceof GLTexture2D))
+            throw new IllegalArgumentException("Incompatible texture type");
 
-        textureBindings.put(slot, new GLTextureBinding(GL11.GL_TEXTURE_2D, textureId, null));
+        textureBindings.put(slot, new GLTextureBinding(GL11.GL_TEXTURE_2D, ((GLTexture2D) tex).getId(), null));
+        boundTextureObjects.put(slot, tex);
         samplerBindings.put(name, slot);
     }
 

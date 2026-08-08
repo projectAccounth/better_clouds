@@ -71,7 +71,7 @@ public class Blaze3DPipelines {
         .withId("cloud_tweaks:pipeline_do")
         .withVertexShader(NO_OP_SHADER_LOCATION.toString())
         .withFragmentShader(NO_OP_SHADER_LOCATION.toString())
-        .withBlendState(BlendState.NONE)
+        .withBlendState(BlendState.OPAQUE)
         .withMaskState(MaskState.DEPTH_ONLY)
         .build();
 
@@ -90,7 +90,7 @@ public class Blaze3DPipelines {
         .withId("cloud_tweaks:stencil")
         .withVertexShader(SCREENQUAD.toString())
         .withFragmentShader(STENCIL_FRAG.toString())
-        .withBlendState(BlendState.TRANSLUCENT)
+        .withBlendState(BlendState.SCREEN)
         .withDepthTestState(DepthTestState.ALWAYS)
         .withMaskState(MaskState.COLOR_DEPTH)
         .withUniforms(Arrays.asList("colorTex0", "colorTex1", "depthTex0", "depthTex1"))
@@ -101,8 +101,8 @@ public class Blaze3DPipelines {
         .withId("cloud_tweaks:blit")
         .withVertexShader(SCREENQUAD.toString())
         .withFragmentShader(BLIT_FRAG.toString())
-        .withBlendState(BlendState.TRANSLUCENT)
-        .withDepthTestState(DepthTestState.ALWAYS)
+        .withBlendState(BlendState.PREMULTIPLIED_ALPHA)
+        .withDepthTestState(DepthTestState.GEQUAL)
         .withMaskState(MaskState.COLOR_DEPTH)
         .withUniforms(Arrays.asList("colorTex0", "colorTex1", "depthTex0", "depthTex1"))
         .build();
