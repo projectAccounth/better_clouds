@@ -15,7 +15,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
     public AbstractStaticMesh.Builder<?, ?> build(
         AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
-        int cx, int cz, float relY, 
+        int cx, int cz,  
         int currentLayer, int colorModifier) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
@@ -35,7 +35,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
                 long cell = cells[cellIdx];
                 int color = Texture.getColor(cell);
                 if (cell != 0L) {
-                    buildFlatCell(bb, dx, dz, currentLayer, relY, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
+                    buildFlatCell(bb, dx, dz, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
                 }
             }
         }
@@ -43,7 +43,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
         return bb;
     }
 
-    private static void buildFlatCell(AbstractStaticMesh.Builder<?, ?> bb, int cx, int cz, int currentLayer, float y, int colorModifier) {
+    private static void buildFlatCell(AbstractStaticMesh.Builder<?, ?> bb, int cx, int cz, int currentLayer, int colorModifier) {
         float x0 = cx * MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float z0 = cz * MeshBuilder.CELL_SIZE_IN_BLOCKS;
@@ -67,7 +67,7 @@ public class ClassicFastMeshBuilder implements MeshTypeBuilder {
     }
 
     @Override
-    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz, float relY, int currentLayer,
+    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz,  int currentLayer,
             int colorModifier) {
         return bb;
     }

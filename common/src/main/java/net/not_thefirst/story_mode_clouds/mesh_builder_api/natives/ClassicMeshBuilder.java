@@ -14,7 +14,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
     public AbstractStaticMesh.Builder<?, ?> build(
         AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
-        int cx, int cz, float relY, 
+        int cx, int cz,  
         int currentLayer, int colorModifier) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
@@ -34,7 +34,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
                 long cell = cells[cellIdx];
                 int color = Texture.getColor(cell);
                 if (cell != 0L) {
-                    buildExtrudedCell(bb, dx, dz, cell, relY, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
+                    buildExtrudedCell(bb, dx, dz, cell, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
                 }
             }
         }
@@ -43,7 +43,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
     }
 
     @Override
-    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz, float relY, int currentLayer,
+    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz,  int currentLayer,
             int colorModifier) {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
                 CloudsConfiguration.getInstance().getLayer(currentLayer);
@@ -63,7 +63,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
                 int color = Texture.getColor(cell);
                 if (cell != 0L) {
                     
-                    buildOutlineCell(bb, dx, dz, cell, relY, currentLayer, 
+                    buildOutlineCell(bb, dx, dz, cell, currentLayer, 
                         layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier,
                         cells,
                         wrapped,
@@ -76,7 +76,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
     }
 
     private static void buildExtrudedCell(AbstractStaticMesh.Builder<?, ?> bb,
-                                   int cx, int cz, long cell, float relY, int currentLayer, int colorModifier) {
+                                   int cx, int cz, long cell,  int currentLayer, int colorModifier) {
         float x0 = cx * MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float x1 = x0 + MeshBuilder.CELL_SIZE_IN_BLOCKS;
         float y0 = 0.0F;
@@ -157,7 +157,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
         int cx,
         int cz,
         long cell,
-        float relY,
+        
         int currentLayer,
         int colorModifier,
         long[] cells,

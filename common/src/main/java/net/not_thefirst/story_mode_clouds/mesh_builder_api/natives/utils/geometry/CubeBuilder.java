@@ -145,7 +145,7 @@ public class CubeBuilder {
         float radius,
         int segments,
         int layer,
-        float relY, int colorModifier
+         int colorModifier
     ) {
         for (EdgeDir dir : EdgeDir.values()) {
             BevelWrappers.topEdge(

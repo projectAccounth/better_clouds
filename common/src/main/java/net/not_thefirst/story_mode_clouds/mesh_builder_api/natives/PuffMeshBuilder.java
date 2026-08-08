@@ -200,7 +200,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
     public AbstractStaticMesh.Builder<?, ?> build(
         AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
-        int cx, int cz, float relY, 
+        int cx, int cz,  
         int currentLayer, int colorModifier) {
 
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
@@ -254,11 +254,11 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
                     switch (MeshBuilder.SHAPE) {
                         case CROSS:
-                            drawCross(bb, px, py, pz, hr, vr, currentLayer, relY, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
+                            drawCross(bb, px, py, pz, hr, vr, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
                             break;
                         case CUBE:
                         default:
-                            drawCube(bb, px, py, pz, hr, vr, currentLayer, relY, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
+                            drawCube(bb, px, py, pz, hr, vr, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
                             break;
                     }
                 }
@@ -272,7 +272,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         AbstractStaticMesh.Builder<?, ?> bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        int layer, float relY, int colorModifier) {
+        int layer,  int colorModifier) {
 
         float x0 = cx - hr; 
         float x1 = cx + hr;
@@ -340,7 +340,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         AbstractStaticMesh.Builder<?, ?> bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        int layer, float relY, int colorModifier) {
+        int layer,  int colorModifier) {
 
         float y0 = cy;
         float y1 = cy + vr;
@@ -363,7 +363,7 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
     }
 
     @Override
-    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz, float relY, int currentLayer,
+    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz,  int currentLayer,
             int colorModifier) {
         return bb;
     }

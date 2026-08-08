@@ -47,7 +47,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
     public AbstractStaticMesh.Builder<?, ?> build(
         AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state, 
-        int cx, int cz, float relY,
+        int cx, int cz, 
         int currentLayer, 
         int colorModifier) {
 
@@ -76,7 +76,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
                 long cell = cells[x + z * w];
                 int color = Texture.getColor(cell);
                 if (cell != 0L) {
-                    buildCell(bb, dx, dz, cell, relY, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier, x, z, state);
+                    buildCell(bb, dx, dz, cell, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier, x, z, state);
                 }
             }
         }
@@ -85,7 +85,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
     }
     
     private static void buildCell(AbstractStaticMesh.Builder<?, ?> bb,
-                            int cx, int cz, long cell, float relY,
+                            int cx, int cz, long cell, 
                             int currentLayer, int colorModifier, int cellIdxX, int cellIdxZ, LayerState state) {
 
         float cellSize = MeshBuilder.CELL_SIZE_IN_BLOCKS;
@@ -139,7 +139,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
     }
 
     @Override
-    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz, float relY, int currentLayer,
+    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz,  int currentLayer,
             int colorModifier) {
         return bb;
     }

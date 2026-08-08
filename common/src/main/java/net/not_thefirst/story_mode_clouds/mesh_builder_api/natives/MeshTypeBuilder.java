@@ -7,12 +7,12 @@ public interface MeshTypeBuilder {
     AbstractStaticMesh.Builder<?, ?> build(
         AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
-        int cx, int cz, float relY, 
+        int cx, int cz,
         int currentLayer, int colorModifier);
 
     AbstractStaticMesh.Builder<?, ?> buildOutline(
         AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
-        int cx, int cz, float relY, 
+        int cx, int cz,  
         int currentLayer, int colorModifier);
 }
