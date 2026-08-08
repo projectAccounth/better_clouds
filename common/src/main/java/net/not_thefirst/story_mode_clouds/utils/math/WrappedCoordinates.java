@@ -6,6 +6,7 @@ public class WrappedCoordinates {
     private final int[] wrappedZ;
     private final int width;
     private final int height;
+    private final int range;
     
     public WrappedCoordinates(int centerX, int centerZ, int range, int width, int height) {
         this.width = width;
@@ -13,6 +14,7 @@ public class WrappedCoordinates {
         int size = range * 2 + 1;
         this.wrappedX = new int[size];
         this.wrappedZ = new int[size];
+        this.range = range;
         
         for (int i = 0; i < size; i++) {
             wrappedX[i] = Math.floorMod(centerX + (i - range), width);
@@ -33,4 +35,18 @@ public class WrappedCoordinates {
         int z = wrappedZ[offsetZ + range];
         return x + z * width;
     }
+
+    public int getCellIndex(int offsetX, int offsetZ) {
+        return getCellIndex(offsetX, offsetZ, this.range);
+    }
+
+    public int getWrappedX(int offsetX) {
+        return wrappedX[offsetX + this.range];
+    }
+    
+    public int getWrappedZ(int offsetZ) {
+        return wrappedZ[offsetZ + this.range];
+    }
+
+    public int getRange() { return range; }
 }

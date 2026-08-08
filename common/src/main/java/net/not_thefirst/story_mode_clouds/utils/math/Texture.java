@@ -40,7 +40,7 @@ public class Texture {
             && !isWestEmpty(c);
     }
 
-    private static int idx(int x, int y, int w, int h) {
+    public static int idx(int x, int y, int w, int h) {
         x = Math.floorMod(x, w);
         y = Math.floorMod(y, h);
         return x + y * w;
@@ -113,55 +113,6 @@ public class Texture {
         if (isSolid(cells[idx(x - 1, y,     w, h)])) count++; // W
 
         return count;
-    }
-
-    private static boolean n(long[] c, int x, int y, int w, int h) {
-        return isSolid(c[idx(x, y - 1, w, h)]);
-    }
-
-    private static boolean e(long[] c, int x, int y, int w, int h) {
-        return isSolid(c[idx(x + 1, y, w, h)]);
-    }
-
-    private static boolean s(long[] c, int x, int y, int w, int h) {
-        return isSolid(c[idx(x, y + 1, w, h)]);
-    }
-
-    private static boolean w0(long[] c, int x, int y, int w, int h) {
-        return isSolid(c[idx(x - 1, y, w, h)]);
-    }
-
-    public static boolean shouldEmitCap(
-            long[] cells,
-            byte[] neighbors,
-            int x, int y,
-            int w, int h
-    ) {
-        boolean n = n(cells, x, y, w, h);
-        boolean e = e(cells, x, y, w, h);
-        boolean s = s(cells, x, y, w, h);
-        boolean w0 = w0(cells, x, y, w, h);
-
-        int count =
-              (n ? 1 : 0)
-            + (e ? 1 : 0)
-            + (s ? 1 : 0)
-            + (w0 ? 1 : 0);
-
-        if (count == 3) {
-            return true;
-        }
-
-        if (count == 2 && !(n && s) && !(e && w0)) {
-            return true;
-        }
-        
-
-        if (count == 4) {
-            return neighbors[idx(x, y, w, h)] < 8;
-        }
-
-        return false;
     }
 
     public static class TextureData {

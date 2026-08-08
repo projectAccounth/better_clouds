@@ -1,7 +1,5 @@
 package net.not_thefirst.story_mode_clouds.utils.minecraft;
 
-import com.mojang.blaze3d.platform.ClipboardManager;
-
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;

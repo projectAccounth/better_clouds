@@ -1,6 +1,11 @@
 package net.not_thefirst.story_mode_clouds.utils.minecraft;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.jspecify.annotations.Nullable;
+
+import com.google.common.io.Files;
 
 import net.minecraft.resources.Identifier;
 
@@ -60,7 +65,7 @@ public class IdentifierWrapper {
     }
 
     /**
-     * Get the namespace ComponentWrapper.
+     * Get the namespace.
      * 
      * @return The namespace (e.g., "minecraft")
      */
@@ -69,12 +74,21 @@ public class IdentifierWrapper {
     }
 
     /**
-     * Get the path ComponentWrapper.
+     * Get the path.
      * 
      * @return The path (e.g., "textures/environment/clouds.png")
      */
     public String getPath() {
         return delegate.getPath();
+    }
+
+    /**
+     * Gets the file name without extension.
+     * @return The file name without extension.
+     */
+    public String getFilename() {
+        Path path = Paths.get(getPath());
+        return Files.getNameWithoutExtension(path.getFileName().toString());
     }
 
     /**
