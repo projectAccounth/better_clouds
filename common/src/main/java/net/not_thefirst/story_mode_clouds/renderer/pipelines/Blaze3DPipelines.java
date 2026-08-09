@@ -90,7 +90,7 @@ public class Blaze3DPipelines {
         .withId("cloud_tweaks:stencil")
         .withVertexShader(SCREENQUAD.toString())
         .withFragmentShader(STENCIL_FRAG.toString())
-        .withBlendState(BlendState.SCREEN)
+        .withBlendState(BlendState.OPAQUE)
         .withDepthTestState(DepthTestState.ALWAYS)
         .withMaskState(MaskState.COLOR_DEPTH)
         .withUniforms(Arrays.asList("colorTex0", "colorTex1", "depthTex0", "depthTex1"))

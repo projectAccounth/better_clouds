@@ -113,7 +113,7 @@ public class GLPipelines {
         .withId("BLIT")
         .withVertexShader(SCREENQUAD.toString())
         .withFragmentShader(BLIT_FRAG.toString())
-        .withBlendState(BlendState.ADD)
+        .withBlendState(BlendState.PREMULTIPLIED_ALPHA)
         .withDepthTestState(DepthTestState.LEQUAL)
         .withMaskState(MaskState.COLOR_DEPTH)
         .build();

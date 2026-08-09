@@ -40,7 +40,11 @@
   "cloudtweaks.tooltip.clouds_mod_enabled": "Enable or disable the cloud rendering mod entirely. Disabling will revert to vanilla clouds.",
 
   "cloudtweaks.option.rebuild_clouds" : "Rebuild Clouds",
-  "cloudtweaks.raw.clouds_rebuilt": "Rebuilt.",
+  "cloudtweaks.desc.rebuild_clouds": "Rebuild the current cloud layers.",
+  "cloudtweaks.option.recompile_scripts": "Recompile Custom Scripts",
+  "cloudtweaks.desc.recompile_scripts": "Reload all custom mesh building scripts.",
+  "cloudtweaks.raw.clouds_rebuilt": "Rebuilt clouds.",
+  "cloudtweaks.raw.reloaded_scripts": "Recompiled custom scripts and rebuilt clouds with the updated scripts (if used). Check logs for any errors.",
 
   "cloudtweaks.option.clouds_rendered": "Clouds Rendered",
   "cloudtweaks.option.cloud_distance": "Cloud Distance (chunks)",

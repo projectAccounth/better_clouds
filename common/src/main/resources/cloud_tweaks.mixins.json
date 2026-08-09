@@ -9,7 +9,8 @@
     "CloudRendererMixin",
     "ClientWorldMixin",
     "LevelRendererMixin",
-    "ClientMixin"
+    "ClientMixin",
+    "ResourceKeyMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -12,14 +12,8 @@ import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;
 
-import java.time.format.DateTimeFormatter;
-import java.time.Instant;
-import java.time.ZoneId;
-
 public class PresetBrowserScreen {
     private PresetBrowserScreen() {}
-    
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
 
     public static Screen createBrowserScreen(PresetController.PresetCategory category, Screen backScreen) {
         var builder = YetAnotherConfigLib.createBuilder()
@@ -293,14 +287,6 @@ public class PresetBrowserScreen {
         }
         
         categoryBuilder.group(group.build());
-    }
-    
-    private static String formatCategoryName(PresetController.PresetCategory category) {
-        return switch (category) {
-            case COLORS -> "Cloud Colors";
-            case LIGHTING -> "Lighting";
-            case LIGHT_SOURCES -> "Light Sources";
-        };
     }
 
     private static void copyToClipboard(String text) {
