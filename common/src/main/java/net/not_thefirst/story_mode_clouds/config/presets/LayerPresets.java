@@ -161,7 +161,7 @@ public class LayerPresets {
         try (FileReader reader = new FileReader(presetFile)) {
             LayerConfiguration layer = GSON.fromJson(reader, LayerConfiguration.class);
             if (layer != null) {
-                CloudsConfiguration.Dimension dimension = CloudsConfiguration.Dimension.fromId(metadata.dimension);
+                CloudsConfiguration.Dimension dimension = CloudsConfiguration.Dimension.get(metadata.dimension);
                 if (dimension == null) {
                     LoggerProvider.get().error("Invalid dimension '{}' for layer preset {}", metadata.dimension, presetId);
                     return null;

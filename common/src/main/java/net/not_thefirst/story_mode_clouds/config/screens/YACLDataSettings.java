@@ -552,22 +552,23 @@ public class YACLDataSettings {
             .build();
     }
 
-    public static ConfigCategory buildLayersSettings(CloudsConfiguration config) {
-        return buildLayersSettingsForDimension(config, CloudsConfiguration.Dimension.OVERWORLD, 
-            "cloudtweaks.category.overworld_layers", "cloudtweaks.desc.overworld_layers");
+    static Screen createLayerSettingsScreenForDimension(
+        CloudsConfiguration config, 
+        CloudsConfiguration.Dimension dimension,
+        Screen backScreen) {
+        return YetAnotherConfigLib.createBuilder()
+            .title(ComponentWrapper.translatable("cloudtweaks.title.layer_settings"))
+            .save(CloudsConfiguration::save)
+            .category(buildLayersSettingsForDimension(
+                config, 
+                dimension, 
+                "cloudtweaks.category.layers", 
+                "cloudtweaks.desc.layers"))
+            .build()
+            .generateScreen(backScreen);
     }
 
-    public static ConfigCategory buildNetherLayersSettings(CloudsConfiguration config) {
-        return buildLayersSettingsForDimension(config, CloudsConfiguration.Dimension.NETHER,
-            "cloudtweaks.category.nether_layers", "cloudtweaks.desc.nether_layers");
-    }
-
-    public static ConfigCategory buildEndLayersSettings(CloudsConfiguration config) {
-        return buildLayersSettingsForDimension(config, CloudsConfiguration.Dimension.END,
-            "cloudtweaks.category.end_layers", "cloudtweaks.desc.end_layers");
-    }
-
-    private static ConfigCategory buildLayersSettingsForDimension(
+    static ConfigCategory buildLayersSettingsForDimension(
         CloudsConfiguration config, 
         CloudsConfiguration.Dimension dimension,
         String categoryNameKey,
@@ -599,7 +600,13 @@ public class YACLDataSettings {
                 ClientHelper.sendLocalSystemMessage(
                     ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.added_layer_prefix").getString() + layerHolder.layers.size() + ComponentWrapper.translatable("cloudtweaks.message.added_layer_to").getString() + dimension.getId())
                 );
-                ClientHelper.setScreen(null);
+
+                Screen refreshedScreen = createLayerSettingsScreenForDimension(config, dimension, ClientHelper.getCurrentScreen());
+                if (refreshedScreen != null) {
+                    ClientHelper.setScreen(refreshedScreen);
+                } else {
+                    ClientHelper.setScreen(null);
+                }
             })
             .build());
         
@@ -637,7 +644,12 @@ public class YACLDataSettings {
                             ClientHelper.sendLocalSystemMessage(
                                 ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.removed_layer_prefix").getString() + dimension.getId())
                             );
-                            ClientHelper.setScreen(null);
+                            Screen refreshedScreen = createLayerSettingsScreenForDimension(config, dimension, ClientHelper.getCurrentScreen());
+                            if (refreshedScreen != null) {
+                                ClientHelper.setScreen(refreshedScreen);
+                            } else {
+                                ClientHelper.setScreen(null);
+                            }
                         }
                     })
                     .build());

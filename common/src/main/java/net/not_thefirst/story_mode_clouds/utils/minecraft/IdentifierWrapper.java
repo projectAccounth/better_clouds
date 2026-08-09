@@ -28,6 +28,32 @@ public class IdentifierWrapper {
     }
 
     /**
+     * Tries to wrap an assumed Minecraft's Identifier/ResourceLocation into an IdentifierWrapper.
+     * @param identifier The Minecraft Identifier to wrap
+     * @return The wrapped IdentifierWrapper, or null if the input is not a valid Identifier
+     */
+    public static IdentifierWrapper tryWrap(final Object identifier) {
+        try {
+            return wrapOrThrow(identifier);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Wraps a Minecraft Identifier/ResourceLocation into an IdentifierWrapper.
+     * @param identifier The Minecraft Identifier to wrap
+     * @return The wrapped IdentifierWrapper
+     * @throws IllegalArgumentException if the input is not a valid Identifier
+     */
+    public static IdentifierWrapper wrapOrThrow(final Object identifier) {
+        if (identifier instanceof Identifier) {
+            return new IdentifierWrapper((Identifier) identifier);
+        }
+        throw new IllegalArgumentException("Object is not a valid Minecraft Identifier: " + identifier);
+    }
+
+    /**
      * Parse an identifier from a string in "namespace:path" format.
      * 
      * @param string The identifier string (e.g., "minecraft:textures/environment/clouds.png")
@@ -35,7 +61,7 @@ public class IdentifierWrapper {
      * @throws IllegalArgumentException if the string is not a valid identifier
      */
     public static IdentifierWrapper parse(String string) {
-        return new IdentifierWrapper(net.minecraft.resources.Identifier.parse(string));
+        return new IdentifierWrapper(Identifier.parse(string));
     }
 
     /**
@@ -46,7 +72,7 @@ public class IdentifierWrapper {
      * @return A new IdentifierWrapper, or null if invalid
      */
     public static @Nullable IdentifierWrapper tryParse(String string) {
-        net.minecraft.resources.Identifier id = net.minecraft.resources.Identifier.tryParse(string);
+        Identifier id = Identifier.tryParse(string);
         return id != null ? new IdentifierWrapper(id) : null;
     }
 
@@ -57,10 +83,10 @@ public class IdentifierWrapper {
      * @return A new IdentifierWrapper with "minecraft" namespace
      */
     public static IdentifierWrapper withDefaultNamespace(String path) {
-        return new IdentifierWrapper(net.minecraft.resources.Identifier.withDefaultNamespace(path));
+        return new IdentifierWrapper(Identifier.withDefaultNamespace(path));
     }
 
-    private IdentifierWrapper(net.minecraft.resources.Identifier delegate) {
+    private IdentifierWrapper(Identifier delegate) {
         this.delegate = delegate;
     }
 

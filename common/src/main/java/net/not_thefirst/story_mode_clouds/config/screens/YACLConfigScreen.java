@@ -10,6 +10,7 @@ import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.Starter;
 import net.not_thefirst.story_mode_clouds.config.presets.LayerPresets;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;
 
@@ -31,21 +32,36 @@ public class YACLConfigScreen {
         LayerPresets.initialize();
         YACLPresetWidgets.setParentScreen(parent);
         
-        return YetAnotherConfigLib.createBuilder()
+        var builder = YetAnotherConfigLib.createBuilder()
             .title(ComponentWrapper.translatable("cloudtweaks.title"))
             .save(CloudsConfiguration::save)
             
             .category(buildGlobalSettings(config))
             .category(buildPresetsSettings())
             .category(buildLightingSettings(config))
+            .category(buildLayerSettings(config, parent))
             .category(YACLDataSettings.buildSkyColorSettings(config))
-            .category(YACLDataSettings.buildLightSourcesSettings(config))
-            .category(YACLDataSettings.buildLayersSettings(config))
-            .category(YACLDataSettings.buildNetherLayersSettings(config))
-            .category(YACLDataSettings.buildEndLayersSettings(config))
-            
-            .build()
-            .generateScreen(parent);
+            .category(YACLDataSettings.buildLightSourcesSettings(config));
+
+        return builder.build().generateScreen(parent);
+    }
+
+    private static ConfigCategory buildLayerSettings(CloudsConfiguration config, Screen parent) {
+        var builder = ConfigCategory.createBuilder()
+            .name(ComponentWrapper.translatable("cloudtweaks.category.layers"))
+            .tooltip(ComponentWrapper.translatable("cloudtweaks.desc.layers"));
+
+        for (CloudsConfiguration.Dimension dimension : CloudsConfiguration.Dimension.values()) {
+            builder.option(ButtonOption.createBuilder()
+                .name(ComponentWrapper.literal(dimension.getId()))
+                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.desc." + dimension.getId() + "_layers")))
+                .action((yacl, btn) -> {
+                    ClientHelper.setScreen(YACLDataSettings.createLayerSettingsScreenForDimension(config, dimension, parent));
+                })
+                .build());
+        }
+
+        return builder.build();
     }
 
     private static ConfigCategory buildGlobalSettings(CloudsConfiguration config) {

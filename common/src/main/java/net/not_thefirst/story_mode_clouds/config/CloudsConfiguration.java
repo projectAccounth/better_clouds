@@ -14,27 +14,38 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.IntFunction;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.ToNumberPolicy;
+
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
-import net.not_thefirst.story_mode_clouds.config.utils.EnumAdapterFactory;
+import net.not_thefirst.lib.utils.objects.DynamicEnum;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeDataCache;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeData.ConfigEntry;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.utils.json.DimensionTypeAdapter;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.math.NumberSequence;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.DimensionProvider;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.IdentifierWrapper;
 
 public class CloudsConfiguration {
+
+    // ------------------------------------------
+    // defs and consts
+
     private static final Gson GSON = 
         new GsonBuilder()
             .setPrettyPrinting()
-            .registerTypeAdapterFactory(new EnumAdapterFactory())
+            .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
+            .registerTypeAdapter(Dimension.class, new DimensionTypeAdapter())
             .create();
 
     private static final String CONFIG_DIR = "config";
@@ -44,12 +55,6 @@ public class CloudsConfiguration {
     // Backup throttling
     private static long lastBackupTime = 0;
     private static final long BACKUP_THROTTLE_MS = 8000; // main config backup cd
-
-    public boolean CLOUDS_RENDERED = true;
-    
-    public boolean OVERWORLD_CLOUDS_RENDERED = true;
-    public boolean NETHER_CLOUDS_RENDERED = false;
-    public boolean END_CLOUDS_RENDERED = false;
     
     private static CloudsConfiguration instance = new CloudsConfiguration();
     
@@ -89,97 +94,83 @@ public class CloudsConfiguration {
         new SkyColorKeypoint(23999, 0xFFD8A8)
     );
 
-    public List<SkyColorKeypoint> CLOUD_COLOR = new ArrayList<>(DEFAULT_COLORS);
-    public CloudColorProviderMode COLOR_MODE = CloudColorProviderMode.VANILLA;
+    public List<SkyColorKeypoint> CLOUD_COLOR = new ArrayList<>(Arrays.asList(
+        new SkyColorKeypoint(0, 0xFFD8A8),
+        new SkyColorKeypoint(3000, 0xFFFFFF),
+        new SkyColorKeypoint(6000, 0xFFFFFF),
+        new SkyColorKeypoint(9000, 0xF4F6F8),
+        new SkyColorKeypoint(12000, 0xFF9E5E),
+        new SkyColorKeypoint(13000, 0xFFB37A),
+        new SkyColorKeypoint(14000, 0x7A86A8),
+        new SkyColorKeypoint(18000, 0x2A2F45),
+        new SkyColorKeypoint(22000, 0x4A567A),
+        new SkyColorKeypoint(23999, 0xFFD8A8)
+    ));
 
+    // ------------------------------------------
+    // global config section
+    
+    public boolean CLOUDS_RENDERED = true;
+
+    public CloudColorProviderMode COLOR_MODE = CloudColorProviderMode.VANILLA;
     public LightingParameters LIGHTING        = new LightingParameters();
     public WeatherColorConfig WEATHER_COLOR   = new WeatherColorConfig();
     public int                CLOUD_GRID_SIZE = 64; // legacy serialized block half-range, kept for backward compatibility
     public Integer            CLOUD_DISTANCE_CHUNKS = null; // distance in chunks; grid half-range = (chunks * 16) / 12
 
-    private LayerHolder LAYERS = new LayerHolder();
-    private LayerHolder NETHER_LAYERS = new LayerHolder();  
-    private LayerHolder END_LAYERS = new LayerHolder();  
+    private final Map<Dimension, LayerHolder> DIMENSION_LAYERS = new HashMap<>();
+    private final Map<Dimension, Boolean> DIMENSION_CLOUD_RENDERED = new HashMap<>();
+    
+    // ------------------------------------------
+    // constructor
 
-    private final Map<Dimension, LayerHolder> DIMENSION_LAYERS = new HashMap<>(); 
-
-    public static final class Dimension {
-        private final String id;
-
-        public Dimension(String id) {
-            this.id = id;
-        }
-
-        public static final Dimension OVERWORLD = new Dimension("overworld");
-        public static final Dimension NETHER = new Dimension("nether");
-        public static final Dimension END = new Dimension("end");
-        
-        public String getId() {
-            return id;
-        }
-
-        public static Dimension[] defaults() {
-            return new Dimension[] {OVERWORLD, NETHER, END};
-        }
-        
-        public static Dimension fromId(String id) {
-            for (Dimension d : Dimension.defaults()) {
-                if (d.id.equals(id)) {
-                    return d;
-                }
-            }
-            return null;
-        }
-
-        public static Dimension fromOrdinal(int ordinal) {
-            Dimension[] dims = Dimension.defaults();
-            if (ordinal >= 0 && ordinal < dims.length) {
-                return dims[ordinal];
-            }
-            return null;
-        }
-
-        public static Dimension fromVanilla(ResourceKey<?> key) {
-            if (key.equals(Level.OVERWORLD)) {
-                return OVERWORLD;
-            } else if (key.equals(Level.NETHER)) {
-                return NETHER;
-            } else if (key.equals(Level.END)) {
-                return END;
-            }
-            return null;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (!(o instanceof Dimension d)) return false;
-            return this.id == d.id;
-        }
-
-        @Override
-        public int hashCode() {
-            return this.id.hashCode();
-        }
+    public CloudsConfiguration() {
+        initializeDimensions();
+        // LAYERS.addLayer(new LayerConfiguration(0));
+        // NETHER_LAYERS.addLayer(new LayerConfiguration(0));
+        // END_LAYERS.addLayer(new LayerConfiguration(0));
     }
+
+    // ------------------------------------------
+    // misc initialization funcs
+
+    public void initializeDimensions() {
+        Set<IdentifierWrapper> dimensions = DimensionProvider.getAllDimensions();
+
+        dimensions.forEach((dim) -> {
+            Dimension dimension = Dimension.getOrRegister(dim);
+
+            if (!DIMENSION_LAYERS.containsKey(dimension)) {
+                LayerHolder holder = new LayerHolder();
+                holder.addLayer(new LayerConfiguration(0));
+                DIMENSION_LAYERS.put(dimension, holder);
+            }
+
+            if (!DIMENSION_CLOUD_RENDERED.containsKey(dimension)) {
+                boolean rendered = dimension.getId() == "minecraft:overworld";
+                DIMENSION_CLOUD_RENDERED.put(dimension, rendered);
+            }
+        });
+    }
+    // ------------------------------------------
+    // getter/setter funcs
+
+    public static CloudsConfiguration getInstance() { return instance; }
     
-    public LayerHolder getHolder() { return LAYERS; }
-    
+    @Nullable
     public LayerHolder getLayerHolder(Dimension dimension) {
-        return switch (dimension.getId()) {
-            case "overworld" -> LAYERS;
-            case "nether" -> NETHER_LAYERS;
-            case "end" -> END_LAYERS;
-            default -> null;
-        };
+        if (!DIMENSION_LAYERS.containsKey(dimension)) {
+            LoggerProvider.get().warn("LayerHolder for dimension {} not found, hash code: {}. Recreating.", dimension.getId(), dimension.hashCode());
+            LayerHolder holder = new LayerHolder();
+            holder.addLayer(new LayerConfiguration(0));
+            DIMENSION_LAYERS.put(dimension, holder);
+            return holder;
+        }
+        return DIMENSION_LAYERS.get(dimension);
     }
     
     public void setLayerHolder(Dimension dimension, LayerHolder holder) {
-        switch (dimension.getId()) {
-            case "overworld" -> this.LAYERS = holder;
-            case "nether" -> this.NETHER_LAYERS = holder;
-            case "end" -> this.END_LAYERS = holder;
-            default -> LoggerProvider.get().error("Attempted to set layer holder for unknown dimension: {}", dimension.getId());
-        }
+        DIMENSION_LAYERS.put(dimension, holder);
     }
 
     public LayerConfiguration getLayer(int idx) {
@@ -203,13 +194,47 @@ public class CloudsConfiguration {
         return holder == null ? 0 : holder.layers.size();
     }
 
-    public LayerConfiguration template = new LayerConfiguration();
-
-    public CloudsConfiguration() {
-        LAYERS.addLayer(new LayerConfiguration(0));
-        NETHER_LAYERS.addLayer(new LayerConfiguration(0));
-        END_LAYERS.addLayer(new LayerConfiguration(0));
+    public long getLastModifiedTime() {
+        return lastModificationTime;
     }
+
+    /**
+     * Mark this configuration as modified. Called when any setting changes.
+     */
+    public void markModified() {
+        lastModificationTime = System.currentTimeMillis();
+    }
+
+    
+    public boolean getCloudRendered(Dimension dimension) {
+        return DIMENSION_CLOUD_RENDERED.getOrDefault(dimension, false);
+    }
+    
+    public void setCloudRendered(Dimension dimension, boolean value) {
+        DIMENSION_CLOUD_RENDERED.put(dimension, value);
+    }
+
+    public int getCloudDistanceChunks() {
+        if (CLOUD_DISTANCE_CHUNKS != null && CLOUD_DISTANCE_CHUNKS > 0) {
+            return CLOUD_DISTANCE_CHUNKS;
+        }
+        int derived = Math.round(CLOUD_GRID_SIZE * 12f / 16f);
+        return derived >= ConfigConstants.MIN_CLOUD_DISTANCE_CHUNKS ? derived : ConfigConstants.DEFAULT_CLOUD_DISTANCE_CHUNKS;
+    }
+
+    public void setCloudDistanceChunks(int value) {
+        CLOUD_DISTANCE_CHUNKS = value;
+        CLOUD_GRID_SIZE = Math.round(value * 16f / 12f);
+    }
+
+    public int getCloudGridRange() {
+        return Math.round(getCloudDistanceChunks() * 16f / 12f);
+    }
+
+    public WeatherColorConfig getWeather() { return WEATHER_COLOR; }
+
+    // ------------------------------------------
+    // file management
 
     public static void load() {
         if (!CONFIG_FILE.exists()) {
@@ -226,19 +251,6 @@ public class CloudsConfiguration {
 
         if (instance == null) {
             instance = new CloudsConfiguration();
-        }
-
-        if (instance.LAYERS == null) {
-            instance.LAYERS = new LayerHolder();
-            instance.LAYERS.addLayer(new LayerConfiguration(0));
-        }
-        if (instance.NETHER_LAYERS == null) {
-            instance.NETHER_LAYERS = new LayerHolder();
-            instance.NETHER_LAYERS.addLayer(new LayerConfiguration(0));
-        }
-        if (instance.END_LAYERS == null) {
-            instance.END_LAYERS = new LayerHolder();
-            instance.END_LAYERS.addLayer(new LayerConfiguration(0));
         }
 
         if (instance.CLOUD_COLOR == null || instance.CLOUD_COLOR.isEmpty()) {
@@ -380,56 +392,9 @@ public class CloudsConfiguration {
         }
     }
 
-    public static CloudsConfiguration getInstance() { return instance; }
 
-    public long getLastModifiedTime() {
-        return lastModificationTime;
-    }
-
-    /**
-     * Mark this configuration as modified. Called when any setting changes.
-     */
-    public void markModified() {
-        lastModificationTime = System.currentTimeMillis();
-    }
-
-    
-    public boolean getCloudRendered(Dimension dimension) {
-        return switch (dimension.getId()) {
-            case "overworld" -> OVERWORLD_CLOUDS_RENDERED;
-            case "nether" -> NETHER_CLOUDS_RENDERED;
-            case "end" -> END_CLOUDS_RENDERED;
-            default -> false;
-        };
-    }
-    
-    public void setCloudRendered(Dimension dimension, boolean value) {
-        switch (dimension.getId()) {
-            case "overworld" -> this.OVERWORLD_CLOUDS_RENDERED = value;
-            case "nether" -> this.NETHER_CLOUDS_RENDERED = value;
-            case "end" -> this.END_CLOUDS_RENDERED = value;
-            default -> LoggerProvider.get().error("Attempted to set cloud rendered for unknown dimension: {}", dimension.getId());
-        }
-    }
-
-    public int getCloudDistanceChunks() {
-        if (CLOUD_DISTANCE_CHUNKS != null && CLOUD_DISTANCE_CHUNKS > 0) {
-            return CLOUD_DISTANCE_CHUNKS;
-        }
-        int derived = Math.round(CLOUD_GRID_SIZE * 12f / 16f);
-        return derived >= ConfigConstants.MIN_CLOUD_DISTANCE_CHUNKS ? derived : ConfigConstants.DEFAULT_CLOUD_DISTANCE_CHUNKS;
-    }
-
-    public void setCloudDistanceChunks(int value) {
-        CLOUD_DISTANCE_CHUNKS = value;
-        CLOUD_GRID_SIZE = Math.round(value * 16f / 12f);
-    }
-
-    public int getCloudGridRange() {
-        return Math.round(getCloudDistanceChunks() * 16f / 12f);
-    }
-
-    public WeatherColorConfig getWeather() { return WEATHER_COLOR; }
+    // ------------------------------------------
+    // typedefs
 
     /**
      * Configuration for a single cloud rendering layer.
@@ -452,6 +417,8 @@ public class CloudsConfiguration {
 
         public String MODE = "NORMAL";
 
+        private Map<String, CustomTypeParameters> CUSTOM_PARAMETERS = new HashMap<>();
+
         public int getLayerIndex() { return LAYER_IDX; }
 
         public void copy(LayerConfiguration other) {
@@ -468,11 +435,59 @@ public class CloudsConfiguration {
         }
 
         public LayerConfiguration(int idx) {
-            LAYER_IDX = idx; 
+            LAYER_IDX = idx;
+            for (var entry : MeshTypeDataCache.getData()) {
+                if (entry.config().isEmpty()) continue;
+                CUSTOM_PARAMETERS.put(entry.name(), new CustomTypeParameters());
+            }
         }
 
         public LayerConfiguration() {
             this(0);
+        }
+
+        public CustomTypeParameters getTypeConfig(String name) {
+            return CUSTOM_PARAMETERS.get(name);
+        }
+
+        public static class CustomTypeParameters {
+            private final Map<String, ConfigInstance<?>> objects = new HashMap<>();
+
+            CustomTypeParameters() {
+            }
+
+            static ConfigInstance createInstanceFromEntry(String name, ConfigEntry entry) {
+                return switch (entry.type()) {
+                    case STRING -> new StringConfig((String) entry.defaultValue());
+                    case NUMBER -> new DoubleConfig((Double) entry.defaultValue());
+                    case INTEGER -> new IntConfig(((Double) entry.defaultValue()).intValue());
+                    case BOOLEAN -> new BooleanConfig((Boolean) entry.defaultValue());
+                    default -> throw new IllegalArgumentException("Unsupported config type: " + entry.type());
+                };
+            }
+
+            public ConfigInstance getValue(String configName) {
+                return objects.get(configName);
+            }
+
+            public boolean hasValue(String configName) {
+                return objects.containsKey(configName);
+            }
+
+            public Map<String, ConfigInstance<?>> getMap() {
+                return objects;
+            }
+
+            public void setValue(String configName, ConfigInstance<?> value) {
+                if (!objects.containsKey(configName)) {
+                    throw new IllegalArgumentException("Config name does not exist: " + configName);
+                }
+
+                if (!value.assignableTo(objects.get(configName))) {
+                    throw new IllegalArgumentException("Config schema mismatch for: " + configName);
+                }
+                objects.put(configName, value);
+            }
         }
 
         /**
@@ -503,8 +518,8 @@ public class CloudsConfiguration {
          * Controls when fog starts and ends relative to the camera.
          */
         public static class FogParameters {
-            private static final float DEFAULT_FOG_START = 50.0f;
-            private static final float DEFAULT_FOG_END = 200.0f;
+            private static final float DEFAULT_FOG_START = 30 * 16.0f; // 30 chunks
+            private static final float DEFAULT_FOG_END = 60 * 16.0f; // 60 chunks
 
             public float FOG_START_DISTANCE = DEFAULT_FOG_START;
             public float FOG_END_DISTANCE = DEFAULT_FOG_END;
@@ -636,10 +651,10 @@ public class CloudsConfiguration {
 
         public final List<LayerConfiguration> layers = new ArrayList<>();
 
-        public LayerHolder() {
+        LayerHolder() {
         }
 
-        public LayerHolder(int layer) {
+        LayerHolder(int layer) {
             this();
             addDefaultLayers(layer, idx -> new LayerConfiguration(idx >= 0 ? idx : -1));
         }
@@ -674,10 +689,15 @@ public class CloudsConfiguration {
         STATIC, DYNAMIC
     }
 
+    // maybe add cloth back ..? without preset functionalities
     public enum ConfigBackend {
         YACL
     }
 
+    public enum CloudColorProviderMode {
+        VANILLA,
+        CUSTOM
+    }
     public static class LightingParameters {
         public LightingParameters() {
             // no-op
@@ -707,7 +727,7 @@ public class CloudsConfiguration {
             new DiffuseLight(new Vector3f(0.0f, 0.0f, -1.0f), 0.1f)
         ));
 
-        public void copy(LightingParameters other) {
+        void copy(LightingParameters other) {
             this.AMBIENT_LIGHTING_STRENGTH = other.AMBIENT_LIGHTING_STRENGTH;
             this.MAX_LIGHTING_SHADING = other.MAX_LIGHTING_SHADING;
             this.SHADING_MODE = other.SHADING_MODE;
@@ -731,7 +751,7 @@ public class CloudsConfiguration {
         public float rainStrength = DEFAULT_RAIN_STRENGTH;
         public float thunderStrength = DEFAULT_THUNDER_STRENGTH;
 
-        public void copy(WeatherColorConfig other) {
+        void copy(WeatherColorConfig other) {
             this.rainColor = other.rainColor;
             this.thunderColor = other.thunderColor;
             this.rainStrength = other.rainStrength;
@@ -756,8 +776,75 @@ public class CloudsConfiguration {
         }
     }
 
-    public enum CloudColorProviderMode {
-        VANILLA,
-        CUSTOM
+    public static final class Dimension extends DynamicEnum<Dimension> {
+
+        private final String id;
+
+        private Dimension(String id, int ord) {
+            super(id, ord);
+            this.id = id;
+        }
+
+        public static final Dimension OVERWORLD = register( "minecraft:overworld");
+        public static final Dimension NETHER = register("minecraft:the_nether");
+        public static final Dimension END = register("minecraft:the_end");
+
+        /**
+         * Gets the ID that was used to construct the enum.
+         * This is the exact original string used to register the enum, which may differ from the enum's name (enum's name is all upper-case, and this is case-sensitive).
+         * @return The ID string used to register this enum.
+         */
+        public String getId() {
+            return id;
+        }
+
+        static Dimension register(String id) {
+            return register(Dimension.class, id, Dimension::new);
+        }
+
+        public static Dimension[] values() {
+            return values(Dimension.class).toArray(new Dimension[0]);
+        }
+
+        public static Dimension tryRegister(IdentifierWrapper id) {
+            return getOrRegister(id);
+        }
+
+        public static Dimension getOrRegister(IdentifierWrapper id) {
+            String idStr = id.toString();
+            Dimension existing = fromId(idStr);
+            if (existing != null) {
+                return existing;
+            }
+            return register(idStr);
+        }
+
+        public static Dimension getOrRegister(String id) {
+            Dimension existing = fromId(id);
+            if (existing != null) {
+                return existing;
+            }
+            return register(id);
+        }
+
+        public static Dimension get(String id) {
+            return fromId(id);
+        }
+        
+        public static Dimension fromId(String id) {
+            try {
+                return valueOf(Dimension.class, id);
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+
+        public static Dimension fromOrdinal(int ordinal) {
+            Dimension[] dims = values();
+            if (ordinal >= 0 && ordinal < dims.length) {
+                return dims[ordinal];
+            }
+            return null;
+        }
     }
 }
