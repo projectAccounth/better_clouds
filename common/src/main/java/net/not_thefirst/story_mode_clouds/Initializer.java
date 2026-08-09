@@ -1,5 +1,6 @@
 package net.not_thefirst.story_mode_clouds;
 
+import net.not_thefirst.story_mode_clouds.config.BackendHolder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 
 public class Initializer {
@@ -9,6 +10,7 @@ public class Initializer {
 
     public static void initialize() {
         CloudsConfiguration.load();
+        BackendHolder.init();
     }
 
     public static String j(String s) {
