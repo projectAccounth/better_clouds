@@ -1,0 +1,11 @@
+{
+    "name": "POPULATED_ND",
+    "generator": {
+        "type": "native"
+    },
+    "render": {
+        "outline_available": false,
+        "depth": false
+    },
+    "config": {}
+}

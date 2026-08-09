@@ -1,0 +1,17 @@
+{
+    "name": "EXAMPLE",
+    "generator": {
+        "type": "custom",
+        "base": "example"
+    },
+    "render": {
+        "outline_available": false,
+        "depth": true
+    },
+    "config": {
+        "TEST_BOOL": {
+            "type": "boolean",
+            "default": false
+        }
+    }
+}

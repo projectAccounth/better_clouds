@@ -1,0 +1,129 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "TypeDefinition",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "generator": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "native",
+                        "custom"
+                    ]
+                },
+                "base": {
+                    "type": "string"
+                },
+                "outline": {
+                    "type": "string"
+                }
+            },
+            "if": {
+                "properties": {
+                    "type": {
+                        "const": "custom"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "then": {
+                "required": [
+                    "base"
+                ]
+            },
+            "else": {
+                "not": {
+                    "required": [
+                        "base"
+                    ]
+                }
+            }
+        },
+        "render": {
+            "type": "object",
+            "properties": {
+                "depth": {
+                    "type": "boolean"
+                },
+                "outline_available": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "config": {
+            "type": "object",
+            "patternProperties": {
+                "^.*$": {
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "type": "string",
+                            "enum": [
+                                "string",
+                                "number",
+                                "integer",
+                                "boolean",
+                                "object",
+                                "array"
+                            ]
+                        },
+                        "description": {
+                            "type": "string"
+                        },
+                        "const": {
+                            "type": [
+                                "string",
+                                "number",
+                                "boolean",
+                                "array",
+                                "object",
+                                "null"
+                            ]
+                        },
+                        "enum": {
+                            "type": "array",
+                            "items": {
+                                "type": [
+                                    "string"
+                                ]
+                            }
+                        },
+                        "minimum": {
+                            "type": "number"
+                        },
+                        "maximum": {
+                            "type": "number"
+                        },
+                        "default": {
+                            "type": [
+                                "string",
+                                "number",
+                                "boolean",
+                                "array",
+                                "object",
+                                "null"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "type"
+                    ],
+                    "additionalProperties": false
+                }
+            }
+        }
+    },
+    "required": [
+        "name",
+        "generator",
+        "render",
+        "config"
+    ]
+}

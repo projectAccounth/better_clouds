@@ -1,0 +1,30 @@
+{
+    "name": "BEVELED",
+    "generator": {
+        "type": "native"
+    },
+    "render": {
+        "outline_available": false,
+        "depth": true
+    },
+    "config": {
+        "BEVEL_SIZE": {
+            "type": "number",
+            "default": 1.5,
+            "minimum": 0.1,
+            "maximum": 8.0
+        },
+        "BEVEL_CORNER_SEGMENTS": {
+            "type": "integer",
+            "default": 8,
+            "minimum": 1,
+            "maximum": 32
+        },
+        "BEVEL_EDGE_SEGMENTS": {
+            "type": "integer",
+            "default": 8,
+            "minimum": 1,
+            "maximum": 32
+        }
+    }
+}
