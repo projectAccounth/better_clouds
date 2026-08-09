@@ -25,6 +25,18 @@ public class GridCoordsApi extends TwoArgFunction {
         library.set("getWrappedX", new GetCellX());
         library.set("getWrappedZ", new GetCellZ());
         library.set("getCloudGridHalfSize", new Range());
+        library.set("getCenterX", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaValue.valueOf(underlying.getCenterX());
+            }
+        });
+        library.set("getCenterZ", new ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                return LuaValue.valueOf(underlying.getCenterZ());
+            }
+        });
         
         env.set("Coords", library);
         return library;

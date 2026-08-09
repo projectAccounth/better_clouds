@@ -1,6 +1,5 @@
 package net.not_thefirst.story_mode_clouds.mesh_builder_api.api;
 
-import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
@@ -54,8 +53,6 @@ public class TextureApi extends TwoArgFunction {
         return lib;
     }
 
-    // ---- Lua-callable dispatcher ----
-
     private static final class Fn extends VarArgFunction {
         static final int IDX = 0, GET_CELL = 1, SET_CELL = 2, GET_NEIGHBOR = 3, SET_NEIGHBOR = 4,
                 GET_COLOR = 5, IS_NORTH_EMPTY = 6, IS_EAST_EMPTY = 7, IS_SOUTH_EMPTY = 8,
@@ -71,12 +68,6 @@ public class TextureApi extends TwoArgFunction {
             this.data = data;
         }
 
-        /**
-         * Resolves the "cell" argument for functions like getColor/isNorthEmpty/etc.
-         * Supports two overloads:
-         *   - (cell)   - a raw LuaLong/number/numeric-string cell value
-         *   - (x, y)   - grid coordinates, wrapped the same way as idx()/getCell()
-         */
         private long resolveCell(Varargs args, int w, int h) {
             if (args.narg() >= 2) {
                 int k = idx(args.checkint(1), args.checkint(2), w, h);

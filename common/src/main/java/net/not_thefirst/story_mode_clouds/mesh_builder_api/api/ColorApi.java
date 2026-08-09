@@ -15,6 +15,8 @@ public class ColorApi extends TwoArgFunction {
     public LuaValue call(LuaValue modname, LuaValue env) {
         LuaTable library = new LuaTable();
 
+        // what the fuck am i doing
+
         library.set("WHITE", LuaValue.valueOf(ARGB.WHITE));
         library.set("BLACK", LuaValue.valueOf(ARGB.BLACK));
 

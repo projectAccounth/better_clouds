@@ -6,16 +6,6 @@ import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.VarArgFunction;
  
-/**
- * Library for bitwise operators for integers wider than 32 bits backed {@code long} via {@link LuaLong}.
- *
- * <pre>{@code
- *   local a = bit64.tolong(0xFFFFFFFF)
- *   local b = bit64.lshift(a, 4)
- *   print(bit64.tohex(b))         -- FFFFFFFF0
- *   print(bit64.tonumber(b))      -- 68719476720
- * }</pre>
- */
 public class Bit64Lib extends TwoArgFunction {
  
     @Override
@@ -60,7 +50,6 @@ public class Bit64Lib extends TwoArgFunction {
  
                 case TONUMBER: {
                     long v = LuaLong.checklong(args.arg1());
-                    // Safe: 48-bit values are always exactly representable as a double.
                     return LuaValue.valueOf((double) v);
                 }
  

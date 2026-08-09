@@ -26,7 +26,6 @@ public class MeshApi extends TwoArgFunction {
         library.set("setColor", new SetColorFunc());
         library.set("setUv", new SetUvFunc());
         library.set("setNormal", new SetNormalFunc());
-        library.set("setLineWidth", new SetLineWidthFunc());
         library.set("quad", new QuadFunc());
         library.set("triangle", new TriangleFunc());
         
@@ -98,15 +97,6 @@ public class MeshApi extends TwoArgFunction {
                 (float) y.checkdouble(),
                 (float) z.checkdouble()
             );
-            return NONE;
-        }
-    }
-
-    /** Mesh.setLineWidth(width) */
-    private class SetLineWidthFunc extends VarArgFunction {
-        @Override
-        public Varargs invoke(Varargs args) {
-            underlyingBuilder.setLineWidth((float) args.arg1().checkdouble());
             return NONE;
         }
     }

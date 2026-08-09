@@ -60,12 +60,11 @@ public final class LuaLong extends LuaUserdata {
         this.setmetatable(table);
     }
  
-    /** Wraps a long, masking it down to 48 bits */
     public static LuaLong valueOf(long v) {
         return new LuaLong(v);
     }
  
-    /** The raw (already-masked) 48-bit value. */
+    /** The raw (already masked) 48-bit value. */
     public long longValue() {
         return value;
     }

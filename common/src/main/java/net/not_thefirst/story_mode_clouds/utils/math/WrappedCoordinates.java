@@ -1,9 +1,12 @@
 package net.not_thefirst.story_mode_clouds.utils.math;
 
-@SuppressWarnings("unused")
 public class WrappedCoordinates {
     private final int[] wrappedX;
     private final int[] wrappedZ;
+
+    private final int centerX;
+    private final int centerZ;
+
     private final int width;
     private final int height;
     private final int range;
@@ -14,6 +17,8 @@ public class WrappedCoordinates {
         int size = range * 2 + 1;
         this.wrappedX = new int[size];
         this.wrappedZ = new int[size];
+        this.centerX = centerX;
+        this.centerZ = centerZ;
         this.range = range;
         
         for (int i = 0; i < size; i++) {
@@ -49,4 +54,7 @@ public class WrappedCoordinates {
     }
 
     public int getRange() { return range; }
+
+    public int getCenterX() { return centerX; }
+    public int getCenterZ() { return centerZ; }
 }

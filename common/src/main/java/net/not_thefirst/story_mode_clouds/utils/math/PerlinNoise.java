@@ -3,11 +3,13 @@ import java.util.Random;
 
 public class PerlinNoise {
     private final int[] permutation;
+    private long seed;
 
     public PerlinNoise(long seed) {
         permutation = new int[512];
         int[] p = new int[256];
         Random rand = new Random(seed);
+        this.seed = seed;
 
         // Fill array with values 0 -> 255
         for (int i = 0; i < 256; i++) p[i] = i;
@@ -78,5 +80,28 @@ public class PerlinNoise {
 
     public double noise(double x, double y) {
         return noise(x, y, 0.0);
+    }
+
+    public long getSeed() {
+        return seed;
+    }
+
+    public void reset(long newSeed) {
+        this.seed = newSeed;
+        Random rand = new Random(newSeed);
+        int[] p = new int[256];
+
+        for (int i = 0; i < 256; i++) p[i] = i;
+
+        for (int i = 255; i > 0; i--) {
+            int j = rand.nextInt(i + 1);
+            int tmp = p[i];
+            p[i] = p[j];
+            p[j] = tmp;
+        }
+
+        for (int i = 0; i < 512; i++) {
+            permutation[i] = p[i & 255];
+        }
     }
 }
