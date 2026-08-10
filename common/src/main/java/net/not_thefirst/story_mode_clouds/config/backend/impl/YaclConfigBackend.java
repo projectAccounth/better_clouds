@@ -244,6 +244,7 @@ public final class YaclConfigBackend implements ConfigBackend {
 
     private static final class YaclGroupBuilder implements ConfigGroupBuilder {
         private String name;
+        private String description;
         private final List<ConfigOptionBuilder<?>> options = new ArrayList<>();
         private final List<ConfigActionBuilder> actions = new ArrayList<>();
 
@@ -254,6 +255,12 @@ public final class YaclConfigBackend implements ConfigBackend {
         @Override
         public ConfigGroupBuilder name(String name) {
             this.name = name;
+            return this;
+        }
+
+        @Override
+        public ConfigGroupBuilder description(String description) {
+            this.description = description;
             return this;
         }
 
@@ -273,6 +280,10 @@ public final class YaclConfigBackend implements ConfigBackend {
         public ConfigGroupSpec build() {
             var builder = OptionGroup.createBuilder()
                 .name(resolveText(name));
+
+            if (description != null && !description.isBlank()) {
+                builder.description(OptionDescription.of(resolveText(description)));
+            }
 
             for (ConfigOptionBuilder<?> optionBuilder : options) {
                 ConfigOptionSpec<?> spec = optionBuilder.build();

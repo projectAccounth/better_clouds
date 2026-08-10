@@ -7,3 +7,6 @@ bin/
 *.sh
 .architectury-transformer/
 .eclipse/
+
+# personal scripts
+*.py

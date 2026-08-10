@@ -1,10 +1,9 @@
 package net.not_thefirst.story_mode_clouds.config.screens;
 
-import dev.isxander.yacl3.api.*;
-import dev.isxander.yacl3.api.controller.StringControllerBuilder;
-import dev.isxander.yacl3.gui.YACLScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.not_thefirst.story_mode_clouds.config.BackendHolder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.config.backend.ConfigBackend;
 import net.not_thefirst.story_mode_clouds.config.presets.*;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.utils.glfw.ClipboardUtils;
@@ -16,37 +15,34 @@ public class PresetBrowserScreen {
     private PresetBrowserScreen() {}
 
     public static Screen createBrowserScreen(PresetController.PresetCategory category, Screen backScreen) {
-        var builder = YetAnotherConfigLib.createBuilder()
-            .title(ComponentWrapper.translatable("cloudtweaks.presets"))
-            .save(CloudsConfiguration::save);
-        
-        var categoryBuilder = ConfigCategory.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets"));
-        
-        CloudsConfiguration config = CloudsConfiguration.getInstance();
+        var backend = BackendHolder.getBackend();
+        var screenBuilder = backend.createScreen("cloudtweaks.presets", CloudsConfiguration::save);
+        var categoryBuilder = backend.createCategory("cloudtweaks.presets", null);
+        var config = CloudsConfiguration.getInstance();
+        final Screen[] self = new Screen[1];
         
         switch (category) {
             case COLORS:
                 for (CloudColorPreset preset : PresetController.listColorPresets()) {
-                    addColorPresetGroup(categoryBuilder, preset, config, backScreen);
+                    addColorPresetGroup(categoryBuilder, preset, config, backScreen, self);
                 }
                 break;
             case LIGHTING:
                 for (LightingPreset preset : PresetController.listLightingPresets()) {
-                    addLightingPresetGroup(categoryBuilder, preset, config, backScreen);
+                    addLightingPresetGroup(categoryBuilder, preset, config, backScreen, self);
                 }
                 break;
             case LIGHT_SOURCES:
                 for (LightSourcesPreset preset : PresetController.listLightSourcesPresets()) {
-                    addLightSourcesPresetGroup(categoryBuilder, preset, config, backScreen);
+                    addLightSourcesPresetGroup(categoryBuilder, preset, config, backScreen, self);
                 }
                 break;
         }
         
-        categoryBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.import"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.import.tooltip")))
-            .action((yacl, btn) -> {
+        categoryBuilder.action(backend.createAction(
+            "cloudtweaks.presets.import",
+            "cloudtweaks.presets.import.tooltip",
+            () -> {
                 try {
                     String clipboard = ClipboardUtils.getClipboard(ClientHelper.getGLFWHandle());
                     if (clipboard != null && !clipboard.isEmpty()) {
@@ -61,39 +57,38 @@ public class PresetBrowserScreen {
                 } catch (Exception e) {
                     LoggerProvider.get().error("Failed to read import payload from clipboard: {}", e.getMessage());
                 }
-            })
-            .build());
+            }
+        ));
 
-        categoryBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.back"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.back.tooltip")))
-            .action((yacl, btn) -> ClientHelper.setScreen(backScreen))
-            .build());
-        
-        builder.category(categoryBuilder.build());
-        return new YACLScreen(builder.build(), backScreen);
+        categoryBuilder.action(backend.createAction(
+            "cloudtweaks.presets.back",
+            "cloudtweaks.presets.back.tooltip",
+            () -> ClientHelper.setScreen(backScreen)
+        ));
+
+        screenBuilder.category(categoryBuilder);
+        var screen = screenBuilder.build(backScreen);
+        self[0] = screen;
+        return screen;
     }
     
-    private static void addColorPresetGroup(ConfigCategory.Builder categoryBuilder, CloudColorPreset preset, CloudsConfiguration config, Screen backScreen) {
-        
-        var group = OptionGroup.createBuilder()
-            .name(ComponentWrapper.literal(preset.displayName))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.information")))
-            ;
-        
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.preview"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.preview.tooltip")))
-            .action((yacl, btn) ->
-                ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
-                    PresetController.PresetCategory.COLORS, preset.id, backScreen
-                )))
-            .build());
-        
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.export"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.export_base64.tooltip")))
-            .action((yacl, btn) -> {
+    private static void addColorPresetGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, CloudColorPreset preset, CloudsConfiguration config, Screen backScreen, Screen[] self) {
+        var backend = BackendHolder.getBackend();
+        var group = backend.createGroup(preset.displayName)
+            .description("cloudtweaks.presets.information");
+
+        group.action(backend.createAction(
+            "cloudtweaks.presets.preview",
+            "cloudtweaks.presets.preview.tooltip",
+            () -> ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
+                PresetController.PresetCategory.COLORS, preset.id, self[0]
+            ))
+        ));
+
+        group.action(backend.createAction(
+            "cloudtweaks.presets.export",
+            "cloudtweaks.presets.export_base64.tooltip",
+            () -> {
                 String base64 = PresetController.exportColorPresetAsBase64(preset.id);
                 if (base64 != null) {
                     copyToClipboard(base64);
@@ -101,72 +96,66 @@ public class PresetBrowserScreen {
                         ComponentWrapper.translatable("cloudtweaks.presets.exported_to_clipboard")
                     );
                 }
-            })
-            .build());
+            }
+        ));
 
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.edit"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.option.edit.tooltip")))
-            .action((yacl, btn) ->
-                ClientHelper.setScreen(PresetEditorScreen.createPresetEditingScreen(
-                    PresetController.PresetCategory.COLORS, preset.id, yacl
-                )))
-            .build());
-        
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.load_preset_action"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.load.color.tooltip")))
-            .action((yacl, btn) -> {
+        group.action(backend.createAction(
+            "cloudtweaks.option.edit",
+            "cloudtweaks.option.edit.tooltip",
+            () -> ClientHelper.setScreen(PresetEditorScreen.createPresetEditingScreen(
+                PresetController.PresetCategory.COLORS, preset.id, self[0]
+            ))
+        ));
+
+        group.action(backend.createAction(
+            "cloudtweaks.option.load_preset_action",
+            "cloudtweaks.presets.load.color.tooltip",
+            () -> {
                 if (PresetController.loadColorPreset(preset.id, config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
-
                     ClientHelper.sendLocalSystemMessage(
                         ComponentWrapper.translatable("cloudtweaks.message.loaded_color_preset_prefix")
                     );
                 }
-            })
-            .build());
-        
+            }
+        ));
+
         if (!preset.id.equals("default")) {
-            group.option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.option.delete_preset_action"))
-                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.tooltip.delete_preset_action")))
-                .action((yacl, btn) -> {
+            group.action(backend.createAction(
+                "cloudtweaks.option.delete_preset_action",
+                "cloudtweaks.tooltip.delete_preset_action",
+                () -> {
                     if (PresetController.deleteColorPreset(preset.id)) {
                         ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.translatable("cloudtweaks.message.deleted_color_preset_prefix")
                         );
                         ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.COLORS, backScreen));
                     }
-                })
-                .build());
+                }
+            ));
         }
-        
-        categoryBuilder.group(group.build());
+
+        categoryBuilder.group(group);
     }
     
-    private static void addLightingPresetGroup(ConfigCategory.Builder categoryBuilder, LightingPreset preset, CloudsConfiguration config, Screen backScreen) {
-        
-        var group = OptionGroup.createBuilder()
-            .name(ComponentWrapper.literal(preset.displayName))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.information")))
-            ;
-        
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.preview"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.preview.tooltip")))
-            .action((yacl, btn) ->
-                ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
-                    PresetController.PresetCategory.LIGHTING, preset.id, backScreen
-                ))
-            )
-            .build());
-        
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.export"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.export_base64.tooltip")))
-            .action((yacl, btn) -> {
+    private static void addLightingPresetGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightingPreset preset, CloudsConfiguration config, Screen backScreen, Screen[] self) {
+        var backend = BackendHolder.getBackend();
+        var group = backend.createGroup(preset.displayName)
+            .description("cloudtweaks.presets.information");
+
+        group.action(backend.createAction(
+            "cloudtweaks.presets.preview",
+            "cloudtweaks.presets.preview.tooltip",
+            () -> ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
+                PresetController.PresetCategory.LIGHTING, preset.id, self[0]
+            ))
+        ));
+
+        group.action(backend.createAction(
+            "cloudtweaks.presets.export",
+            "cloudtweaks.presets.export_base64.tooltip",
+            () -> {
                 String base64 = PresetController.exportLightingPresetAsBase64(preset.id);
                 if (base64 != null) {
                     copyToClipboard(base64);
@@ -174,22 +163,21 @@ public class PresetBrowserScreen {
                         ComponentWrapper.translatable("cloudtweaks.presets.exported_to_clipboard")
                     );
                 }
-            })
-            .build());
+            }
+        ));
 
-        group.option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.option.edit"))
-                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.option.edit.tooltip")))
-            .action((yacl, btn) ->
-                ClientHelper.setScreen(PresetEditorScreen.createPresetEditingScreen(
-                    PresetController.PresetCategory.LIGHTING, preset.id, yacl
-                )))
-            .build());
-        
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.load_preset_action"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.load.lighting.tooltip")))
-            .action((yacl, btn) -> {
+        group.action(backend.createAction(
+            "cloudtweaks.option.edit",
+            "cloudtweaks.option.edit.tooltip",
+            () -> ClientHelper.setScreen(PresetEditorScreen.createPresetEditingScreen(
+                PresetController.PresetCategory.LIGHTING, preset.id, self[0]
+            ))
+        ));
+
+        group.action(backend.createAction(
+            "cloudtweaks.option.load_preset_action",
+            "cloudtweaks.presets.load.lighting.tooltip",
+            () -> {
                 if (PresetController.loadLightingPreset(preset.id, config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
@@ -197,47 +185,44 @@ public class PresetBrowserScreen {
                         ComponentWrapper.translatable("cloudtweaks.message.loaded_lighting_preset_prefix")
                     );
                 }
-            })
-            .build());
-        
+            }
+        ));
+
         if (!preset.id.equals("default")) {
-            group.option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.option.delete_preset_action"))
-                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.tooltip.delete_preset_action")))
-                .action((yacl, btn) -> {
+            group.action(backend.createAction(
+                "cloudtweaks.option.delete_preset_action",
+                "cloudtweaks.tooltip.delete_preset_action",
+                () -> {
                     if (PresetController.deleteLightingPreset(preset.id)) {
                         ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.translatable("cloudtweaks.message.deleted_lighting_preset_prefix")
                         );
                         ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHTING, backScreen));
                     }
-                })
-                .build());
+                }
+            ));
         }
-        
-        categoryBuilder.group(group.build());
+
+        categoryBuilder.group(group);
     }
     
-    private static void addLightSourcesPresetGroup(ConfigCategory.Builder categoryBuilder, LightSourcesPreset preset, CloudsConfiguration config, Screen backScreen) {
-        
-        var group = OptionGroup.createBuilder()
-            .name(ComponentWrapper.literal(preset.displayName))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.information")))
-            ;
-        
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.preview"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.preview.tooltip")))
-            .action((yacl, btn) ->
-                ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
-                        PresetController.PresetCategory.LIGHT_SOURCES, preset.id, backScreen
-                    )))
-            .build());
-        
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.export"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.export_base64.tooltip")))
-            .action((yacl, btn) -> {
+    private static void addLightSourcesPresetGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightSourcesPreset preset, CloudsConfiguration config, Screen backScreen, Screen[] self) {
+        var backend = BackendHolder.getBackend();
+        var group = backend.createGroup(preset.displayName)
+            .description("cloudtweaks.presets.information");
+
+        group.action(backend.createAction(
+            "cloudtweaks.presets.preview",
+            "cloudtweaks.presets.preview.tooltip",
+            () -> ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
+                PresetController.PresetCategory.LIGHT_SOURCES, preset.id, self[0]
+            ))
+        ));
+
+        group.action(backend.createAction(
+            "cloudtweaks.presets.export",
+            "cloudtweaks.presets.export_base64.tooltip",
+            () -> {
                 String base64 = PresetController.exportLightSourcesPresetAsBase64(preset.id);
                 if (base64 != null) {
                     copyToClipboard(base64);
@@ -245,22 +230,21 @@ public class PresetBrowserScreen {
                         ComponentWrapper.translatable("cloudtweaks.presets.exported_to_clipboard")
                     );
                 }
-            })
-            .build());
+            }
+        ));
 
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.edit"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.option.edit.tooltip")))
-            .action((yacl, btn) ->
-                ClientHelper.setScreen(PresetEditorScreen.createPresetEditingScreen(
-                    PresetController.PresetCategory.LIGHT_SOURCES, preset.id, yacl
-                )))
-            .build());
-        
-        group.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.load_preset_action"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.load.light_sources.tooltip")))
-            .action((yacl, btn) -> {
+        group.action(backend.createAction(
+            "cloudtweaks.option.edit",
+            "cloudtweaks.option.edit.tooltip",
+            () -> ClientHelper.setScreen(PresetEditorScreen.createPresetEditingScreen(
+                PresetController.PresetCategory.LIGHT_SOURCES, preset.id, self[0]
+            ))
+        ));
+
+        group.action(backend.createAction(
+            "cloudtweaks.option.load_preset_action",
+            "cloudtweaks.presets.load.light_sources.tooltip",
+            () -> {
                 if (PresetController.loadLightSourcesPreset(preset.id, config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
@@ -268,25 +252,25 @@ public class PresetBrowserScreen {
                         ComponentWrapper.translatable("cloudtweaks.message.loaded_light_sources_preset_prefix")
                     );
                 }
-            })
-            .build());
-        
+            }
+        ));
+
         if (!preset.id.equals("default")) {
-            group.option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.option.delete_preset_action"))
-                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.tooltip.delete_preset_action")))
-                .action((yacl, btn) -> {
+            group.action(backend.createAction(
+                "cloudtweaks.option.delete_preset_action",
+                "cloudtweaks.tooltip.delete_preset_action",
+                () -> {
                     if (PresetController.deleteLightSourcesPreset(preset.id)) {
                         ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.translatable("cloudtweaks.message.deleted_light_sources_preset_prefix")
                         );
                         ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHT_SOURCES, backScreen));
                     }
-                })
-                .build());
+                }
+            ));
         }
-        
-        categoryBuilder.group(group.build());
+
+        categoryBuilder.group(group);
     }
 
     private static void copyToClipboard(String text) {
@@ -298,9 +282,8 @@ public class PresetBrowserScreen {
     }
 
     private static void showImportDialog(PresetController.PresetCategory category, String payload, Screen parentScreen) {
-        var builder = YetAnotherConfigLib.createBuilder()
-            .title(ComponentWrapper.translatable("cloudtweaks.presets.import_title"))
-            .save(() -> {});
+        var backend = BackendHolder.getBackend();
+        var screenBuilder = backend.createScreen("cloudtweaks.presets.import_title", () -> {});
 
         var importData = new Object() {
             String presetId = "imported_" + System.currentTimeMillis();
@@ -308,43 +291,46 @@ public class PresetBrowserScreen {
             String description = "Imported preset from clipboard";
         };
 
-        var categoryBuilder = ConfigCategory.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.import_details"))
-            .option(Option.<String>createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.presets.import.preset_id"))
-                .binding(importData.presetId, () -> importData.presetId, v -> importData.presetId = v)
-                .controller(StringControllerBuilder::create)
-                .build())
-            .option(Option.<String>createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.presets.import.display_name"))
-                .binding(importData.displayName, () -> importData.displayName, v -> importData.displayName = v)
-                .controller(StringControllerBuilder::create)
-                .build())
-            .option(Option.<String>createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.presets.import.description"))
-                .binding(importData.description, () -> importData.description, v -> importData.description = v)
-                .controller(StringControllerBuilder::create)
-                .build())
-            .option(ButtonOption.createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.presets.import_button"))
-                .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.import_button.tooltip")))
-                .action((yacl, btn) -> {
-                    boolean success = switch (category) {
-                        case COLORS -> PresetController.importColorPresetFromPayload(importData.presetId, importData.displayName, importData.description, payload);
-                        case LIGHTING -> PresetController.importLightingPresetFromPayload(importData.presetId, importData.displayName, importData.description, payload);
-                        case LIGHT_SOURCES -> PresetController.importLightSourcesPresetFromPayload(importData.presetId, importData.displayName, importData.description, payload);
-                    };
+        var categoryBuilder = backend.createCategory("cloudtweaks.presets.import_details", null)
+            .option(backend.stringOption(
+                "cloudtweaks.presets.import.preset_id",
+                null,
+                () -> importData.presetId,
+                v -> importData.presetId = v
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.presets.import.display_name",
+                null,
+                () -> importData.displayName,
+                v -> importData.displayName = v
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.presets.import.description",
+                null,
+                () -> importData.description,
+                v -> importData.description = v
+            ));
 
-                    if (success) {
-                        ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.translatable("cloudtweaks.message.imported_preset")
-                        );
-                        ClientHelper.setScreen(createBrowserScreen(category, parentScreen));
-                    }
-                })
-                .build());
+        categoryBuilder.action(backend.createAction(
+            "cloudtweaks.presets.import_button",
+            "cloudtweaks.presets.import_button.tooltip",
+            () -> {
+                boolean success = switch (category) {
+                    case COLORS -> PresetController.importColorPresetFromPayload(importData.presetId, importData.displayName, importData.description, payload);
+                    case LIGHTING -> PresetController.importLightingPresetFromPayload(importData.presetId, importData.displayName, importData.description, payload);
+                    case LIGHT_SOURCES -> PresetController.importLightSourcesPresetFromPayload(importData.presetId, importData.displayName, importData.description, payload);
+                };
 
-        builder.category(categoryBuilder.build());
-        ClientHelper.setScreen(new YACLScreen(builder.build(), parentScreen));
+                if (success) {
+                    ClientHelper.sendLocalSystemMessage(
+                        ComponentWrapper.translatable("cloudtweaks.message.imported_preset")
+                    );
+                    ClientHelper.setScreen(createBrowserScreen(category, parentScreen));
+                }
+            }
+        ));
+
+        screenBuilder.category(categoryBuilder);
+        ClientHelper.setScreen(screenBuilder.build(parentScreen));
     }
 }

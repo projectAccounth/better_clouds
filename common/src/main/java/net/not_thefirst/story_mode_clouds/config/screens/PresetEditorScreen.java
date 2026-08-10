@@ -1,21 +1,19 @@
 package net.not_thefirst.story_mode_clouds.config.screens;
 
-import dev.isxander.yacl3.api.*;
-import dev.isxander.yacl3.api.controller.*;
-import dev.isxander.yacl3.gui.YACLScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.not_thefirst.story_mode_clouds.config.BackendHolder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.ConfigConstants;
+import net.not_thefirst.story_mode_clouds.config.backend.ConfigBackend;
 import net.not_thefirst.story_mode_clouds.config.presets.*;
 import net.not_thefirst.story_mode_clouds.utils.math.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;
-
 import java.awt.Color;
-
-import java.time.format.DateTimeFormatter;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 public class PresetEditorScreen {
     private PresetEditorScreen() {}
@@ -31,13 +29,10 @@ public class PresetEditorScreen {
     private static String editingDescription;
 
     public static Screen createEditorScreen(PresetController.PresetCategory category, String presetId, Screen backScreen) {
-        var builder = YetAnotherConfigLib.createBuilder()
-            .title(ComponentWrapper.literal(formatCategoryName(category)))
-            .save(CloudsConfiguration::save);
-        
-        var categoryBuilder = ConfigCategory.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.data"));
-        
+        var backend = BackendHolder.getBackend();
+        var screenBuilder = backend.createScreen(formatCategoryName(category), CloudsConfiguration::save);
+        var categoryBuilder = backend.createCategory("cloudtweaks.presets.data", null);
+
         switch (category) {
             case COLORS:
                 CloudColorPreset colorPreset = PresetController.getColorPreset(presetId);
@@ -58,15 +53,15 @@ public class PresetEditorScreen {
                 }
                 break;
         }
-        
-        categoryBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.back"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.back.tooltip")))
-            .action((yacl, btn) -> ClientHelper.setScreen(backScreen))
-            .build());
-        
-        builder.category(categoryBuilder.build());
-        return new YACLScreen(builder.build(), backScreen);
+
+        categoryBuilder.action(backend.createAction(
+            "cloudtweaks.presets.back",
+            "cloudtweaks.presets.back.tooltip",
+            () -> ClientHelper.setScreen(backScreen)
+        ));
+
+        screenBuilder.category(categoryBuilder);
+        return screenBuilder.build(backScreen);
     }
     
     public static Screen createMetadataEditScreen(PresetController.PresetCategory category, String presetId, Screen backScreen) {
@@ -96,482 +91,515 @@ public class PresetEditorScreen {
                 }
                 break;
         }
+
+        var backend = BackendHolder.getBackend();
+
+        var screenBuilder = backend.createScreen(formatCategoryName(category), () -> {
+            PresetController.updatePresetMetadata(category, presetId, editingDisplayName, editingDescription);
+            CloudsConfiguration.save();
+        });
+
+        var infoCategory = backend.createCategory("cloudtweaks.presets.information", null);
         
-        var builder = YetAnotherConfigLib.createBuilder()
-            .title(ComponentWrapper.literal(formatCategoryName(category)))
-            .save(() -> {
-                PresetController.updatePresetMetadata(category, presetId, editingDisplayName, editingDescription);
-                CloudsConfiguration.save();
-            });
+        infoCategory
+            .option(backend.stringOption(
+                "cloudtweaks.presets.name",
+                null,
+                () -> editingDisplayName,
+                v -> editingDisplayName = v
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.option.preset_desc",
+                null,
+                () -> editingDescription,
+                v -> editingDescription = v
+            ))
+            .action(backend.createAction(
+                "cloudtweaks.presets.back",
+                "cloudtweaks.presets.back.tooltip",
+                () -> ClientHelper.setScreen(backScreen)
+            ));
         
-        var categoryBuilder = ConfigCategory.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.information"));
-        
-        categoryBuilder.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.name"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.tooltip.preset_name")))
-            .binding(editingDisplayName, () -> editingDisplayName, v -> editingDisplayName = v)
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        categoryBuilder.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.preset_desc"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.tooltip.preset_desc")))
-            .binding(editingDescription, () -> editingDescription, v -> editingDescription = v)
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        categoryBuilder.option(ButtonOption.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.back"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.back.tooltip")))
-            .action((yacl, btn) -> ClientHelper.setScreen(backScreen))
-            .build());
-        
-        builder.category(categoryBuilder.build());
-        return new YACLScreen(builder.build(), backScreen);
+        screenBuilder.category(infoCategory);
+        return screenBuilder.build(backScreen);
     }
 
     public static Screen createPresetEditingScreen(PresetController.PresetCategory category, String presetId, Screen backScreen) {
+        var backend = BackendHolder.getBackend();
+
         switch (category) {
             case COLORS: {
                 CloudColorPreset preset = PresetController.getColorPreset(presetId);
                 if (preset == null) return null;
 
-                // Local editable object is the preset itself
-                var builder = YetAnotherConfigLib.createBuilder()
-                    .title(ComponentWrapper.translatable("cloudtweaks.presets.edit_color_prefix"))
-                    .save(() -> {
-                        PresetController.saveColorPresetDirect(preset);
-                        CloudsConfiguration.save();
-                    });
+                var screenBuilder = backend.createScreen("cloudtweaks.presets.edit_color_prefix", () -> {
+                    PresetController.saveColorPresetDirect(preset);
+                    CloudsConfiguration.save();
+                });
 
-                var categoryBuilder = ConfigCategory.createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.presets.data"));
+                var dataCategory = backend.createCategory("cloudtweaks.presets.data", null);
+                var infoGroup = backend.createGroup("cloudtweaks.presets.information");
 
-                // Metadata group
-                var infoGroup = OptionGroup.createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.presets.information"));
+                infoGroup
+                    .option(backend.stringOption(
+                        "cloudtweaks.presets.name",
+                        null,
+                        () -> preset.displayName,
+                        v -> preset.displayName = v
+                    ))
+                    .option(backend.stringOption(
+                        "cloudtweaks.option.preset_desc",
+                        null,
+                        () -> preset.description,
+                        v -> preset.description = v
+                    ));
 
-                infoGroup.option(Option.<String>createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.presets.name"))
-                    .binding(preset.displayName, () -> preset.displayName, v -> preset.displayName = v)
-                    .controller(StringControllerBuilder::create)
-                    .build());
+                dataCategory.group(infoGroup);
 
-                infoGroup.option(Option.<String>createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.option.preset_desc"))
-                    .binding(preset.description, () -> preset.description, v -> preset.description = v)
-                    .controller(StringControllerBuilder::create)
-                    .build());
+                var colorGroup = backend.createGroup("cloudtweaks.presets.color_presets");
 
-                categoryBuilder.group(infoGroup.build());
-
-                // Color keypoints editable
-                var colorsGroup = OptionGroup.createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.presets.color_presets"));
-
-                if (preset.colors == null) preset.colors = new java.util.ArrayList<>();
-
-                colorsGroup.option(ButtonOption.createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.presets.add_keypoint"))
-                    .action((yacl, btn) -> {
-                        CloudsConfiguration.SkyColorKeypoint newKp = new CloudsConfiguration.SkyColorKeypoint();
-                        newKp.time = preset.colors.isEmpty() ? 0 : preset.colors.get(preset.colors.size() - 1).time + 1000;
-                        newKp.color = 0xFFFFFF;
-                        preset.colors.add(newKp);
-                        CloudsConfiguration.save();
-                        ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.added_color_keypoint"));
-                        ClientHelper.setScreen(backScreen);
-                    })
-                    .build());
-
+                if (preset.colors == null) preset.colors = new ArrayList<>();
+                
+                colorGroup
+                    .action(backend.createAction(
+                        "cloudtweaks.presets.add_keypoint",
+                        "cloudtweaks.presets.add_keypoint.tooltip",
+                        () -> {
+                            CloudsConfiguration.SkyColorKeypoint newKp = new CloudsConfiguration.SkyColorKeypoint();
+                            newKp.time = preset.colors.isEmpty() ? 0 : preset.colors.get(preset.colors.size() - 1).time + 1000;
+                            newKp.color = 0xFFFFFF;
+                            preset.colors.add(newKp);
+                            CloudsConfiguration.save();
+                            ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.added_color_keypoint"));
+                            Screen refreshedScreen = createPresetEditingScreen(category, presetId, backScreen);
+                            if (refreshedScreen != null) {
+                                ClientHelper.setScreen(refreshedScreen);
+                            }
+                            else {
+                                ClientHelper.setScreen(backScreen);
+                            }
+                        }
+                    ));
+                    
                 for (int i = 0; i < preset.colors.size(); i++) {
                     CloudsConfiguration.SkyColorKeypoint kp = preset.colors.get(i);
-                    var groupBuilder = OptionGroup.createBuilder()
-                        .name(ComponentWrapper.translatable("cloudtweaks.raw.keypoint"))
-                        .option(Option.<Integer>createBuilder()
-                            .name(ComponentWrapper.translatable("cloudtweaks.raw.time"))
-                            .binding(kp.time, () -> kp.time, v -> kp.time = v)
-                            .controller(opt -> IntegerFieldControllerBuilder.create(opt).range(0, 24000))
-                            .build())
-                            .option(Option.<Color>createBuilder()
-                                .name(ComponentWrapper.translatable("cloudtweaks.raw.color"))
-                            .binding(new Color(kp.color), () -> new Color(kp.color), v -> kp.color = v.getRGB())
-                            .controller(ColorControllerBuilder::create)
-                            .build())
-                            .option(ButtonOption.createBuilder()
-                                .name(ComponentWrapper.translatable("cloudtweaks.raw.remove"))
-                            .action((yacl, btn) -> {
+
+                    var group = backend.createGroup("cloudtweaks.raw.keypoint")
+                        .option(backend.integerOption(
+                            "cloudtweaks.raw.time",
+                            null,
+                            () -> kp.time,
+                            v -> kp.time = v
+                        ).range(0, 24000))
+                        .option(backend.colorOption(
+                            "cloudtweaks.raw.color",
+                            null,
+                            () -> new Color(kp.color),
+                            v -> kp.color = v.getRGB()
+                        ))
+                        .action(backend.createAction(
+                            "cloudtweaks.raw.remove",
+                            "cloudtweaks.raw.remove.tooltip",
+                            () -> {
                                 if (preset.colors.size() > 0) {
                                     preset.colors.remove(kp);
                                     CloudsConfiguration.save();
-                                        ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_keypoint"));
-                                    ClientHelper.setScreen(backScreen);
+                                    ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_keypoint"));
+                                    Screen refreshedScreen = createPresetEditingScreen(category, presetId, backScreen);
+                                    if (refreshedScreen != null) {
+                                        ClientHelper.setScreen(refreshedScreen);
+                                    }
+                                    else {
+                                        ClientHelper.setScreen(backScreen);
+                                    }
                                 }
-                            })
-                            .build());
-
-                    categoryBuilder.group(groupBuilder.build());
+                            }
+                        ));
+                    
+                    dataCategory.group(group);
                 }
 
-                categoryBuilder.group(colorsGroup.build());
+                dataCategory.group(colorGroup);
 
-                builder.category(categoryBuilder.build());
-                return new YACLScreen(builder.build(), backScreen);
+                screenBuilder.category(dataCategory);
+                return screenBuilder.build(backScreen);
             }
             case LIGHTING: {
                 LightingPreset preset = PresetController.getLightingPreset(presetId);
                 if (preset == null) return null;
 
-                var builder = YetAnotherConfigLib.createBuilder()
-                    .title(ComponentWrapper.translatable("cloudtweaks.presets.edit_lighting_prefix"))
-                    .save(() -> {
-                        PresetController.saveLightingPresetDirect(preset);
-                        CloudsConfiguration.save();
-                    });
+                var screenBuilder = backend.createScreen("cloudtweaks.presets.edit_lighting_prefix", () -> {
+                    PresetController.saveLightingPresetDirect(preset);
+                    CloudsConfiguration.save();
+                });
 
-                var categoryBuilder = ConfigCategory.createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.presets.lighting_data"));
+                var dataCategory = backend.createCategory("cloudtweaks.presets.lighting_data", null);
 
-                categoryBuilder.option(Option.<String>createBuilder()
-                    .name(ComponentWrapper.literal("Display Name"))
-                    .binding(preset.displayName, () -> preset.displayName, v -> preset.displayName = v)
-                    .controller(StringControllerBuilder::create)
-                    .build());
+                dataCategory
+                    .option(backend.stringOption(
+                        "cloudtweaks.presets.name",
+                        null,
+                        () -> preset.displayName,
+                        v -> preset.displayName = v
+                    ))
+                    .option(backend.stringOption(
+                        "cloudtweaks.option.preset_desc",
+                        null,
+                        () -> preset.description,
+                        v -> preset.description = v
+                    ))
+                    .option(backend.floatOption(
+                        "cloudtweaks.option.ambient_strength",
+                        null,
+                        () -> preset.ambientStrength,
+                        v -> preset.ambientStrength = v
+                    ).range(0.0f, 1.0f).slider()
+                        .step(0.05f))
+                    // .option(backend.floatOption(
+                    //     "cloudtweaks.option.max_shading",
+                    //     null,
+                    //     () -> preset.maxShadingStrength,
+                    //     v -> preset.maxShadingStrength = v
+                    // ).range(0.0f, 1.0f).slider()
+                    //     .step(0.05f))
+                    .option(backend.enumOption(
+                        "cloudtweaks.option.shading_mode",
+                        null,
+                        () -> preset.shadingMode,
+                        v -> preset.shadingMode = v
+                    ).enumClass(CloudsConfiguration.ShadingMode.class))
+                    .option(backend.enumOption(
+                        "cloudtweaks.option.lighting_type",
+                        null,
+                        () -> preset.lightingType,
+                        v -> preset.lightingType = v
+                    ).enumClass(CloudsConfiguration.LightingType.class))
+                    .option(backend.integerOption(
+                        "cloudtweaks.presets.day_start",
+                        null,
+                        () -> preset.dayStart,
+                        v -> preset.dayStart = v
+                    ).range(0, 24000))
+                    .option(backend.integerOption(
+                        "cloudtweaks.presets.day_noon",
+                        null,
+                        () -> preset.dayNoon,
+                        v -> preset.dayNoon = v
+                    ).range(0, 24000))
+                    .option(backend.integerOption(
+                        "cloudtweaks.presets.day_end",
+                        null,
+                        () -> preset.dayEnd,
+                        v -> preset.dayEnd = v
+                    ).range(0, 24000));
 
-                categoryBuilder.option(Option.<String>createBuilder()
-                    .name(ComponentWrapper.literal("Description"))
-                    .binding(preset.description, () -> preset.description, v -> preset.description = v)
-                    .controller(StringControllerBuilder::create)
-                    .build());
-
-                categoryBuilder.option(Option.<Float>createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.option.ambient_strength"))
-                    .binding(preset.ambientStrength, () -> preset.ambientStrength, v -> preset.ambientStrength = v)
-                    .controller(opt -> FloatSliderControllerBuilder.create(opt).range(0.0f, 2.0f).step(0.05f))
-                    .build());
-
-                categoryBuilder.option(Option.<Float>createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.option.max_shading"))
-                    .binding(preset.maxShadingStrength, () -> preset.maxShadingStrength, v -> preset.maxShadingStrength = v)
-                    .controller(opt -> FloatSliderControllerBuilder.create(opt).range(0.0f, 2.0f).step(0.05f))
-                    .build());
-
-                categoryBuilder.option(Option.<CloudsConfiguration.ShadingMode>createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.option.shading_mode"))
-                    .binding(preset.shadingMode, () -> preset.shadingMode, v -> preset.shadingMode = v)
-                    .controller(opt -> EnumControllerBuilder.create(opt).enumClass(CloudsConfiguration.ShadingMode.class))
-                    .build());
-
-                categoryBuilder.option(Option.<CloudsConfiguration.LightingType>createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.option.lighting_type"))
-                    .binding(preset.lightingType, () -> preset.lightingType, v -> preset.lightingType = v)
-                    .controller(opt -> EnumControllerBuilder.create(opt).enumClass(CloudsConfiguration.LightingType.class))
-                    .build());
-
-                categoryBuilder.option(Option.<Integer>createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.presets.day_start"))
-                    .binding(preset.dayStart, () -> preset.dayStart, v -> preset.dayStart = v)
-                    .controller(opt -> IntegerFieldControllerBuilder.create(opt).range(0, 24000))
-                    .build());
-
-                categoryBuilder.option(Option.<Integer>createBuilder()
-                    .name(ComponentWrapper.literal("Day Noon"))
-                    .binding(preset.dayNoon, () -> preset.dayNoon, v -> preset.dayNoon = v)
-                    .controller(opt -> IntegerFieldControllerBuilder.create(opt).range(0, 24000))
-                    .build());
-
-                categoryBuilder.option(Option.<Integer>createBuilder()
-                    .name(ComponentWrapper.literal("Day End"))
-                    .binding(preset.dayEnd, () -> preset.dayEnd, v -> preset.dayEnd = v)
-                    .controller(opt -> IntegerFieldControllerBuilder.create(opt).range(0, 24000))
-                    .build());
-
-                builder.category(categoryBuilder.build());
-                return new YACLScreen(builder.build(), backScreen);
+                screenBuilder.category(dataCategory);
+                return screenBuilder.build(backScreen);
             }
             case LIGHT_SOURCES: {
                 LightSourcesPreset preset = PresetController.getLightSourcesPreset(presetId);
                 if (preset == null) return null;
 
-                var builder = YetAnotherConfigLib.createBuilder()
-                    .title(ComponentWrapper.translatable("cloudtweaks.presets.edit_light_sources_prefix"))
-                    .save(() -> {
-                        PresetController.saveLightSourcesPresetDirect(preset);
-                        CloudsConfiguration.save();
-                    });
+                var screenBuilder = backend.createScreen("cloudtweaks.presets.edit_light_sources_prefix", () -> {
+                    PresetController.saveLightSourcesPresetDirect(preset);
+                    CloudsConfiguration.save();
+                });
 
-                var categoryBuilder = ConfigCategory.createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.option.light_sources"));
+                var dataCategory = backend.createCategory("cloudtweaks.presets.light_sources", null);
 
-                if (preset.lights == null) preset.lights = new java.util.ArrayList<>();
+                if (preset.lights == null) preset.lights = new ArrayList<>();
 
-                categoryBuilder.option(ButtonOption.createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.presets.add_light"))
-                    .action((yacl, btn) -> {
-                        preset.lights.add(new DiffuseLight());
-                        CloudsConfiguration.save();
-                        ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.added_light"));
-                        ClientHelper.setScreen(backScreen);
-                    })
-                    .build());
+                dataCategory
+                    .action(backend.createAction(
+                        "cloudtweaks.presets.add_light", 
+                        "cloudtweaks.presets.add_light.tooltip", 
+                        () -> {
+                            preset.lights.add(new DiffuseLight());
+                            CloudsConfiguration.save();
+                            ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.added_light"));
+                            Screen refreshedScreen = createPresetEditingScreen(category, presetId, backScreen);
+                            if (refreshedScreen != null) {
+                                ClientHelper.setScreen(refreshedScreen);
+                            }
+                            else {
+                                ClientHelper.setScreen(backScreen);
+                            }
+                        }
+                    ));
 
                 for (int i = 0; i < preset.lights.size(); i++) {
                     DiffuseLight light = preset.lights.get(i);
-                    var groupBuilder = OptionGroup.createBuilder()
-                        .name(ComponentWrapper.translatable("cloudtweaks.entry.light"))
-                        .option(Option.<Float>createBuilder()
-                            .name(ComponentWrapper.translatable("cloudtweaks.option.direction_x"))
-                            .binding(light.getXDirection(), light::getXDirection, light::setXDirection)
-                            .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-1.0f, 1.0f).step(0.01f))
-                            .build())
-                            .option(Option.<Float>createBuilder()
-                                .name(ComponentWrapper.translatable("cloudtweaks.option.direction_y"))
-                            .binding(light.getYDirection(), light::getYDirection, light::setYDirection)
-                            .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-1.0f, 1.0f).step(0.01f))
-                            .build())
-                            .option(Option.<Float>createBuilder()
-                                .name(ComponentWrapper.translatable("cloudtweaks.option.direction_z"))
-                            .binding(light.getZDirection(), light::getZDirection, light::setZDirection)
-                            .controller(opt -> FloatSliderControllerBuilder.create(opt).range(-1.0f, 1.0f).step(0.01f))
-                            .build())
-                            .option(Option.<Float>createBuilder()
-                                .name(ComponentWrapper.translatable("cloudtweaks.option.intensity"))
-                            .binding(light.intensity(), light::intensity, light::setIntensity)
-                            .controller(opt -> FloatSliderControllerBuilder.create(opt).range(0.0f, 1.0f).step(0.01f))
-                            .build())
-                            .option(ButtonOption.createBuilder()
-                                .name(ComponentWrapper.translatable("cloudtweaks.raw.remove"))
-                            .action((yacl, btn) -> {
+
+                    var group = backend.createGroup("cloudtweaks.entry.light");
+
+                    group
+                        .option(backend.floatOption(
+                            "cloudtweaks.option.direction_x",
+                            null,
+                            () -> light.direction().x(),
+                            v -> light.setDirection(v, light.direction().y(), light.direction().z())
+                        ).range(-1.0f, 1.0f).slider()
+                            .step(0.01f))
+                        .option(backend.floatOption(
+                            "cloudtweaks.option.direction_y",
+                            null,
+                            () -> light.direction().y(),
+                            v -> light.setDirection(light.direction().x(), v, light.direction().z())
+                        ).range(-1.0f, 1.0f).slider()
+                            .step(0.01f))
+                        .option(backend.floatOption(
+                            "cloudtweaks.option.direction_z",
+                            null,
+                            () -> light.direction().z(),
+                            v -> light.setDirection(light.direction().x(), light.direction().y(), v)
+                        ).range(-1.0f, 1.0f).slider()
+                            .step(0.01f))
+                        .option(backend.floatOption(
+                            "cloudtweaks.option.intensity",
+                            null,
+                            () -> light.intensity(),
+                            v -> light.setIntensity(v)
+                        ).range(0.0f, 1.0f).slider()
+                            .step(0.01f))
+                        .action(backend.createAction(
+                            "cloudtweaks.raw.remove",
+                            "cloudtweaks.raw.remove.tooltip",
+                            () -> {
                                 if (preset.lights.size() > 0) {
                                     preset.lights.remove(light);
                                     CloudsConfiguration.save();
-                                        ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_light"));
-                                    ClientHelper.setScreen(backScreen);
+                                    ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_light"));
+                                    Screen refreshedScreen = createPresetEditingScreen(category, presetId, backScreen);
+                                    if (refreshedScreen != null) {
+                                        ClientHelper.setScreen(refreshedScreen);
+                                    }
+                                    else {
+                                        ClientHelper.setScreen(backScreen);
+                                    }
                                 }
-                            })
-                            .build());
+                            }
+                        ));
 
-                    categoryBuilder.group(groupBuilder.build());
+                    dataCategory.group(group);
                 }
 
-                builder.category(categoryBuilder.build());
-                return new YACLScreen(builder.build(), backScreen);
+                screenBuilder.category(dataCategory);
+                return screenBuilder.build(backScreen);
             }
         }
         return null;
     }
     
-    private static void addColorPresetDataGroup(ConfigCategory.Builder categoryBuilder, CloudColorPreset preset) {
+    private static void addColorPresetDataGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, CloudColorPreset preset) {
         String lastMod = preset.lastModified > 0 ? DATE_FORMAT.format(Instant.ofEpochMilli(preset.lastModified)) : "Unknown";
-        
-                var infoGroup = OptionGroup.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.information"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.metadata_about")));
-        
-        infoGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.name"))
-            .binding(preset.displayName, () -> preset.displayName, v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        infoGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.preset_desc"))
-            .binding(preset.description, () -> preset.description, v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        infoGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.last_modified"))
-            .binding(lastMod, () -> lastMod, v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        infoGroup.option(Option.<Integer>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.color_count"))
-            .binding(preset.colors.size(), () -> preset.colors.size(), v -> {})
-            .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, 24))
-            .build());
-        
-        categoryBuilder.group(infoGroup.build());
-        
-        var modeGroup = OptionGroup.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.color_mode"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.color_mode_desc")));
-        
-        modeGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.cloud_mode"))
-            .binding(preset.colorMode.name(), () -> preset.colorMode.name(), v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        categoryBuilder.group(modeGroup.build());
-        
-        var colorsGroup = OptionGroup.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.color_keypoints"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.color_keypoints_desc")));
-        
+        var backend = BackendHolder.getBackend();
+
+        var infoGroup = backend.createGroup("cloudtweaks.presets.information")
+            .description("cloudtweaks.presets.metadata_about");
+
+        infoGroup.option(backend.stringOption(
+                "cloudtweaks.presets.name",
+                null,
+                () -> preset.displayName,
+                v -> {}
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.option.preset_desc",
+                null,
+                () -> preset.description,
+                v -> {}
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.presets.last_modified",
+                null,
+                () -> lastMod,
+                v -> {}
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.presets.color_count",
+                null,
+                () -> String.valueOf(preset.colors.size()),
+                v -> {}
+            ));
+
+        categoryBuilder.group(infoGroup);
+
+        var modeGroup = backend.createGroup("cloudtweaks.presets.color_mode")
+            .description("cloudtweaks.presets.color_mode_desc");
+
+        modeGroup.option(backend.stringOption(
+                "cloudtweaks.option.cloud_mode",
+                null,
+                () -> preset.colorMode.name(),
+                v -> {}
+            ));
+
+        categoryBuilder.group(modeGroup);
+
+        var colorsGroup = backend.createGroup("cloudtweaks.presets.color_keypoints")
+            .description("cloudtweaks.presets.color_keypoints_desc");
+
         if (preset.colors == null || preset.colors.isEmpty()) {
-            colorsGroup.option(Option.<String>createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.presets.no_color_keypoints"))
-                .binding("No colors configured", () -> "No colors configured", v -> {})
-                .controller(StringControllerBuilder::create)
-                .build());
+            colorsGroup.option(backend.stringOption(
+                "cloudtweaks.presets.no_color_keypoints",
+                null,
+                () -> "No colors configured",
+                v -> {}
+            ));
         } else {
             for (int i = 0; i < preset.colors.size(); i++) {
-                int index = i;
-                CloudsConfiguration.SkyColorKeypoint keypoint = preset.colors.get(index);
-                colorsGroup.option(Option.<String>createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.raw.keypoint"))
-                    .binding(formatColorKeypoint(keypoint), () -> formatColorKeypoint(keypoint), v -> {})
-                    .controller(StringControllerBuilder::create)
-                    .build());
+                CloudsConfiguration.SkyColorKeypoint keypoint = preset.colors.get(i);
+                colorsGroup.option(backend.stringOption(
+                    "cloudtweaks.raw.keypoint",
+                    null,
+                    () -> formatColorKeypoint(keypoint),
+                    v -> {}
+                ));
             }
         }
-        
-        categoryBuilder.group(colorsGroup.build());
+
+        categoryBuilder.group(colorsGroup);
     }
     
-    private static void addLightingPresetDataGroup(ConfigCategory.Builder categoryBuilder, LightingPreset preset) {
+    private static void addLightingPresetDataGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightingPreset preset) {
         String lastMod = preset.lastModified > 0 ? DATE_FORMAT.format(Instant.ofEpochMilli(preset.lastModified)) : "Unknown";
+        var backend = BackendHolder.getBackend();
+
+        var infoGroup = backend.createGroup("cloudtweaks.presets.information")
+            .description("cloudtweaks.presets.metadata_about");
         
-        var infoGroup = OptionGroup.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.information"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.metadata_about")));
+        infoGroup.option(backend.stringOption(
+                "cloudtweaks.presets.name",
+                null,
+                () -> preset.displayName,
+                v -> {}
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.option.preset_desc",
+                null,
+                () -> preset.description,
+                v -> {}
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.presets.last_modified",
+                null,
+                () -> lastMod,
+                v -> {}
+            ));
+
+        categoryBuilder.group(infoGroup);
+
+        var lightsGroup = backend.createGroup("cloudtweaks.presets.lighting_parameters")
+            .description("cloudtweaks.presets.configuration_settings");
         
-        infoGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.name"))
-            .binding(preset.displayName, () -> preset.displayName, v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
+        lightsGroup.option(backend.floatOption(
+                "cloudtweaks.option.ambient_strength",
+                null,
+                () -> preset.ambientStrength,
+                v -> {}
+            ).range(0.0f, 2.0f).step(0.1f).slider())
+            .option(backend.floatOption(
+                "cloudtweaks.option.max_shading",
+                null,
+                () -> preset.maxShadingStrength,
+                v -> {}
+            ).range(0.0f, 2.0f).step(0.1f).slider())
+            .option(backend.stringOption(
+                "cloudtweaks.option.shading_mode",
+                null,
+                () -> preset.shadingMode.name(),
+                v -> {}
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.option.lighting_type",
+                null,
+                () -> preset.lightingType.name(),
+                v -> {}
+            ));
+
+        categoryBuilder.group(lightsGroup);
+
+        var dayGroup = backend.createGroup("cloudtweaks.presets.day_cycle")
+            .description("cloudtweaks.presets.day_cycle_desc");
         
-        infoGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.preset_desc"))
-            .binding(preset.description, () -> preset.description, v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        infoGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.last_modified"))
-            .binding(lastMod, () -> lastMod, v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        categoryBuilder.group(infoGroup.build());
-        
-        // Lighting parameters
-        var lightsGroup = OptionGroup.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.lighting_parameters"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.configuration_settings")));
-        
-        lightsGroup.option(Option.<Float>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.ambient_strength"))
-            .binding(preset.ambientStrength, () -> preset.ambientStrength, v -> {})
-            .controller(opt -> FloatSliderControllerBuilder.create(opt).range(0.0f, 2.0f).step(0.1f))
-            .build());
-        
-        lightsGroup.option(Option.<Float>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.max_shading"))
-            .binding(preset.maxShadingStrength, () -> preset.maxShadingStrength, v -> {})
-            .controller(opt -> FloatSliderControllerBuilder.create(opt).range(0.0f, 2.0f).step(0.1f))
-            .build());
-        
-        lightsGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.shading_mode"))
-            .binding(preset.shadingMode.name(), () -> preset.shadingMode.name(), v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        lightsGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.lighting_type"))
-            .binding(preset.lightingType.name(), () -> preset.lightingType.name(), v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        categoryBuilder.group(lightsGroup.build());
-        
-        // Day cycle
-        var dayGroup = OptionGroup.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.day_cycle"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.day_cycle_desc")));
-        
-        dayGroup.option(Option.<Integer>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.day_start"))
-            .binding(preset.dayStart, () -> preset.dayStart, v -> {})
-            .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, 24000).step(100))
-            .build());
-        
-        dayGroup.option(Option.<Integer>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.day_noon"))
-            .binding(preset.dayNoon, () -> preset.dayNoon, v -> {})
-            .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, 24000).step(100))
-            .build());
-        
-        dayGroup.option(Option.<Integer>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.day_end"))
-            .binding(preset.dayEnd, () -> preset.dayEnd, v -> {})
-            .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, 24000).step(100))
-            .build());
-        
-        categoryBuilder.group(dayGroup.build());
+        dayGroup.option(backend.integerOption(
+                "cloudtweaks.presets.day_start",
+                null,
+                () -> preset.dayStart,
+                v -> {}
+            ).range(0, 24000).step(100).slider())
+            .option(backend.integerOption(
+                "cloudtweaks.presets.day_noon",
+                null,
+                () -> preset.dayNoon,
+                v -> {}
+            ).range(0, 24000).step(100).slider())
+            .option(backend.integerOption(
+                "cloudtweaks.presets.day_end",
+                null,
+                () -> preset.dayEnd,
+                v -> {}
+            ).range(0, 24000).step(100).slider());
+
+        categoryBuilder.group(dayGroup);
     }
     
-    private static void addLightSourcesPresetDataGroup(ConfigCategory.Builder categoryBuilder, LightSourcesPreset preset) {
+    private static void addLightSourcesPresetDataGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightSourcesPreset preset) {
         String lastMod = preset.lastModified > 0 ? DATE_FORMAT.format(Instant.ofEpochMilli(preset.lastModified)) : "Unknown";
-        
-        var infoGroup = OptionGroup.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.information"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.metadata_about")));
-        
-        infoGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.name"))
-            .binding(preset.displayName, () -> preset.displayName, v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        infoGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.preset_desc"))
-            .binding(preset.description, () -> preset.description, v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        infoGroup.option(Option.<String>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.last_modified"))
-            .binding(lastMod, () -> lastMod, v -> {})
-            .controller(StringControllerBuilder::create)
-            .build());
-        
-        infoGroup.option(Option.<Integer>createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.presets.light_source_count"))
-            .binding(preset.lights.size(), () -> preset.lights.size(), v -> {})
-            .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, ConfigConstants.MAX_LIGHT_COUNT).step(1))
-            .build());
-        
-        categoryBuilder.group(infoGroup.build());
-        
-        var lightsGroup = OptionGroup.createBuilder()
-            .name(ComponentWrapper.translatable("cloudtweaks.option.light_sources"))
-            .description(OptionDescription.of(ComponentWrapper.translatable("cloudtweaks.presets.light_sources_desc")));
-        
+        var backend = BackendHolder.getBackend();
+
+        var infoGroup = backend.createGroup("cloudtweaks.presets.information")
+            .description("cloudtweaks.presets.metadata_about");
+
+        infoGroup.option(backend.stringOption(
+                "cloudtweaks.presets.name",
+                null,
+                () -> preset.displayName,
+                v -> {}
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.option.preset_desc",
+                null,
+                () -> preset.description,
+                v -> {}
+            ))
+            .option(backend.stringOption(
+                "cloudtweaks.presets.last_modified",
+                null,
+                () -> lastMod,
+                v -> {}
+            ))
+            .option(backend.integerOption(
+                "cloudtweaks.presets.light_source_count",
+                null,
+                () -> preset.lights.size(),
+                v -> {}
+            ).range(0, ConfigConstants.MAX_LIGHT_COUNT).field());
+
+        categoryBuilder.group(infoGroup);
+
+        var lightsGroup = backend.createGroup("cloudtweaks.option.light_sources")
+            .description("cloudtweaks.presets.light_sources_desc");
+
         if (preset.lights == null || preset.lights.isEmpty()) {
-            lightsGroup.option(Option.<String>createBuilder()
-                .name(ComponentWrapper.translatable("cloudtweaks.presets.no_light_sources"))
-                .binding("No light sources configured", () -> "No light sources configured", v -> {})
-                .controller(StringControllerBuilder::create)
-                .build());
+            lightsGroup.option(backend.stringOption(
+                "cloudtweaks.presets.no_light_sources",
+                null,
+                () -> "No light sources configured",
+                v -> {}
+            ));
         } else {
-            for (int i = 0; i < preset.lights.size(); i++) {
-                int index = i;
-                DiffuseLight light = preset.lights.get(index);
-                lightsGroup.option(Option.<String>createBuilder()
-                    .name(ComponentWrapper.translatable("cloudtweaks.entry.light"))
-                    .binding(formatDiffuseLight(light), () -> formatDiffuseLight(light), v -> {})
-                    .controller(StringControllerBuilder::create)
-                    .build());
+            for (DiffuseLight light : preset.lights) {
+                lightsGroup.option(backend.stringOption(
+                    "cloudtweaks.entry.light",
+                    null,
+                    () -> formatDiffuseLight(light),
+                    v -> {}
+                ));
             }
         }
-        
-        categoryBuilder.group(lightsGroup.build());
+
+        categoryBuilder.group(lightsGroup);
     }
     
     private static String formatColorKeypoint(CloudsConfiguration.SkyColorKeypoint keypoint) {

@@ -304,42 +304,6 @@ public class PresetController {
         }
     }
 
-    private static boolean validateColorPresetPayload(String json) {
-        try {
-            var obj = JsonParser.parseString(json).getAsJsonObject();
-            if (!obj.has("colors") || !obj.get("colors").isJsonArray()) return false;
-            if (!obj.has("colorMode")) return false;
-            return obj.getAsJsonArray("colors").size() > 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private static boolean validateLightingPresetPayload(String json) {
-        try {
-            var obj = JsonParser.parseString(json).getAsJsonObject();
-            return obj.has("ambientStrength")
-                && obj.has("maxShadingStrength")
-                && obj.has("shadingMode")
-                && obj.has("lightingType")
-                && obj.has("dayStart")
-                && obj.has("dayEnd")
-                && obj.has("dayNoon");
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private static boolean validateLightSourcesPresetPayload(String json) {
-        try {
-            var obj = JsonParser.parseString(json).getAsJsonObject();
-            if (!obj.has("lights") || !obj.get("lights").isJsonArray()) return false;
-            return obj.getAsJsonArray("lights").size() > 0;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     public static boolean loadColorPreset(String presetId, CloudsConfiguration config) {
         ensure();
         CloudColorPreset preset = COLOR_PRESETS.get(presetId);
@@ -651,8 +615,8 @@ public class PresetController {
         }
         
         if (!LIGHT_SOURCES_PRESETS.containsKey("default")) {
-            CloudsConfiguration config = CloudsConfiguration.getInstance();
-            LightSourcesPreset defaultLights = LightSourcesPreset.fromConfiguration("default", "Default Light Sources", "Default light source configuration", config);
+            LightSourcesPreset defaultLights = new LightSourcesPreset("default", "Default Light Sources", "Default light source configuration");
+            defaultLights.lights = new ArrayList<>(CloudsConfiguration.LightingParameters.DEFAULT_LIGHTS);
             saveLightSourcesPresetDirect(defaultLights);
         }
     }

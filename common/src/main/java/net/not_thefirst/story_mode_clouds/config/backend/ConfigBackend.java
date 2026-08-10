@@ -41,6 +41,7 @@ public interface ConfigBackend {
 
     interface ConfigGroupBuilder {
         ConfigGroupBuilder name(String name);
+        ConfigGroupBuilder description(String description);
         ConfigGroupBuilder option(ConfigOptionBuilder<?> option);
         ConfigGroupBuilder action(ConfigActionBuilder action);
         ConfigGroupSpec build();

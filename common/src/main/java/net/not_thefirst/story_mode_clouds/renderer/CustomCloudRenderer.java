@@ -108,6 +108,8 @@ public class CustomCloudRenderer implements AutoCloseable {
     public CustomCloudRenderer() {
         super();
 
+        LoggerProvider.get().info("Initializing CustomCloudRenderer");
+
         initResources();
         rebuildLayerStates();
         applyTexture();
@@ -373,7 +375,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         List<DiffuseLight> lights = lightingParameters.lights;
         int maxLightCount = CloudsConfiguration.LightingParameters.MAX_LIGHT_COUNT;
         float lightAmbientFactor = lightingParameters.AMBIENT_LIGHTING_STRENGTH;
-        float lightShadingStrength = lightingParameters.MAX_LIGHTING_SHADING;
+        float lightShadingStrength = 1.0f; // lightingParameters.MAX_LIGHTING_SHADING;
 
         currentLayer.transforms.reset();
         currentLayer.cloudsInfo.reset();

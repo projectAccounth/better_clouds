@@ -709,6 +709,13 @@ public class CloudsConfiguration {
         private static final int DEFAULT_DAY_NOON = 6000;
         public static final int DAY_LENGTH = 24000;
         public static final int MAX_LIGHT_COUNT = 32;
+        public static final List<DiffuseLight> DEFAULT_LIGHTS = Arrays.asList(
+            new DiffuseLight(new Vector3f(0.0f, -1.0f, 1.0f), 0.3f),
+            new DiffuseLight(new Vector3f(-1.0f, 0.0f, 0.0f), 0.2f),
+            new DiffuseLight(new Vector3f(1.0f, 0.0f, 0.0f), 0.2f),
+            new DiffuseLight(new Vector3f(0.0f, 0.0f, 1.0f), 0.1f),
+            new DiffuseLight(new Vector3f(0.0f, 0.0f, -1.0f), 0.1f)
+        );
 
         public float AMBIENT_LIGHTING_STRENGTH = DEFAULT_AMBIENT_LIGHTING;
         public float MAX_LIGHTING_SHADING = DEFAULT_MAX_LIGHTING_SHADING;

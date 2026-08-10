@@ -49,6 +49,11 @@ public class DiffuseLight {
         this.directionZ = normalized.z();
     }
 
+    public void setDirection(Float x, Float y, Float z) {
+        Vector3f newDirection = new Vector3f(x, y, z);
+        setDirection(newDirection);
+    }
+
     public void setXDirection(float x) {
         this.directionX = x;
     }
