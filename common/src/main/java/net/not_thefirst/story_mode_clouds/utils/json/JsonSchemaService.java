@@ -4,21 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import com.networknt.schema.*;
 
-import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeData;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeData.ConfigEntry;
 
-import java.lang.reflect.Type;
-import java.util.Map;
 import java.util.Set;
 
 public class JsonSchemaService {
     private static final ObjectMapper jacksonMapper = new ObjectMapper();
-    private static final Type mapType = new TypeToken<Map<String, MeshTypeData.ConfigEntry>>(){}.getType();
     private static final Gson gson = 
         new GsonBuilder()
-            .registerTypeAdapter(mapType, new ConfigValueAdapter())
+            .registerTypeAdapter(ConfigEntry.class, new ConfigEntryAdapter())
             .create();
     
     private final JsonSchema schema;
