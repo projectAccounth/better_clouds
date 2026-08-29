@@ -2,6 +2,9 @@ package net.not_thefirst.story_mode_clouds.config.resources;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -9,9 +12,12 @@ import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;
+import net.not_thefirst.story_mode_clouds.utils.minecraft.IdentifierWrapper;
 
 public class CloudResourceLoader {
     private CloudResourceLoader() {}
+
+    private static final Map<IdentifierWrapper, Texture.TextureData> CACHE = new HashMap<>();
 
     /**
      * Load a texture for a cloud layer using the ResourceHandler.
@@ -30,12 +36,19 @@ public class CloudResourceLoader {
             return Optional.empty();
         }
 
+        IdentifierWrapper key = IdentifierWrapper.of(namespace, textureName);
+
+        if (CACHE.containsKey(key)) {
+            LoggerProvider.get().debug("Cloud texture cache hit!");
+            return Optional.of(CACHE.get(key));
+        }
+
         // split texture name into directory (concatenated with "textures/") and file name
         String directory = "textures";
         String fileName = textureName;
         String[] pathParts = textureName.split("/");
         if (pathParts.length > 1) {
-            directory = "textures/" + String.join("/", java.util.Arrays.copyOf(pathParts, pathParts.length - 1));
+            directory = "textures/" + String.join("/", Arrays.copyOf(pathParts, pathParts.length - 1));
             fileName = pathParts[pathParts.length - 1];
         } 
         
@@ -66,6 +79,7 @@ public class CloudResourceLoader {
             Optional<Texture.TextureData> textureData = Texture.buildTexture(inputStream, flipX, flipY);
             if (textureData.isPresent()) {
                 LoggerProvider.get().info("Loaded custom cloud texture: {}:{}.png", namespace, textureName);
+                CACHE.put(key, textureData.get());
                 return textureData;
             } else {
                 String errorMsg = String.format("§cFailed to load texture: %s:%s.png", namespace, textureName);

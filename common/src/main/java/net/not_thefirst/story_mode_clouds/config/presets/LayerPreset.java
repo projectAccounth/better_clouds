@@ -1,7 +1,6 @@
 package net.not_thefirst.story_mode_clouds.config.presets;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
@@ -86,7 +85,7 @@ public class LayerPreset implements Preset {
         if (json == null) return false;
 
         try {
-            Gson gson = new GsonBuilder().create();
+            Gson gson = CloudsConfiguration.getInstance().getGson();
             CloudsConfiguration.LayerConfiguration layerConfig = gson.fromJson(json, CloudsConfiguration.LayerConfiguration.class);
             return LayerPresets.validateLayerConfiguration(layerConfig);
         } catch (Exception e) {

@@ -25,8 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-
+import java.util.regex.Pattern;
 import java.awt.Color;
 
 public final class YaclConfigBackend implements ConfigBackend {
@@ -360,7 +359,7 @@ public final class YaclConfigBackend implements ConfigBackend {
         private int min = Integer.MIN_VALUE;
         private int max = Integer.MAX_VALUE;
         private int step = 1;
-        private boolean slider = true;
+        private boolean slider = false;
 
         private YaclIntegerOptionBuilder(String name, String description, Supplier<Integer> getter, Consumer<Integer> setter) {
             this.name = name;
@@ -443,7 +442,7 @@ public final class YaclConfigBackend implements ConfigBackend {
         private float min = Float.MIN_VALUE;
         private float max = Float.MAX_VALUE;
         private float step = 0.01f;
-        private boolean slider = true;
+        private boolean slider = false;
 
         private YaclFloatOptionBuilder(String name, String description, Supplier<Float> getter, Consumer<Float> setter) {
             this.name = name;
@@ -744,12 +743,15 @@ public final class YaclConfigBackend implements ConfigBackend {
         }
     }
 
+    // the snake case special
+    private static final Pattern PREFIX = Pattern.compile("^[a-zA-Z0-9]+(?:_[a-zA-Z0-9]+)*\\.");
+
     private static Component resolveText(String value) {
         if (value == null || value.isBlank()) {
-            return ComponentWrapper.literal(" ");
+            return ComponentWrapper.literal("");
         }
 
-        if (value.startsWith("cloudtweaks.") || value.startsWith("minecraft.")) {
+        if (PREFIX.matcher(value).find()) {
             return ComponentWrapper.translatable(value);
         }
 

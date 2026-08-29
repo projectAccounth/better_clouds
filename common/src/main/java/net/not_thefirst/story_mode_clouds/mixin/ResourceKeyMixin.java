@@ -5,10 +5,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.DimensionProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.IdentifierWrapper;
 
@@ -24,10 +22,8 @@ public class ResourceKeyMixin {
         at = @At("HEAD")
     )
     private static void onCreate(Identifier registryId, Identifier valueId, CallbackInfoReturnable<ResourceKey<?>> cir) {
-        // registryId is internally a Identifier so the comparison must work, right?
         if (registryId.equals(DIMENSION_KEY.getDelegate())) {
             DimensionProvider.addDimension(IdentifierWrapper.tryWrap(valueId));
-            LoggerProvider.get().info("Captured dimension registration: {}", valueId.toString());
         }
     }
 }

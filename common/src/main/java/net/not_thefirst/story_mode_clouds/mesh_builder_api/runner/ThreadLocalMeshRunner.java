@@ -41,6 +41,9 @@ public class ThreadLocalMeshRunner {
         localEnv.load(new MathLib());
         localEnv.load(new TableLib());
 
+        localEnv.set("dofile", LuaValue.NIL);
+        localEnv.set("loadfile", LuaValue.NIL);
+
         localEnv.load(new MeshApi(builder));
         localEnv.load(new ColorApi());
         localEnv.load(new NoiseApi());

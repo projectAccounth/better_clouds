@@ -67,7 +67,9 @@ public class LayerPresetsScreen {
                             loadedPreset.applyTo(config);
                             CloudsConfiguration.save();
                             ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.translatable("cloudtweaks.message.loaded_layer_preset_prefix")
+                                ComponentWrapper.literal(
+                                    ComponentWrapper.translatable("cloudtweaks.message.loaded_layer_preset_prefix").getString() + preset.displayName
+                                )
                             );
                             ClientHelper.setScreen(createLayerPresetsScreen(dimension, backScreen));
                         }
@@ -81,7 +83,9 @@ public class LayerPresetsScreen {
                         if (base64 != null) {
                             copyToClipboard(base64);
                             ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.translatable("cloudtweaks.presets.exported_to_clipboard")
+                                ComponentWrapper.literal(
+                                    ComponentWrapper.translatable("cloudtweaks.presets.exported_to_clipboard").getString() + preset.displayName
+                                )
                             );
                         }
                     }
@@ -107,7 +111,9 @@ public class LayerPresetsScreen {
                     () -> {
                         if (LayerPresets.deleteLayerPreset(preset.id)) {
                             ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.translatable("cloudtweaks.message.deleted_layer_preset_prefix")
+                                ComponentWrapper.literal(
+                                    ComponentWrapper.translatable("cloudtweaks.message.deleted_layer_preset_prefix").getString() + preset.displayName
+                                )
                             );
                             ClientHelper.setScreen(createLayerPresetsScreen(dimension, backScreen));
                         }
@@ -165,7 +171,9 @@ public class LayerPresetsScreen {
 
                     if (success) {
                         ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.translatable("cloudtweaks.message.imported_layer_preset")
+                            ComponentWrapper.literal(
+                                ComponentWrapper.translatable("cloudtweaks.message.imported_layer_preset").getString() + importData.displayName
+                            )
                         );
                         LoggerProvider.get().info("Imported preset: {} (ID: {})", importData.displayName, importData.presetId);
                         ClientHelper.setScreen(null);

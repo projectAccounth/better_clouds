@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -16,9 +15,7 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 public class ConfigSerializer {
     private ConfigSerializer() {}
 
-    private static final Gson GSON = new GsonBuilder()
-            .setPrettyPrinting()
-            .create();
+    private static final Gson GSON = CloudsConfiguration.getInstance().getGson();
 
     /**
      * Serialize a CloudsConfiguration to a JSON string.

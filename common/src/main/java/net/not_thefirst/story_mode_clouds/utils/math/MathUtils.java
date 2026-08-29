@@ -12,4 +12,8 @@ public class MathUtils {
         }
         return value;
     }
+
+    public static float lerp(float frt, float start, float end) {
+        return start + frt * (end - start);
+    }
 }

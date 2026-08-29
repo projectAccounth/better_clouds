@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -26,7 +25,7 @@ import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 public class LayerPresets {
     private LayerPresets() {}
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = CloudsConfiguration.getInstance().getGson();
     private static final File LAYER_PRESETS_DIR = new File("config/cloud_presets/layers");
     private static final File LAYER_PRESETS_INDEX = new File(LAYER_PRESETS_DIR, "presets.json");
     

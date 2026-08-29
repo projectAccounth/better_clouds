@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -18,7 +17,7 @@ import net.not_thefirst.story_mode_clouds.utils.minecraft.IdentifierWrapper;
  * Presets are stored as JSON files accessible via resource locations.
  */
 public class ResourcePackPresetLoader {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = CloudsConfiguration.getInstance().getGson();
     private static final String PRESETS_RESOURCE_PATH = "cloud_presets";
     
     private static final Map<String, CloudsConfiguration> RESOURCEPACK_PRESETS = new HashMap<>();

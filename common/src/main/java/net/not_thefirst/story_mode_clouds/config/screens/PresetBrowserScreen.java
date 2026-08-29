@@ -115,7 +115,9 @@ public class PresetBrowserScreen {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                     ClientHelper.sendLocalSystemMessage(
-                        ComponentWrapper.translatable("cloudtweaks.message.loaded_color_preset_prefix")
+                        ComponentWrapper.literal(
+                            ComponentWrapper.translatable("cloudtweaks.message.loaded_color_preset_prefix").getString() + preset.displayName
+                        )
                     );
                 }
             }
@@ -128,7 +130,9 @@ public class PresetBrowserScreen {
                 () -> {
                     if (PresetController.deleteColorPreset(preset.id)) {
                         ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.translatable("cloudtweaks.message.deleted_color_preset_prefix")
+                            ComponentWrapper.literal(
+                                ComponentWrapper.translatable("cloudtweaks.message.deleted_color_preset_prefix").getString() + preset.displayName
+                            )
                         );
                         ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.COLORS, backScreen));
                     }
@@ -182,7 +186,9 @@ public class PresetBrowserScreen {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                     ClientHelper.sendLocalSystemMessage(
-                        ComponentWrapper.translatable("cloudtweaks.message.loaded_lighting_preset_prefix")
+                        ComponentWrapper.literal(
+                            ComponentWrapper.translatable("cloudtweaks.message.loaded_lighting_preset_prefix").getString() + preset.displayName
+                        )
                     );
                 }
             }
@@ -195,7 +201,9 @@ public class PresetBrowserScreen {
                 () -> {
                     if (PresetController.deleteLightingPreset(preset.id)) {
                         ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.translatable("cloudtweaks.message.deleted_lighting_preset_prefix")
+                            ComponentWrapper.literal(
+                                ComponentWrapper.translatable("cloudtweaks.message.deleted_lighting_preset_prefix").getString() + preset.displayName
+                            )
                         );
                         ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHTING, backScreen));
                     }
@@ -249,7 +257,9 @@ public class PresetBrowserScreen {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                     ClientHelper.sendLocalSystemMessage(
-                        ComponentWrapper.translatable("cloudtweaks.message.loaded_light_sources_preset_prefix")
+                        ComponentWrapper.literal(
+                            ComponentWrapper.translatable("cloudtweaks.message.loaded_light_sources_preset_prefix").getString() + preset.displayName
+                        )
                     );
                 }
             }

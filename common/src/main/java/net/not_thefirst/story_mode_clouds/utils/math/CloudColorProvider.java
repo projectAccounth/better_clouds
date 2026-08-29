@@ -2,7 +2,6 @@ package net.not_thefirst.story_mode_clouds.utils.math;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.util.Mth;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.not_thefirst.lib.utils.math.ARGB;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -74,9 +73,9 @@ public class CloudColorProvider {
             float rb = ARGB.blueFloat(config.rainColor);
 
             float t = rain * config.rainStrength;
-            r = Mth.lerp(t, r, rr);
-            g = Mth.lerp(t, g, rg);
-            b = Mth.lerp(t, b, rb);
+            r = MathUtils.lerp(t, r, rr);
+            g = MathUtils.lerp(t, g, rg);
+            b = MathUtils.lerp(t, b, rb);
         }
 
         if (thunder > 0.0f) {
@@ -85,9 +84,9 @@ public class CloudColorProvider {
             float tb = ARGB.blueFloat(config.thunderColor);
 
             float t = thunder * config.thunderStrength;
-            r = Mth.lerp(t, r, tr);
-            g = Mth.lerp(t, g, tg);
-            b = Mth.lerp(t, b, tb);
+            r = MathUtils.lerp(t, r, tr);
+            g = MathUtils.lerp(t, g, tg);
+            b = MathUtils.lerp(t, b, tb);
         }
 
         return ARGB.colorFromFloat(1.0f, r, g, b);
