@@ -14,8 +14,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -25,13 +28,16 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 import net.not_thefirst.lib.utils.objects.DynamicEnum;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeData;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeDataCache;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeData.ConfigEntry;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.utils.json.ConfigInstanceAdapterFactory;
 import net.not_thefirst.story_mode_clouds.utils.json.DimensionTypeAdapter;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.DiffuseLight;
+import net.not_thefirst.story_mode_clouds.utils.math.MathUtils;
 import net.not_thefirst.story_mode_clouds.utils.math.NumberSequence;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.DimensionProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.IdentifierWrapper;
@@ -46,6 +52,7 @@ public class CloudsConfiguration {
             .setPrettyPrinting()
             .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
             .registerTypeAdapter(Dimension.class, new DimensionTypeAdapter())
+            .registerTypeAdapterFactory(new ConfigInstanceAdapterFactory())
             .create();
 
     private static final String CONFIG_DIR = "config";
@@ -147,7 +154,7 @@ public class CloudsConfiguration {
             }
 
             if (!DIMENSION_CLOUD_RENDERED.containsKey(dimension)) {
-                boolean rendered = dimension.getId() == "minecraft:overworld";
+                boolean rendered = dimension.getId().equalsIgnoreCase("minecraft:overworld");
                 DIMENSION_CLOUD_RENDERED.put(dimension, rendered);
             }
         });
@@ -235,6 +242,56 @@ public class CloudsConfiguration {
 
     // ------------------------------------------
     // file management
+
+    /**
+     * Force a complete configuration reload from disk
+     */
+    public static void refreshConfig() {
+        LoggerProvider.get().info("Refreshing configuration from disk");
+        load();
+        
+        initializeCustomParameters();
+        
+        if (RendererHolder.get() != null) {
+            RendererHolder.get().markForRebuild();
+        }
+        
+        instance.lastModificationTime = System.currentTimeMillis();
+        
+        LoggerProvider.get().info("Successfully refreshed configuration");
+    }
+
+    private static void initializeCustomParameters() {
+        for (LayerHolder holder : instance.DIMENSION_LAYERS.values()) {
+            for (LayerConfiguration layer : holder.layers) {
+                initializeLayerCustomParameters(layer);
+            }
+        }
+    }
+
+    private static void initializeLayerCustomParameters(LayerConfiguration layer) {
+        Map<String, MeshTypeData> schemaMap = MeshTypeDataCache.getData().stream()
+            .collect(Collectors.toMap(MeshTypeData::name, Function.identity()));
+
+        layer.CUSTOM_PARAMETERS.keySet().removeIf(name -> !schemaMap.containsKey(name));
+
+        for (var schemaEntry : schemaMap.entrySet()) {
+            String typeName = schemaEntry.getKey();
+            MeshTypeData schema = schemaEntry.getValue();
+
+            if (schema.config().isEmpty()) {
+                layer.CUSTOM_PARAMETERS.remove(typeName);
+                continue;
+            }
+
+            LayerConfiguration.CustomTypeParameters params = layer.CUSTOM_PARAMETERS.computeIfAbsent(
+                typeName,
+                k -> new LayerConfiguration.CustomTypeParameters()
+            );
+            
+            params.initializeFromSchema(schema);
+        }
+    }
 
     public static void load() {
         if (!CONFIG_FILE.exists()) {
@@ -363,10 +420,9 @@ public class CloudsConfiguration {
     }
 
     /**
-     * Create a timestamped backup of the config file. Includes throttling to prevent backup spam.
+     * Create a timestamped backup of the config file.
      */
     private static void createTimestampedBackup(File source) throws IOException {
-        // Check throttling: only backup if enough time has passed since last backup
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastBackupTime < BACKUP_THROTTLE_MS) {
             LoggerProvider.get().debug("Main config backup skipped - throttled (< {}ms)", BACKUP_THROTTLE_MS);
@@ -392,6 +448,9 @@ public class CloudsConfiguration {
         }
     }
 
+    public Gson getGson() {
+        return GSON;
+    }
 
     // ------------------------------------------
     // typedefs
@@ -402,7 +461,6 @@ public class CloudsConfiguration {
      * Multiple layers can be stacked to create complex cloud effects.
      */
     public static class LayerConfiguration {
-        public BevelParameters       BEVEL       = new BevelParameters();
         public AppearanceParameters  APPEARANCE  = new AppearanceParameters();
         public FadeParameters        FADE        = new FadeParameters();
         public FogParameters         FOG         = new FogParameters();
@@ -428,10 +486,11 @@ public class CloudsConfiguration {
             this.LAYER_RENDERED = other.LAYER_RENDERED;
             this.LAYER_HEIGHT = other.LAYER_HEIGHT;
             this.MODE = other.MODE;
-            this.BEVEL.copy(other.BEVEL);
             this.APPEARANCE.copy(other.APPEARANCE);
             this.FADE.copy(other.FADE);
             this.FOG.copy(other.FOG);
+
+            refreshCustomTypeConfig();
         }
 
         public LayerConfiguration(int idx) {
@@ -450,23 +509,147 @@ public class CloudsConfiguration {
             return CUSTOM_PARAMETERS.get(name);
         }
 
+        public void deleteCustomType(String name) {
+            CUSTOM_PARAMETERS.remove(name);
+        }
+
+        public CustomTypeParameters resetCustomTypeConfig(String name) {
+            CustomTypeParameters conf = CUSTOM_PARAMETERS.computeIfAbsent(name, k -> new CustomTypeParameters());
+
+            MeshTypeData meshTypeData = MeshTypeDataCache.get(name);
+            if (meshTypeData != null) {
+                conf.initializeFromSchema(meshTypeData);
+            }
+
+            return conf;
+        }
+
+        public boolean hasCustomTypeConfig(String name) {
+            return CUSTOM_PARAMETERS.containsKey(name);
+        }
+
+        public void refreshCustomTypeConfig() {
+            for (var entry : MeshTypeDataCache.getData()) {
+                if (entry.config().isEmpty()) continue;
+                if (!hasCustomTypeConfig(entry.name())) {
+                    resetCustomTypeConfig(entry.name());
+                }
+                else {
+                    CustomTypeParameters conf = getTypeConfig(entry.name());
+                    conf.initializeFromSchema(entry);
+                }
+            }
+        }
+
+        public Map<String, CustomTypeParameters> getAllTypeConfig() {
+            return CUSTOM_PARAMETERS;
+        }
+
         public static class CustomTypeParameters {
             private final Map<String, ConfigInstance<?>> objects = new HashMap<>();
+            private transient MeshTypeData schema;
 
             CustomTypeParameters() {
             }
 
-            static ConfigInstance createInstanceFromEntry(String name, ConfigEntry entry) {
-                return switch (entry.type()) {
-                    case STRING -> new StringConfig((String) entry.defaultValue());
-                    case NUMBER -> new DoubleConfig((Double) entry.defaultValue());
-                    case INTEGER -> new IntConfig(((Double) entry.defaultValue()).intValue());
-                    case BOOLEAN -> new BooleanConfig((Boolean) entry.defaultValue());
+            static ConfigInstance<?> createInstanceFromEntry(ConfigEntry entry) {
+                switch (entry.type()) {
+                    case STRING -> {
+                        String v = (String) entry.defaultValue();
+                        return new StringConfig(v);
+                    }
+                    case NUMBER -> {
+                        var ne = (MeshTypeData.NumberConfigEntry) entry;
+                        Float def = ne.defaultValue();
+                        Float min = ne.minimum();
+                        Float max = ne.maximum();
+                        if (def == null) def = 0f;
+                        float clamped = MathUtils.clamp(def, min, max);
+                        return new FloatConfig(clamped);
+                    }
+                    case INTEGER -> {
+                        var ie = (MeshTypeData.IntegerConfigEntry) entry;
+                        Long def = ie.defaultValue();
+                        Long min = ie.minimum();
+                        Long max = ie.maximum();
+                        if (def == null) def = 0L;
+                        long clamped = MathUtils.clamp(def, min, max);
+                        return new IntConfig((int) clamped);
+                    }
+                    case BOOLEAN -> {
+                        Boolean b = (Boolean) entry.defaultValue();
+                        if (b == null) b = Boolean.FALSE;
+                        return new BooleanConfig(b);
+                    }
                     default -> throw new IllegalArgumentException("Unsupported config type: " + entry.type());
-                };
+                }
             }
 
-            public ConfigInstance getValue(String configName) {
+            /**
+             * Initializes/migrates this to match the new schema
+             * 
+             * <p>
+             * Behavior
+             * <ul>
+             *   <li> If no entries exist, creates all entries from schema
+             *   <li> If entries exist, compares against schema
+             *   <li> Drops unknown fields not in schema, adds new fields from schema
+             * </ul>
+             * 
+             * @param schema The MeshTypeData schema to synchronize against
+             * @throws IllegalArgumentException if schema is null
+             */
+            public void initializeFromSchema(MeshTypeData schema) {
+                if (schema == null) {
+                    throw new IllegalArgumentException("Schema cannot be null");
+                }
+                this.schema = schema;
+
+                Map<String, ConfigEntry> schemaEntries = schema.config();
+                
+                // Recreate all entries from schema
+                if (objects.isEmpty()) {
+                    for (var entry : schemaEntries.entrySet()) {
+                        objects.put(entry.getKey(), createInstanceFromEntry(entry.getValue()));
+                    }
+                    return;
+                }
+                
+                // Remove fields not in the schema
+                objects.keySet().removeIf(key -> !schemaEntries.containsKey(key));
+                
+                // Add missing fields from schema
+                for (var entry : schemaEntries.entrySet()) {
+                    if (!objects.containsKey(entry.getKey())) {
+                        objects.put(entry.getKey(), createInstanceFromEntry(entry.getValue()));
+                    }
+                }
+                
+                for (var e : objects.entrySet()) {
+                    String key = e.getKey();
+                    ConfigInstance<?> inst = e.getValue();
+                    ConfigEntry def = schemaEntries.get(key);
+                    if (def == null) continue;
+                    if (def.isFloat() && inst instanceof FloatConfig) {
+                        float cur = ((FloatConfig) inst).value();
+                        var ne = (MeshTypeData.NumberConfigEntry) def;
+                        float clamped = MathUtils.clamp(cur, ne.minimum(), ne.maximum());
+                        if (clamped != cur) {
+                            objects.put(key, new FloatConfig(clamped));
+                        }
+                    } else if (def.isInteger() && inst instanceof IntConfig) {
+                        int cur = ((IntConfig) inst).value();
+                        var ie = (MeshTypeData.IntegerConfigEntry) def;
+                        long clamped = MathUtils.clamp(Long.valueOf(cur), ie.minimum(), ie.maximum());
+                        int asInt = (int) clamped;
+                        if (asInt != cur) {
+                            objects.put(key, new IntConfig(asInt));
+                        }
+                    }
+                }
+            }
+
+            public ConfigInstance<?> getValue(String configName) {
                 return objects.get(configName);
             }
 
@@ -478,6 +661,34 @@ public class CloudsConfiguration {
                 return objects;
             }
 
+            public Optional<Number> min(String configName) {
+                if (schema == null) return Optional.empty();
+                ConfigEntry def = schema.config().get(configName);
+                if (def == null) return Optional.empty();
+                if (def.isFloat()) {
+                    var ne = (MeshTypeData.NumberConfigEntry) def;
+                    return Optional.ofNullable(ne.minimum());
+                } else if (def.isInteger()) {
+                    var ie = (MeshTypeData.IntegerConfigEntry) def;
+                    return Optional.ofNullable(ie.minimum());
+                }
+                return Optional.empty();
+            }
+
+            public Optional<Number> max(String configName) {
+                if (schema == null) return Optional.empty();
+                ConfigEntry def = schema.config().get(configName);
+                if (def == null) return Optional.empty();
+                if (def.isFloat()) {
+                    var ne = (MeshTypeData.NumberConfigEntry) def;
+                    return Optional.ofNullable(ne.maximum());
+                } else if (def.isInteger()) {
+                    var ie = (MeshTypeData.IntegerConfigEntry) def;
+                    return Optional.ofNullable(ie.maximum());
+                }
+                return Optional.empty();
+            }
+
             public void setValue(String configName, ConfigInstance<?> value) {
                 if (!objects.containsKey(configName)) {
                     throw new IllegalArgumentException("Config name does not exist: " + configName);
@@ -486,30 +697,29 @@ public class CloudsConfiguration {
                 if (!value.assignableTo(objects.get(configName))) {
                     throw new IllegalArgumentException("Config schema mismatch for: " + configName);
                 }
-                objects.put(configName, value);
-            }
-        }
 
-        /**
-         * Bevel parameters for cloud mesh geometry.
-         * Controls the smoothing/beveling of edges in the cloud mesh for better appearance.
-         */
-        public static class BevelParameters {
-            private static final float DEFAULT_BEVEL_SIZE = 0.1f;
-            private static final int DEFAULT_EDGE_SEGMENTS = 8;
-            private static final int DEFAULT_CORNER_SEGMENTS = 8;
+                var instance = objects.get(configName);
 
-            public float BEVEL_SIZE = DEFAULT_BEVEL_SIZE;
-            public int BEVEL_EDGE_SEGMENTS = DEFAULT_EDGE_SEGMENTS;
-            public int BEVEL_CORNER_SEGMENTS = DEFAULT_CORNER_SEGMENTS;
+                if (this.schema != null) {
+                    ConfigEntry def = this.schema.config().get(configName);
+                    if (def != null) {
+                        if (def.isFloat() && value instanceof FloatConfig) {
+                            float cur = ((FloatConfig) value).value();
+                            var ne = (MeshTypeData.NumberConfigEntry) def;
+                            float clamped = MathUtils.clamp(cur, ne.minimum(), ne.maximum());
+                            instance.setValue(clamped);
+                            return;
+                        } else if (def.isInteger() && value instanceof IntConfig) {
+                            int cur = ((IntConfig) value).value();
+                            var ie = (MeshTypeData.IntegerConfigEntry) def;
+                            long clamped = MathUtils.clamp(Long.valueOf(cur), ie.minimum(), ie.maximum());
+                            instance.setValue(clamped);
+                            return;
+                        }
+                    }
+                }
 
-            /**
-             * Copy values from another BevelParameters instance.
-             */
-            void copy(BevelParameters other) {
-                this.BEVEL_SIZE = other.BEVEL_SIZE;
-                this.BEVEL_EDGE_SEGMENTS = other.BEVEL_EDGE_SEGMENTS;
-                this.BEVEL_CORNER_SEGMENTS = other.BEVEL_CORNER_SEGMENTS;
+                instance.setValueFrom(value);
             }
         }
 

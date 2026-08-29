@@ -5,82 +5,188 @@ import java.util.Map;
 import com.google.gson.annotations.SerializedName;
 
 public record MeshTypeData(
-    String name,
-    @SerializedName("render") RenderOptions renderOptions,
-    @SerializedName("generator") GeneratorConfig generatorConfig,
-    Map<String, ConfigEntry> config
-) {
+        String name,
+        @SerializedName("render") RenderOptions renderOptions,
+        @SerializedName("generator") GeneratorConfig generatorConfig,
+        Map<String, ConfigEntry> config) {
 
     public ConfigEntry getEntryDefinition(String key) {
         return config.get(key);
     }
 
-    public static record ConfigEntry(
-        ConfigType type,
-        String description,
+    public enum ConfigType {
+        STRING,
+        NUMBER,
+        INTEGER,
+        BOOLEAN,
+        OBJECT,
+        ARRAY;
 
-        // for numeric types
-        Double minimum,
-        Double maximum,
-          
-        @SerializedName("default") 
-        Object defaultValue
-    ) {
-        public boolean isObjectValid(Object value) {
-            if (value == null) return false;
-            switch (type) {
-                case STRING -> { return value instanceof String; }
-                case NUMBER -> { return value instanceof Double || value instanceof Float; }
-                case INTEGER -> { return value instanceof Integer || value instanceof Long; }
-                case BOOLEAN -> { return value instanceof Boolean; }
-                case OBJECT -> { return false; } // custom objects are not yet supported
-                case ARRAY -> { return false; } // arrays are not yet supported
-                default -> throw new IllegalArgumentException("Unexpected value: " + type);
+        public static ConfigType fromJson(String value) {
+            return valueOf(value.toUpperCase());
+        }
+
+        public String toJson() {
+            return name().toLowerCase();
+        }
+    }
+    public sealed interface ConfigEntry
+            permits StringConfigEntry,
+            NumberConfigEntry,
+            IntegerConfigEntry,
+            BooleanConfigEntry {
+        ConfigType type();
+
+        String description();
+
+        Object defaultValue();
+
+        default boolean isString() {
+            return type() == ConfigType.STRING;
+        }
+
+        default boolean isFloat() {
+            return type() == ConfigType.NUMBER;
+        }
+
+        default boolean isInteger() {
+            return type() == ConfigType.INTEGER;
+        }
+
+        default boolean isBoolean() {
+            return type() == ConfigType.BOOLEAN;
+        }
+
+        default boolean isOfNumericType() {
+            return isFloat() || isInteger();
+        }
+
+        /** Whether a runtime value can be assigned to this config entry. */
+        boolean isObjectValid(Object value);
+    }
+
+    public record StringConfigEntry(String description, String defaultValue) implements ConfigEntry {
+
+        public StringConfigEntry {
+            if (defaultValue == null) {
+                defaultValue = "";
             }
         }
+
+        @Override
+        public ConfigType type() {
+            return ConfigType.STRING;
+        }
+
+        @Override
+        public boolean isObjectValid(Object value) {
+            return value instanceof String;
+        }
+    }
+
+    public record NumberConfigEntry(String description, Float minimum, Float maximum, Float defaultValue)
+            implements ConfigEntry {
+
+        public NumberConfigEntry {
+            if (minimum == null) {
+                minimum = Float.NEGATIVE_INFINITY;
+            }
+            if (maximum == null) {
+                maximum = Float.POSITIVE_INFINITY;
+            }
+            if (defaultValue == null) {
+                defaultValue = 0.0f;
+            }
+        }
+
+        @Override
+        public ConfigType type() {
+            return ConfigType.NUMBER;
+        }
+
+        @Override
+        public boolean isObjectValid(Object value) {
+            return value instanceof Float;
+        }
+    }
+
+    public record IntegerConfigEntry(String description, Long minimum, Long maximum, Long defaultValue)
+            implements ConfigEntry {
+
+        public IntegerConfigEntry {
+            if (minimum == null) {
+                minimum = Long.valueOf(Integer.MIN_VALUE);
+            }
+            if (maximum == null) {
+                maximum = Long.valueOf(Integer.MAX_VALUE);
+            }
+            if (defaultValue == null) {
+                defaultValue = 0L;
+            }
+        }
+            
+        @Override
+        public ConfigType type() {
+            return ConfigType.INTEGER;
+        }
+
+        @Override
+        public boolean isObjectValid(Object value) {
+            return value instanceof Integer || value instanceof Long;
+        }
+    }
+
+    public record BooleanConfigEntry(String description, Boolean defaultValue) implements ConfigEntry {
         
-        public boolean isDouble() {
-            return type == ConfigType.NUMBER;
+        public BooleanConfigEntry {
+            if (defaultValue == null) {
+                defaultValue = false;
+            }
         }
 
-        public boolean isInteger() {
-            return type == ConfigType.INTEGER;
+        @Override
+        public ConfigType type() {
+            return ConfigType.BOOLEAN;
         }
 
-        public boolean isString() {
-            return type == ConfigType.STRING;
-        }
-
-        public boolean isBoolean() {
-            return type == ConfigType.BOOLEAN;
-        }
-
-        public boolean isNumber() {
-            return isDouble() || isInteger();
+        @Override
+        public boolean isObjectValid(Object value) {
+            return value instanceof Boolean;
         }
     }
 
     public static record RenderOptions(
-        boolean depth,
-        @SerializedName("outline_available") boolean outlineAvailable
-    ) {}
-    public static record GeneratorConfig(
-        GeneratorType type, 
-        @SerializedName("base") String baseScriptName, 
-        @SerializedName("outline") String outlineScriptName
-    ) {}
-
-    public enum GeneratorType {
-        @SerializedName("native") NATIVE, 
-        @SerializedName("custom") CUSTOM
+            boolean depth,
+            @SerializedName("outline_available") boolean outlineAvailable) {
     }
 
-    public enum ConfigType {
-        @SerializedName("string") STRING,
-        @SerializedName("number") NUMBER,
-        @SerializedName("integer") INTEGER,
-        @SerializedName("boolean") BOOLEAN,
-        @SerializedName("object") OBJECT,
-        @SerializedName("array") ARRAY
+    public static record GeneratorConfig(
+            GeneratorType type,
+            @SerializedName("base") String baseScriptName,
+            @SerializedName("outline") String outlineScriptName) {
+    }
+
+    public enum GeneratorType {
+        @SerializedName("native")
+        NATIVE,
+        @SerializedName("custom")
+        CUSTOM
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        MeshTypeData that = (MeshTypeData) o;
+
+        return name.equals(that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
     }
 }

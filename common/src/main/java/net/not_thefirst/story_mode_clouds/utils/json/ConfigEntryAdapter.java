@@ -78,9 +78,9 @@ public final class ConfigEntryAdapter extends TypeAdapter<ConfigEntry> {
         return switch (type) {
             case STRING -> new StringConfigEntry(description, getStringDefault(obj));
             case NUMBER ->
-                new NumberConfigEntry(description, getFloat(obj, "min"), getFloat(obj, "max"), getFloatDefault(obj));
+                new NumberConfigEntry(description, getFloat(obj, "minimum"), getFloat(obj, "maximum"), getFloatDefault(obj));
             case INTEGER ->
-                new IntegerConfigEntry(description, getLong(obj, "min"), getLong(obj, "max"), getLongDefault(obj));
+                new IntegerConfigEntry(description, getLong(obj, "minimum"), getLong(obj, "maximum"), getLongDefault(obj));
             case BOOLEAN -> new BooleanConfigEntry(description, getBooleanDefault(obj));
             case OBJECT, ARRAY -> throw new JsonParseException("Unsupported config type: " + type);
         };

@@ -6,10 +6,13 @@ import net.not_thefirst.story_mode_clouds.config.backend.ConfigBackend;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.ConfigConstants;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.*;
+import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.CustomTypeParameters;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration.LayerConfiguration.FadeType;
 import net.not_thefirst.story_mode_clouds.config.presets.LayerPresets;
 import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeRegistry;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.DiffuseLight;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;
@@ -19,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 
 public class DataSettings {
     private DataSettings() {}
@@ -87,7 +91,7 @@ public class DataSettings {
             "cloudtweaks.presets.save_color_preset.tooltip",
             () -> {
                 String timestamp = String.valueOf(System.currentTimeMillis());
-                String presetName = ComponentWrapper.translatable("cloudtweaks.presets.default_color_preset_name_prefix").getString() + formatTimestamp(System.currentTimeMillis());
+                String presetName = "ColorPreset_" + formatTimestamp(System.currentTimeMillis());
                 if (PresetController.saveColorPreset(timestamp, presetName, ComponentWrapper.translatable("cloudtweaks.presets.default_color_preset_description").getString(), config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
@@ -177,7 +181,7 @@ public class DataSettings {
             "cloudtweaks.presets.save_light_sources_preset.tooltip",
             () -> {
                 String timestamp = String.valueOf(System.currentTimeMillis());
-                String presetName = ComponentWrapper.translatable("cloudtweaks.presets.default_light_sources_preset_name_prefix").getString() + formatTimestamp(System.currentTimeMillis());
+                String presetName = "LightSourcesPreset_" + formatTimestamp(System.currentTimeMillis());
                 if (PresetController.saveLightSourcesPreset(timestamp, presetName, ComponentWrapper.translatable("cloudtweaks.presets.default_light_sources_preset_description").getString(), config)) {
                     CloudsConfiguration.save();
                     if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
@@ -200,11 +204,11 @@ public class DataSettings {
             .category(buildLayerAppearanceSettings(layer))
             .category(buildOutlineCategory(layer))
             .category(buildTextureCategory(layer))
-            .category(buildLayerBevelSettings(layer))
+            .category(buildTypeSpecificCategory(layer))
             .category(buildLayerFogSettings(layer))
             .category(buildLayerFadeSettings(layer))
             .category(buildLayerSaveAsPresetCategory(layer, dimension))
-            .build(backScreen);
+            .build(ClientHelper.getCurrentScreen());
     }
 
     private static ConfigBackend.ConfigCategoryBuilder buildLayerBasicSettings(LayerConfiguration layer) {
@@ -242,7 +246,7 @@ public class DataSettings {
                 null,
                 () -> layer.MODE,
                 v -> layer.MODE = v
-            ))
+            ).dropDown(MeshTypeRegistry.getInstance().values().stream().map(mt -> mt.getName()).toList()))
             .option(backend.booleanOption(
                 "cloudtweaks.option.fog_enabled",
                 null,
@@ -253,11 +257,115 @@ public class DataSettings {
         return category;
     }
 
+    private static Screen createTypeSpecificConfigScreen(String name, CustomTypeParameters params, Screen backScreen, LayerConfiguration layer) {
+        var backend = BackendHolder.getBackend();
+        var screen = backend.createScreen(name, CloudsConfiguration::save);
+        var category = backend.createCategory("cloudtweaks.group.type_specific", null);
+        var group = backend.createGroup(name + ComponentWrapper.translatable("cloudtweaks.group.type_specific_suffix").getString());
+        
+        for (var entry : params.getMap().entrySet()) {
+            String entryName = entry.getKey();
+            var configInstance = entry.getValue();
+
+            Object value = configInstance.value();
+
+            if (value instanceof String) {
+                group.option(backend.stringOption(
+                    entryName,
+                    null,
+                    () -> (String) configInstance.value(),
+                    v -> configInstance.setValue(v)
+                ));
+            } 
+            else if (value instanceof Float) {
+                Optional<Number> fieldMin = params.min(entryName);
+                Optional<Number> fieldMax = params.max(entryName);
+                LoggerProvider.get().info("Config entry {} has min: {}, max: {}", entryName, fieldMin, fieldMax);
+                group.option(backend.floatOption(
+                    entryName,
+                    null,
+                    () -> (Float) configInstance.value(),
+                    v -> configInstance.setValue(v)
+                )
+                .field()
+                .range(fieldMin.map(Number::floatValue).orElse(Float.NEGATIVE_INFINITY), fieldMax.map(Number::floatValue).orElse(Float.POSITIVE_INFINITY)));
+            } 
+            else if (value instanceof Integer) {
+                Optional<Number> fieldMin = params.min(entryName);
+                Optional<Number> fieldMax = params.max(entryName);
+                LoggerProvider.get().info("Config entry {} has min: {}, max: {}", entryName, fieldMin, fieldMax);
+                group.option(backend.integerOption(
+                    entryName,
+                    null,
+                    () -> (Integer) configInstance.value(),
+                    v -> configInstance.setValue(v)
+                )
+                .field()
+                .range(fieldMin.map(Number::intValue).orElse(Integer.MIN_VALUE), fieldMax.map(Number::intValue).orElse(Integer.MAX_VALUE)));
+            }
+            else if (value instanceof Boolean) {
+                group.option(backend.booleanOption(
+                    entryName,
+                    null,
+                    () -> (Boolean) configInstance.value(),
+                    v -> configInstance.setValue(v)
+                ));
+            } else {
+                throw new IllegalArgumentException("Unsupported config instance type: " + value.getClass());
+            }
+        }
+
+        group.action(backend.createAction(
+            "cloudtweaks.raw.remove", 
+            "cloudtweaks.action.remove_config", 
+            () -> {
+                layer.deleteCustomType(name);
+                ClientHelper.setScreen(backScreen);
+            })
+        );
+
+        group.action(backend.createAction(
+            "cloudtweaks.raw.reset", 
+            "cloudtweaks.action.reset_config", 
+            () -> {
+                layer.deleteCustomType(name);
+                CustomTypeParameters newParams = layer.resetCustomTypeConfig(name);
+                Screen refreshedScreen = createTypeSpecificConfigScreen(name, newParams, backScreen, layer);
+                ClientHelper.setScreen(refreshedScreen);
+            })
+        );
+
+
+        category.group(group);
+        screen.category(category);
+        return screen.build(backScreen);
+    }
+
     private static ConfigBackend.ConfigCategoryBuilder buildTypeSpecificCategory(LayerConfiguration layer) {
         var backend = BackendHolder.getBackend();
+        var category = backend.createCategory("cloudtweaks.group.type_specific", null);
 
-        var category = backend.createCategory("cloudtweaks.group.placeholder", null);
+        var typeConfigs = layer.getAllTypeConfig();
+        var mainGroup = backend.createGroup("cloudtweaks.group.type_specific");
 
+        for (var entry : typeConfigs.entrySet()) {
+            String typeName = entry.getKey();
+            CustomTypeParameters params = entry.getValue();
+
+            mainGroup.action(backend.createAction(
+                typeName,
+                null,
+                () -> {
+                    Screen typeScreen = createTypeSpecificConfigScreen(typeName, params, ClientHelper.getCurrentScreen(), layer);
+                    if (typeScreen != null) {
+                        ClientHelper.setScreen(typeScreen);
+                    }
+                }
+            ));
+
+        }
+
+        category.group(mainGroup);
         return category;
     }
 
@@ -457,40 +565,6 @@ public class DataSettings {
                 .step(ConfigConstants.LAYER_HEIGHT_OFFSET_STEP)
                 .slider());
                 
-            return category;
-        }
-
-    private static ConfigBackend.ConfigCategoryBuilder buildLayerBevelSettings(LayerConfiguration layer) {
-        var backend = BackendHolder.getBackend();
-
-        var category = backend.createCategory("cloudtweaks.group.bevel", null);
-
-        category
-            .option(backend.floatOption(
-                "cloudtweaks.option.bevel_size",
-                null,
-                () -> layer.BEVEL.BEVEL_SIZE,
-                v -> layer.BEVEL.BEVEL_SIZE = v
-            ).range(ConfigConstants.MIN_BEVEL_SIZE, ConfigConstants.MAX_BEVEL_SIZE)
-                .step(0.05f)
-                .slider())
-            .option(backend.integerOption(
-                "cloudtweaks.option.edge_segments",
-                null,
-                () -> layer.BEVEL.BEVEL_EDGE_SEGMENTS,
-                v -> layer.BEVEL.BEVEL_EDGE_SEGMENTS = v
-            ).range(ConfigConstants.MIN_EDGE_SEGMENTS, ConfigConstants.MAX_EDGE_SEGMENTS)
-                .step(1)
-                .field())
-            .option(backend.integerOption(
-                "cloudtweaks.option.corner_segments",
-                null,
-                () -> layer.BEVEL.BEVEL_CORNER_SEGMENTS,
-                v -> layer.BEVEL.BEVEL_CORNER_SEGMENTS = v
-            ).range(ConfigConstants.MIN_CORNER_SEGMENTS, ConfigConstants.MAX_CORNER_SEGMENTS)
-                .step(1)
-                .field());
-
         return category;
     }
 
@@ -599,6 +673,7 @@ public class DataSettings {
         var category = backend.createCategory(categoryNameKey, categoryDescKey);
         
         LayerHolder layerHolder = config.getLayerHolder(dimension);
+        Screen base = ClientHelper.getCurrentScreen();
 
         category
             .option(backend.booleanOption(
@@ -619,7 +694,7 @@ public class DataSettings {
                         ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.added_layer_prefix").getString() + layerHolder.layers.size() + ComponentWrapper.translatable("cloudtweaks.message.added_layer_to").getString() + dimension.getId())
                     );
 
-                    Screen refreshedScreen = createLayerSettingsScreenForDimension(config, dimension, ClientHelper.getCurrentScreen());
+                    Screen refreshedScreen = createLayerSettingsScreenForDimension(config, dimension, base);
                     if (refreshedScreen != null) {
                         ClientHelper.setScreen(refreshedScreen);
                     } else {
@@ -645,7 +720,7 @@ public class DataSettings {
                     "cloudtweaks.option.edit",
                     "cloudtweaks.option.edit_layer_settings",
                     () -> {
-                        Screen editScreen = createLayerEditingScreen(dimension, layerIndex, ClientHelper.getCurrentScreen());
+                        Screen editScreen = createLayerEditingScreen(dimension, layerIndex, base);
                         if (editScreen != null) {
                             ClientHelper.setScreen(editScreen);
                         }
@@ -661,7 +736,7 @@ public class DataSettings {
                             ClientHelper.sendLocalSystemMessage(
                                 ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.removed_layer_prefix").getString() + dimension.getId())
                             );
-                            Screen refreshedScreen = createLayerSettingsScreenForDimension(config, dimension, ClientHelper.getCurrentScreen());
+                            Screen refreshedScreen = createLayerSettingsScreenForDimension(config, dimension, base);
                             if (refreshedScreen != null) {
                                 ClientHelper.setScreen(refreshedScreen);
                             } else {
@@ -678,7 +753,7 @@ public class DataSettings {
             "cloudtweaks.presets.layer_presets_button",
             "cloudtweaks.presets.layer_presets_button.tooltip",
             () -> {
-                Screen presetsScreen = LayerPresetsScreen.createLayerPresetsScreen(dimension, ClientHelper.getCurrentScreen());
+                Screen presetsScreen = LayerPresetsScreen.createLayerPresetsScreen(dimension, base);
                 if (presetsScreen != null) {
                     ClientHelper.setScreen(presetsScreen);
                 }
@@ -704,7 +779,6 @@ public class DataSettings {
             .category(buildLayerAppearanceSettings(layer))
             .category(buildOutlineCategory(layer))
             .category(buildTextureCategory(layer))
-            .category(buildLayerBevelSettings(layer))
             .category(buildLayerFogSettings(layer))
             .category(buildLayerFadeSettings(layer))
             .category(buildLayerPresetSaveCategory(layer, presetId, dimension, backScreen))

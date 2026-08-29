@@ -75,7 +75,16 @@ public class ConfigScreen {
                     ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.raw.reloaded_scripts"));
                     ClientHelper.setScreen(null);
                 }
-            ));
+            ))
+            .action(backend.createAction(
+                "cloudtweaks.option.refresh_config", 
+                "cloudtweaks.desc.refresh_config", 
+                () -> {
+                    CloudsConfiguration.save();
+                    CloudsConfiguration.refreshConfig();
+                    ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.raw.refreshed_config"));
+                    ClientHelper.setScreen(null);
+                }));
     }
 
     private static ConfigBackend.ConfigCategoryBuilder buildLightingSettings(CloudsConfiguration config) {
@@ -173,10 +182,11 @@ public class ConfigScreen {
 
         for (CloudsConfiguration.Dimension dimension : CloudsConfiguration.Dimension.values()) {
             builder.action(backend.createAction(
-                ComponentWrapper.literal(dimension.getId()).getString(),
-                ComponentWrapper.translatable("cloudtweaks.desc.dimension" + dimension.getId()).getString(),
+                ComponentWrapper.translatable("cloudtweaks.raw.edit").getString() + " " + dimension.getId(),
+                ComponentWrapper.translatable("cloudtweaks.desc.edit_dimension").getString() + " " + dimension.getId(),
                 () -> {
-                    ClientHelper.setScreen(DataSettings.createLayerSettingsScreenForDimension(config, dimension, parent));
+                    // current screen is YACL's screen or whatever config screen we're using
+                    ClientHelper.setScreen(DataSettings.createLayerSettingsScreenForDimension(config, dimension, ClientHelper.getCurrentScreen()));
                 }
             ));
         }

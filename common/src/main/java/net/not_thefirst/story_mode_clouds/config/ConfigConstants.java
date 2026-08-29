@@ -64,15 +64,6 @@ public class ConfigConstants {
     public static final int DEFAULT_FOG_END_DISTANCE_CHUNKS = 12;
     public static final int FOG_DISTANCE_CHUNK_SIZE = 16;
     
-    public static final float MIN_BEVEL_SIZE = 0.0f;
-    public static final float MAX_BEVEL_SIZE = 10.0f;
-    public static final int MIN_EDGE_SEGMENTS = 1;
-    public static final int MAX_EDGE_SEGMENTS = 32;
-    public static final int MIN_CORNER_SEGMENTS = 1;
-    public static final int MAX_CORNER_SEGMENTS = 32;
-    public static final float DEFAULT_BEVEL_SIZE = 0.1f;
-    public static final int DEFAULT_EDGE_SEGMENTS = 8;
-    public static final int DEFAULT_CORNER_SEGMENTS = 8;
     public static final float MAX_CLOUDS_OUTLINE_SIZE = 4.0f;
 
     public static final int MIN_CLOUD_DISTANCE_CHUNKS = 4;      // 12 chunks = 192 blocks -> 16 grid size
@@ -83,8 +74,6 @@ public class ConfigConstants {
     public static final int MAX_LAYER_OFFSET = 1000;
 
     public static final float MAX_AXIS_VELOCITY = 20;
-
-    public static final String PRESET_EXTENSION = ".json";
     
     private ConfigConstants() {
         throw new AssertionError("h");
