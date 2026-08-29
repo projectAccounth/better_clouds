@@ -2,6 +2,8 @@ package net.not_thefirst.story_mode_clouds.renderer.pipelines;
 
 import java.util.Map;
 
+import net.not_thefirst.lib.gl_render_system.alt.AbstractPipeline;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractPipeline.Builder;
 import net.not_thefirst.lib.gl_render_system.alt.PipelineManager;
 import net.not_thefirst.lib.gl_render_system.alt.PipelineManager.PipelineProvider;
 import net.not_thefirst.lib.gl_render_system.state.BlendState;
@@ -20,29 +22,31 @@ import net.not_thefirst.story_mode_clouds.renderer.platform.gl.GLResourceHandler
 import net.not_thefirst.story_mode_clouds.renderer.platform.gl.GLTextureFactory;
 import net.not_thefirst.story_mode_clouds.renderer.platform.gl.GLUBODataBufferFactory;
 
-public class GLPipelines {
-    private GLPipelines() {}
+public class GLPipelines extends PipelineAllocator {
+    public GLPipelines() {
+        super();
+    }
 
-    public static final IdentifierWrapper CLOUD_SHADER_VERT = 
+    static final IdentifierWrapper CLOUD_SHADER_VERT = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/rt_clouds.vert");
-    public static final IdentifierWrapper CLOUD_SHADER_FRAG = 
+    static final IdentifierWrapper CLOUD_SHADER_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/rt_clouds.frag");
 
-    public static final IdentifierWrapper CLOUD_SHADER_OUTLINE_VERT = 
+    static final IdentifierWrapper CLOUD_SHADER_OUTLINE_VERT = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/rt_clouds_outline.vert");
-    public static final IdentifierWrapper CLOUD_SHADER_OUTLINE_FRAG = 
+    static final IdentifierWrapper CLOUD_SHADER_OUTLINE_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/rt_clouds_outline.frag");
 
-    public static final IdentifierWrapper NO_OP_VERT = 
+    static final IdentifierWrapper NO_OP_VERT = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/no_op.vert");
-    public static final IdentifierWrapper NO_OP_FRAG = 
+    static final IdentifierWrapper NO_OP_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/no_op.frag");
 
-    public static final IdentifierWrapper SCREENQUAD = 
+    static final IdentifierWrapper SCREENQUAD = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/screenquad.vert");
-    public static final IdentifierWrapper STENCIL_FRAG = 
+    static final IdentifierWrapper STENCIL_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/stencil.frag");
-    public static final IdentifierWrapper BLIT_FRAG = 
+    static final IdentifierWrapper BLIT_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "shaders/gl/blit.frag");
 
     private static GLPipeline.Builder base = (GLPipeline.Builder) new GLPipeline.Builder("CUSTOM_POSITION_COLOR")
@@ -57,8 +61,7 @@ public class GLPipelines {
             "Transforms", 0,
             "CloudInfo" , 1,
             "Lighting"  , 2,
-            "Camera"    , 3,
-            "Outline"   , 4
+            "Camera"    , 3
         ));
 
     public static final GLPipeline NONE = base
@@ -118,21 +121,42 @@ public class GLPipelines {
         .withMaskState(MaskState.COLOR_DEPTH)
         .build();
 
-    public static void init() {
+    public static final PipelineProvider GL = PipelineProvider.register("GL");
+
+    public void initialize() {
         var manager = PipelineManager.getInstance();
 
         GLResourceHandler.init(ClientHelper.getClient().getResourceManager());
-        manager.registerDataBufferFactory(PipelineProvider.DEFAULT, GLUBODataBufferFactory::new);
-        manager.registerRenderPassFactory(PipelineProvider.DEFAULT, GLRenderPassFactory::new);
-        manager.registerTextureFactory(PipelineProvider.DEFAULT, GLTextureFactory::new);
-        manager.registerRenderTargetFactory(PipelineProvider.DEFAULT, GLRenderTargetFactory::new);
+        manager.registerDataBufferFactory(GL, GLUBODataBufferFactory::new);
+        manager.registerRenderPassFactory(GL, GLRenderPassFactory::new);
+        manager.registerTextureFactory(GL, GLTextureFactory::new);
+        manager.registerRenderTargetFactory(GL, GLRenderTargetFactory::new);
 
-        manager.registerPipeline(CUSTOM_POSITION_COLOR, PipelineProvider.DEFAULT);
-        manager.registerPipeline(POSITION_COLOR_NO_DEPTH, PipelineProvider.DEFAULT);
-        manager.registerPipeline(POSITION_COLOR_DEPTH_ONLY, PipelineProvider.DEFAULT);
-        manager.registerPipeline(OUTLINE, PipelineProvider.DEFAULT);
-        manager.registerPipeline(NONE, PipelineProvider.DEFAULT);
-        manager.registerPipeline(STENCIL, PipelineProvider.DEFAULT);
-        manager.registerPipeline(BLIT, PipelineProvider.DEFAULT);
+        manager.registerPipeline(CUSTOM_POSITION_COLOR, GL);
+        manager.registerPipeline(POSITION_COLOR_NO_DEPTH, GL);
+        manager.registerPipeline(POSITION_COLOR_DEPTH_ONLY, GL);
+        manager.registerPipeline(OUTLINE, GL);
+        manager.registerPipeline(NONE, GL);
+        manager.registerPipeline(STENCIL, GL);
+        manager.registerPipeline(BLIT, GL);
+    }
+
+    @Override
+    public Builder<?> createBuilder(String name) {
+        return new GLPipeline.Builder(name);
+    }
+
+    @Override
+    public void registerPipeline(AbstractPipeline pipeline) {
+        if (!(pipeline instanceof GLPipeline)) {
+            throw new IllegalArgumentException("Pipeline must be an instance of GLPipeline");
+        }
+        PipelineManager.getInstance().registerPipeline(pipeline, GL);
+    }
+
+    @Override
+    public AbstractPipeline getPipeline(String name) {
+        PipelineManager.setPipelineProvider(GL);
+        return PipelineManager.getInstance().getPipeline(name);
     }
 }

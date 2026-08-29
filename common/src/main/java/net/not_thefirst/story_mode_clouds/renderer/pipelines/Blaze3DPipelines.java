@@ -3,6 +3,7 @@ package net.not_thefirst.story_mode_clouds.renderer.pipelines;
 import java.util.Arrays;
 import java.util.Map;
 
+import net.not_thefirst.lib.gl_render_system.alt.AbstractPipeline;
 import net.not_thefirst.lib.gl_render_system.alt.PipelineManager;
 import net.not_thefirst.lib.gl_render_system.alt.PipelineManager.PipelineProvider;
 import net.not_thefirst.lib.gl_render_system.mesh.utils.GLPrimitive;
@@ -20,18 +21,20 @@ import net.not_thefirst.story_mode_clouds.renderer.platform.blaze3d.B3DTextureFa
 import net.not_thefirst.story_mode_clouds.renderer.platform.blaze3d.B3DUBODataBufferFactory;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.IdentifierWrapper;
 
-public class Blaze3DPipelines {
-    private Blaze3DPipelines() {}
+public class Blaze3DPipelines extends PipelineAllocator {
+    public Blaze3DPipelines() {
+        super();
+    }
 
-    public static final IdentifierWrapper PIPELINE_IDS = IdentifierWrapper.of(Initializer.MOD_ID, "pipeline/pos_tex_c");
-    public static final IdentifierWrapper SHADER_LOCATION = IdentifierWrapper.of(Initializer.MOD_ID, "b3d/rt_clouds");
-    public static final IdentifierWrapper SHADER_LOCATION_OUTLINE = IdentifierWrapper.of(Initializer.MOD_ID, "b3d/rt_clouds_outline");
-    public static final IdentifierWrapper NO_OP_SHADER_LOCATION = IdentifierWrapper.of(Initializer.MOD_ID, "b3d/no_op");
-    public static final IdentifierWrapper SCREENQUAD = 
+    static final IdentifierWrapper PIPELINE_IDS = IdentifierWrapper.of(Initializer.MOD_ID, "pipeline/pos_tex_c");
+    static final IdentifierWrapper SHADER_LOCATION = IdentifierWrapper.of(Initializer.MOD_ID, "b3d/rt_clouds");
+    static final IdentifierWrapper SHADER_LOCATION_OUTLINE = IdentifierWrapper.of(Initializer.MOD_ID, "b3d/rt_clouds_outline");
+    static final IdentifierWrapper NO_OP_SHADER_LOCATION = IdentifierWrapper.of(Initializer.MOD_ID, "b3d/no_op");
+    static final IdentifierWrapper SCREENQUAD = 
         IdentifierWrapper.of(Initializer.MOD_ID, "b3d/screenquad");
-    public static final IdentifierWrapper STENCIL_FRAG = 
+    static final IdentifierWrapper STENCIL_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "b3d/stencil");
-    public static final IdentifierWrapper BLIT_FRAG = 
+    static final IdentifierWrapper BLIT_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "b3d/blit");
 
 
@@ -44,12 +47,12 @@ public class Blaze3DPipelines {
             .withCullState(CullState.CULL)
             .withFaceCull(FaceCullState.BACK)
             .withDepthTestState(DepthTestState.GEQUAL)
-            .withUniformBlocks(Map.ofEntries(
-                Map.entry("Transforms", 0),
-                Map.entry("CloudInfo", 1),
-                Map.entry("Lighting", 2),
-                Map.entry("Camera", 3),
-                Map.entry("Outline", 4)
+            .withUniformBlocks(Map.of(
+                "Transforms", 0,
+                "CloudInfo", 1,
+                "Lighting", 2,
+                "Camera", 3,
+                "Outline", 3
             ));
 
     public static final B3DPipeline POSITION_COLOR_NO_DEPTH = COMMON_BUILDER
@@ -110,7 +113,7 @@ public class Blaze3DPipelines {
 
     public static final PipelineProvider BLAZE3D = PipelineProvider.register("BLAZE3D");
 
-    public static void init() {
+    public void initialize() {
         PipelineManager manager = PipelineManager.getInstance();
         manager.registerPipeline(POSITION_COLOR_NO_DEPTH, BLAZE3D);
         manager.registerPipeline(CUSTOM_POSITION_COLOR, BLAZE3D);
@@ -123,5 +126,24 @@ public class Blaze3DPipelines {
         manager.registerRenderPassFactory(  BLAZE3D, B3DRenderPassFactory::new);
         manager.registerRenderTargetFactory(BLAZE3D, B3DRenderTargetFactory::new);
         manager.registerTextureFactory(     BLAZE3D, B3DTextureFactory::new);
+    }
+
+    @Override
+    public AbstractPipeline.Builder<?> createBuilder(String name) {
+        return new B3DPipeline.Builder(name);
+    }
+
+    @Override
+    public void registerPipeline(AbstractPipeline pipeline) {
+        if (!(pipeline instanceof B3DPipeline)) {
+            throw new IllegalArgumentException("Pipeline must be an instance of B3DPipeline");
+        }
+        PipelineManager.getInstance().registerPipeline(pipeline, BLAZE3D);
+    }
+
+    @Override
+    public AbstractPipeline getPipeline(String name) {
+        PipelineManager.setPipelineProvider(BLAZE3D);
+        return PipelineManager.getInstance().getPipeline(name);
     }
 }
