@@ -9,19 +9,20 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL31;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractRenderPass;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractTexture;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractTextureArray;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractUBODataBuffer;
+import net.not_thefirst.lib.gl_render_system.alt.SamplerDefinition;
 import net.not_thefirst.lib.gl_render_system.alt.UniformValue;
 import net.not_thefirst.lib.gl_render_system.shader.GLProgram;
 import net.not_thefirst.lib.gl_render_system.shader.GLTextureBinding;
 import net.not_thefirst.lib.gl_render_system.shader.UniformBufferObject;
 import net.not_thefirst.lib.gl_render_system.state.GLStateGuard;
 
-public class GLRenderPass extends AbstractRenderPass<GLPipeline> {
+final class GLRenderPass extends AbstractRenderPass<GLPipeline> {
 
     private final Map<String, ByteBuffer> uniformBlocks = new HashMap<>();
     private final Map<Integer, GLTextureBinding> textureBindings = new HashMap<>();
@@ -215,7 +216,13 @@ public class GLRenderPass extends AbstractRenderPass<GLPipeline> {
     }
 
     @Override
-    public void bindTexture(String name, AbstractTexture tex, int slot) {
+    public void bindTexture(
+        String name, 
+        AbstractTexture tex, 
+        int slot, 
+        SamplerDefinition.FilterDefinition filter, 
+        SamplerDefinition.WrapDefinition wrap
+    ) {
         if (name == null) {
             throw new IllegalArgumentException("Texture sampler name cannot be null");
         }
@@ -225,22 +232,25 @@ public class GLRenderPass extends AbstractRenderPass<GLPipeline> {
         if (!(tex instanceof GLTexture2D))
             throw new IllegalArgumentException("Incompatible texture type");
 
-        textureBindings.put(slot, new GLTextureBinding(GL11.GL_TEXTURE_2D, ((GLTexture2D) tex).getId(), null));
+        textureBindings.put(
+            slot, 
+            new GLTextureBinding(
+                GL11.GL_TEXTURE_2D, 
+                ((GLTexture2D) tex).getId(), 
+                SamplerCache.getInstance().getSampler(filter, wrap)));
         boundTextureObjects.put(slot, tex);
         samplerBindings.put(name, slot);
     }
 
     @Override
-    public void bindTextureArray(String name, int textureId, int slot) {
-        if (name == null) {
-            throw new IllegalArgumentException("Texture sampler name cannot be null");
-        }
-        if (slot < 0) {
-            throw new IllegalArgumentException("Texture slot cannot be negative");
-        }
-
-        textureBindings.put(slot, new GLTextureBinding(GL31.GL_TEXTURE_2D_ARRAY, textureId, null));
-        samplerBindings.put(name, slot);
+    public void bindTextureArray(
+        String name, 
+        AbstractTextureArray texArr, 
+        int slot, 
+        SamplerDefinition.FilterDefinition filter, 
+        SamplerDefinition.WrapDefinition wrap
+    ) {
+        throw new UnsupportedOperationException("Texture arrays are not supported in this GLRenderPass implementation");
     }
 
     private void bindTextures(GLProgram program) {

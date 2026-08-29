@@ -16,7 +16,7 @@ import net.not_thefirst.lib.gl_render_system.mesh.utils.GLPrimitive;
 import net.not_thefirst.lib.gl_render_system.vertex.VertexFormat;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
-public class B3DRenderTarget extends AbstractRenderTarget {
+class B3DRenderTarget extends AbstractRenderTarget {
 
     private RenderTarget internal;
     private static AbstractStaticMesh<?> quad;
@@ -69,6 +69,15 @@ public class B3DRenderTarget extends AbstractRenderTarget {
     public void clearDepthAttachment(float depth) {
         super.clearDepthAttachment(depth);
         RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(internal.getDepthTexture(), depth);
+    }
+
+    @Override
+    public void copyDepthFrom(AbstractRenderTarget other) {
+        if (!(other instanceof B3DRenderTarget tar)) 
+            throw new IllegalArgumentException();
+        super.copyDepthFrom(other);
+
+        this.internal.copyDepthFrom(tar.internal);
     }
 
     @Override

@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import org.lwjgl.opengl.GL31;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractPipeline;
+import net.not_thefirst.lib.gl_render_system.mesh.utils.GLPrimitive;
 import net.not_thefirst.lib.gl_render_system.shader.GLProgram;
 import net.not_thefirst.lib.gl_render_system.shader.UniformBufferObject;
 import net.not_thefirst.lib.gl_render_system.state.BlendState;
@@ -179,6 +180,11 @@ public class GLPipeline extends AbstractPipeline {
 
         public Builder(String name) {
             super(name);
+        }
+
+        public Builder withPrimitive(GLPrimitive prim) {
+            // no-op
+            return this;
         }
 
         @Override

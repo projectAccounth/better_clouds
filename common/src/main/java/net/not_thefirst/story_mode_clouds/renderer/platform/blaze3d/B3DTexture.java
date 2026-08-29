@@ -32,7 +32,7 @@ public class B3DTexture extends AbstractTexture {
         super.unbind(unit);
     }
 
-    public GpuTexture getBackend() {
+    GpuTexture getBackend() {
         return backend;
     }
 

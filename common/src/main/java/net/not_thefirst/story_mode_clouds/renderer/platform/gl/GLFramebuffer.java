@@ -25,7 +25,7 @@ import net.not_thefirst.lib.gl_render_system.alt.RenderTargetDescriptor;
 import net.not_thefirst.lib.gl_render_system.mesh.utils.GLPrimitive;
 import net.not_thefirst.lib.gl_render_system.vertex.VertexFormat;
 
-public final class GLFramebuffer extends AbstractRenderTarget {
+final class GLFramebuffer extends AbstractRenderTarget {
 
     private final int fboId;
     private final boolean defaultFramebuffer;

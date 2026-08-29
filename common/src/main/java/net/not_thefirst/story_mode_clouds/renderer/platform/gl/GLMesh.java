@@ -105,11 +105,6 @@ public class GLMesh extends AbstractStaticMesh<GLRenderPass> {
         }
 
         @Override
-        public Builder setLineWidth(float width) {
-            return this;
-        }
-
-        @Override
         public GLMesh build() {
             IndexedCompiledMesh compiled = buildingMesh.compile();
             GpuMesh uploaded = MeshUploader.uploadIndexed(compiled);

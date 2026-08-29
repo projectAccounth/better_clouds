@@ -20,7 +20,7 @@ import java.nio.ByteBuffer;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractTexture;
 
-public final class GLTexture2D extends AbstractTexture {
+final class GLTexture2D extends AbstractTexture {
 
     private final int textureId;
     private final int internalFormat;

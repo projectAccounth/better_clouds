@@ -18,7 +18,10 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractRenderPass;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractTexture;
+import net.not_thefirst.lib.gl_render_system.alt.AbstractTextureArray;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractUBODataBuffer;
+import net.not_thefirst.lib.gl_render_system.alt.SamplerDefinition.FilterDefinition;
+import net.not_thefirst.lib.gl_render_system.alt.SamplerDefinition.WrapDefinition;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 
@@ -26,6 +29,7 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
 
     private RenderPass pass;
     private final Map<String, GpuBuffer> uniformBlocks = new HashMap<>();
+    private final Map<Integer, AbstractTexture> boundTextureObjects = new HashMap<>();
 
     B3DRenderPass(String name, B3DPipeline... pipelines) {
         super(name, pipelines);
@@ -127,16 +131,6 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
     }
 
     @Override
-    public void bindTexture(String name, AbstractTexture tex, int slot) {
-        throw new UnsupportedOperationException("Unimplemented method 'bindTexture'");
-    }
-
-    @Override
-    public void bindTextureArray(String name, int textureId, int slot) {
-        throw new UnsupportedOperationException("Unimplemented method 'bindTextureArray'");
-    }
-
-    @Override
     public void setMesh(AbstractStaticMesh<?> mesh, int indexCount) {
         if (mesh == null) {
             throw new IllegalArgumentException("Mesh cannot be null");
@@ -146,5 +140,39 @@ public class B3DRenderPass extends AbstractRenderPass<B3DPipeline> {
         }
         this.meshData = mesh;
         this.indexCount = mesh.getIndexCount();
+    }
+
+    @Override
+    public void bindTexture(String name, AbstractTexture tex, int slot, FilterDefinition filter, WrapDefinition wrap) {
+        if (name == null) {
+            throw new IllegalArgumentException("Texture sampler name cannot be null");
+        }
+        if (slot < 0) {
+            throw new IllegalArgumentException("Texture slot cannot be negative");
+        }
+        if (!(tex instanceof B3DTexture b3dTex)) {
+            throw new IllegalArgumentException(
+                "Texture must be an instance of B3DTexture"
+            );
+        }
+
+        pass.bindTexture(
+            name, 
+            RenderSystem.getDevice().createTextureView(b3dTex.getBackend()), 
+            RenderSystem.getSamplerCache().getSampler(
+                B3DConversions.toAddr(wrap.getWrapS()),
+                B3DConversions.toAddr(wrap.getWrapT()),
+                B3DConversions.toFilter(filter.getMinFilter()),
+                B3DConversions.toFilter(filter.getMagFilter()),
+                false
+            ));
+            
+        boundTextureObjects.put(slot, tex);
+    }
+
+    @Override
+    public void bindTextureArray(String name, AbstractTextureArray texArray, int slot, FilterDefinition filter,
+            WrapDefinition wrap) {
+        throw new UnsupportedOperationException("Unimplemented method 'bindTextureArray'");
     }
 }

@@ -130,12 +130,7 @@ public class B3DMesh extends AbstractStaticMesh<B3DRenderPass> {
             buildingMesh.setNormal(x, y, z);
             return this;
         }
-
-        @Override
-        public Builder setLineWidth(float width) {
-            return this;
-        }
-
+        
         @Override
         public B3DMesh build() {
             try (MeshData data = buildingMesh.buildOrThrow()) {

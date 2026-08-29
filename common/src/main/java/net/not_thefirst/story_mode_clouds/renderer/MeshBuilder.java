@@ -22,18 +22,11 @@ public class MeshBuilder {
     private static final int MESH_BUILD_TIMEOUT_MS = 4000;
 
     public static final CloudShape SHAPE     = CloudShape.CUBE;
-    public static final PuffMode   PUFF_MODE = PuffMode.SCATTERED;
 
     public enum CloudShape {
         CUBE,
         CROSS
     }
-
-    public enum PuffMode {
-        SCATTERED,
-        COMPACT
-    }
-
     @FunctionalInterface
     public static interface MeshCallback {
         AssetHandle<AbstractStaticMesh.Builder<?, ?>> apply(
