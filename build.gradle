@@ -26,6 +26,17 @@ subprojects {
     repositories {
         mavenLocal()
         maven { url "https://maven.neoforged.net/releases/" }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "Modrinth"
+                    url = "https://api.modrinth.com/maven"
+                }
+            }
+            filter {
+                includeGroup "maven.modrinth"
+            }
+        }
     }
 }
 
@@ -82,7 +93,7 @@ def registerLoaderTask(String loader) {
             }
 
             def expectedPattern =
-                    ~/^${project.name}\+.+-${rootProject.mod_version}-${loader}\.jar$/;
+                    ~/^${project.name}\+.+-${rootProject.mod_version}-${loader}_.+\.jar$/;
 
             fileTree(libsDir) {
                 include("*.jar");

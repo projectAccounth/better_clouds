@@ -1,3 +1,4 @@
+import static utils.Utils.*
 plugins {
     id "java"
     id "maven-publish"
@@ -23,7 +24,6 @@ dependencies {
     jarJar(implementation('com.fasterxml.jackson.core:jackson-annotations:2.17.1'))
 
     compileOnly "dev.isxander:yet-another-config-lib:${project.yacl_version}"
-
 }
 
 mixin {
@@ -74,5 +74,5 @@ jars {
 }
 
 jar {
-    archiveClassifier = "forge"
+    archiveClassifier = "forge_${getGitBranch()}"
 }

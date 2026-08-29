@@ -1,3 +1,5 @@
+import static utils.Utils.*
+
 plugins {
     id "java"
     id "maven-publish"
@@ -24,7 +26,6 @@ dependencies {
     include (implementation ('com.fasterxml.jackson.core:jackson-databind:2.17.1'))
     include (implementation ('com.fasterxml.jackson.core:jackson-core:2.17.1'))
     include (implementation ('com.fasterxml.jackson.core:jackson-annotations:2.17.1'))
-
 
     implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
@@ -81,7 +82,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 jar {
-    archiveClassifier = "fabric"
+    archiveClassifier = "fabric_${getGitBranch()}"
     from("LICENSE") {
         rename { "LICENSE-${project.archivesName}" }
     }
