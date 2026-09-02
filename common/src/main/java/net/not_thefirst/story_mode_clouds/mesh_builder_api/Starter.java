@@ -83,6 +83,12 @@ public final class Starter {
         }
     }
 
+    public static void reloadTypes() {
+        MeshTypeRegistry.getInstance().clear();
+        MeshTypeDataCache.flush();
+        loadTypes();
+    }
+
     public static void reloadScript() {
         ScriptRegistry.clear();
         loadScripts();

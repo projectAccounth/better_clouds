@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 
 import net.not_thefirst.lib.utils.objects.DynamicEnum;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.Starter;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeData;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeDataCache;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeData.ConfigEntry;
@@ -196,6 +197,10 @@ public class CloudsConfiguration {
         REMOVED_DIMENSIONS.add(dimension);
     }
 
+    public boolean dimensionRemoved(Dimension dimension) {
+        return REMOVED_DIMENSIONS.contains(dimension);
+    }
+
     public LayerConfiguration getLayerInDimension(Dimension dimension, int idx) {
         LayerHolder holder = getLayerHolder(dimension);
         if (holder == null || idx < 0 || idx >= holder.layers.size()) {
@@ -263,6 +268,8 @@ public class CloudsConfiguration {
         load();
         REMOVED_DIMENSIONS.clear();
         
+        Starter.reloadTypes();
+
         initializeCustomParameters();
         
         if (RendererHolder.get() != null) {

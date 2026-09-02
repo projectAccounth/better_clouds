@@ -333,143 +333,6 @@ public class DataSettings {
 
     /**
      * ==========================================================================
-     * Layer category
-     *
-     */
-
-
-    public static Screen createLayerEditingScreen(CloudsConfiguration.Dimension dimension, int layerIndex, Screen backScreen) {
-        var manager = LayerEditingScreenManager.getInstance(dimension, layerIndex);
-        manager.setParentScreen(backScreen);
-        return manager.buildScreen();
-    }
-
-    static Screen createLayerSettingsScreenForDimension(
-        CloudsConfiguration config, 
-        CloudsConfiguration.Dimension dimension,
-        Screen backScreen) {
-        var manager = LayerSettingsScreenManager.getInstance(dimension);
-        manager.setParentScreen(backScreen);
-        return manager.buildScreen();
-    }
-
-    static ConfigBackend.ConfigCategoryBuilder buildLayersSettingsForDimension(
-        CloudsConfiguration config, 
-        CloudsConfiguration.Dimension dimension,
-        String categoryNameKey,
-        String categoryDescKey,
-        Screen backScreen,
-        Screen[] self) {
-
-        var backend = BackendHolder.getBackend();
-        var category = backend.createCategory(categoryNameKey, categoryDescKey);
-        
-        LayerHolder layerHolder = config.getLayerHolder(dimension);
-        if (!CloudsConfiguration.Dimension.isBuiltin(dimension)) {
-            category.action(backend.createAction(
-                "cloudtweaks.title.delete_dimension",
-                "cloudtweaks.desc.delete_dimension",
-                () -> {
-                    CloudsConfiguration.getInstance().removeLayerHolder(dimension);
-                    ClientHelper.setScreen(null);
-                }
-            ));
-        }
-
-        category
-            .option(backend.booleanOption(
-                "cloudtweaks.option.dimension_clouds_rendered",
-                null,
-                () -> config.getCloudRendered(dimension),
-                v -> config.setCloudRendered(dimension, v)
-            ))
-
-            .action(backend.createAction(
-                "cloudtweaks.title.add_layer",
-                "cloudtweaks.desc.add_layer",
-                () -> {
-                    LayerConfiguration newLayer = new LayerConfiguration(layerHolder.layers.size());
-                    layerHolder.addLayer(newLayer);
-                    CloudsConfiguration.save();
-                    ClientHelper.sendLocalSystemMessage(
-                        ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.added_layer_prefix").getString() + layerHolder.layers.size() + ComponentWrapper.translatable("cloudtweaks.message.added_layer_to").getString() + dimension.getId())
-                    );
-
-                    Screen refreshedScreen = createLayerSettingsScreenForDimension(config, dimension, backScreen);
-                    if (refreshedScreen != null) {
-                        ClientHelper.setScreen(refreshedScreen);
-                    } else {
-                        ClientHelper.setScreen(null);
-                    }
-                })
-            );
-
-        for (int i = 0; i < layerHolder.layers.size(); i++) {
-            LayerConfiguration layer = layerHolder.layers.get(i);
-            final int layerIndex = i;
-
-            var group = backend.createGroup(ComponentWrapper.translatable("cloudtweaks.layer.label_prefix").getString() + (i + 1) + ": " + layer.NAME);
-
-            group
-                .option(backend.stringOption(
-                    "cloudtweaks.option.name",
-                    null,
-                    () -> layer.NAME,
-                    v -> layer.NAME = v
-                ))
-                .action(backend.createAction(
-                    "cloudtweaks.option.edit",
-                    "cloudtweaks.option.edit_layer_settings",
-                    () -> {
-                        Screen editScreen = createLayerEditingScreen(dimension, layerIndex, self[0]);
-                        if (editScreen != null) {
-                            ClientHelper.setScreen(editScreen);
-                        }
-                    })
-                )
-                .action(backend.createAction(
-                    "cloudtweaks.option.remove_layer",
-                    "cloudtweaks.desc.remove_layer",
-                    () -> {
-                        if (layerHolder.layers.size() > 1) {
-                            layerHolder.removeLayer(layerIndex);
-                            CloudsConfiguration.save();
-                            ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.removed_layer_prefix").getString() + dimension.getId())
-                            );
-                            Screen refreshedScreen = createLayerSettingsScreenForDimension(config, dimension, backScreen);
-                            if (refreshedScreen != null) {
-                                ClientHelper.setScreen(refreshedScreen);
-                            } else {
-                                ClientHelper.setScreen(null);
-                            }
-                        }
-                    })
-                );
-            
-            category.group(group);
-        }
-
-        category.action(backend.createAction(
-            "cloudtweaks.presets.layer_presets_button",
-            "cloudtweaks.presets.layer_presets_button.tooltip",
-            () -> {
-                var presetsManager = LayerPresetsScreenManager.getInstance(dimension);
-                presetsManager.setParentScreen(self[0]);
-                Screen presetsScreen = presetsManager.buildScreen();
-                if (presetsScreen != null) {
-                    ClientHelper.setScreen(presetsScreen);
-                }
-            })
-        );
-        
-        return category;
-    }
-
-    
-
-    /**
-     * ==========================================================================
      * Layer settings section
      *
      */
@@ -480,6 +343,9 @@ public class DataSettings {
         var builder = backend.createCategory("cloudtweaks.category.layers", "cloudtweaks.desc.layers");
 
         for (CloudsConfiguration.Dimension dimension : CloudsConfiguration.Dimension.values()) {
+            if (CloudsConfiguration.getInstance().dimensionRemoved(dimension)) {
+                continue;
+            }
             builder.action(backend.createAction(
                 ComponentWrapper.translatable("cloudtweaks.raw.edit").getString() + " " + dimension.getId(),
                 ComponentWrapper.translatable("cloudtweaks.desc.edit_dimension").getString() + " " + dimension.getId(),

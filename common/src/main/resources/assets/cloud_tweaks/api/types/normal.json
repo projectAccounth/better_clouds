@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "name": "NORMAL",
+    "generator": {
+        "type": "native"
+    },
+    "render": {
+        "depth": true
+    },
+    "config": {}
+}

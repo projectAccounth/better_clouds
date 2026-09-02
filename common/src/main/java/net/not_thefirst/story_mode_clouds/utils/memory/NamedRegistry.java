@@ -45,6 +45,11 @@ public abstract class NamedRegistry<T> {
         return registry.containsKey(name);
     }
 
+    public void clear() {
+        if (frozen) throw new IllegalStateException("Registry is frozen.");
+        registry.clear();
+    }
+
     /**
      * Returns true if the registry is frozen, false otherwise.
      * @return True if the registry is frozen, false otherwise.
