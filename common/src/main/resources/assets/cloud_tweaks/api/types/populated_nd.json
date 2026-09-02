@@ -1,11 +1,84 @@
 {
+    "version": 1,
     "name": "POPULATED_ND",
     "generator": {
         "type": "native"
     },
     "render": {
-        "outline_available": false,
         "depth": false
     },
-    "config": {}
+    "config": {
+        "PUFF_COUNT": {
+            "type": "integer",
+            "default": 6,
+            "minimum": 1,
+            "maximum": 32,
+            "description": "How many cloud puffs are generated per grid cell."
+        },
+        "PUFF_MIN_SIZE": {
+            "type": "number",
+            "default": 1.8,
+            "minimum": 0.1,
+            "maximum": 32.0,
+            "description": "Smallest possible puff radius, in blocks."
+        },
+        "PUFF_MAX_SIZE": {
+            "type": "number",
+            "default": 5.2,
+            "minimum": 0.1,
+            "maximum": 32.0,
+            "description": "Largest possible puff radius, in blocks."
+        },
+        "PUFF_HEIGHT_FACTOR": {
+            "type": "number",
+            "default": 0.45,
+            "minimum": 0.05,
+            "maximum": 4.0,
+            "description": "Puff height as a fraction of its radius. Lower values give flat, pancake-like puffs; higher values give tall, column-like puffs."
+        },
+        "COMPACT_MODE": {
+            "type": "boolean",
+            "default": true,
+            "description": "If enabled, puffs cluster into denser clumps. If disabled, puffs scatter freely and spill across cell edges to hide seams."
+        },
+        "CLUSTER_MAX_COUNT": {
+            "type": "integer",
+            "default": 3,
+            "minimum": 1,
+            "maximum": 8,
+            "description": "Maximum number of clumps per cell. Only used when Compact Mode is enabled."
+        },
+        "CLUSTER_JITTER_FRACTION": {
+            "type": "number",
+            "default": 0.25,
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "How far puffs can drift from their clump's center, as a fraction of the cell size. Only used when Compact Mode is enabled."
+        },
+        "SCATTER_OVERLAP_FACTOR": {
+            "type": "number",
+            "default": 1.25,
+            "minimum": 0.0,
+            "maximum": 4.0,
+            "description": "How far puffs can spill past a cell's edge, relative to their own size. Only used when Compact Mode is disabled."
+        },
+        "NOISE_HEIGHT_ENABLED": {
+            "type": "boolean",
+            "default": true,
+            "description": "If enabled, cloud height rolls smoothly across the map. If disabled, the whole layer sits at one flat height."
+        },
+        "NOISE_HEIGHT_SCALE": {
+            "type": "number",
+            "default": 0.01,
+            "minimum": 0.001,
+            "maximum": 1.0,
+            "description": "How quickly cloud height changes across space. Lower values give broad, rolling shapes; higher values give choppy, frequent variation."
+        },
+        "NOISE_HEIGHT_SEED": {
+            "type": "integer",
+            "default": 0,
+            "minimum": 0,
+            "description": "Seed for the height pattern. Different seeds give different terrain shapes without changing their overall character."
+        }
+    }
 }

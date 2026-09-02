@@ -13,10 +13,13 @@ public class MeshTypeRegistry extends NamedRegistry<MeshType> {
         return INSTANCE;
     }
 
+    public void clear() {
+
+    }
+
     static {
         NORMAL_FAST    = INSTANCE.register("NORMAL_FAST"   , () -> new MeshType("NORMAL_FAST"   , true , true));
         NORMAL         = INSTANCE.register("NORMAL"        , () -> new MeshType("NORMAL"        , true , true));
-        POPULATED      = INSTANCE.register("POPULATED"     , () -> new MeshType("POPULATED"     , true , true));
-        POPULATED_ND   = INSTANCE.register("POPULATED_ND"  , () -> new MeshType("POPULATED_ND"  , false, true));
+        // POPULATED      = INSTANCE.register("POPULATED"     , () -> new MeshType("POPULATED"     , true , true));
     }
 }

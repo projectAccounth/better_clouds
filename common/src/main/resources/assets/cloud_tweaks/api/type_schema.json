@@ -1,8 +1,11 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$schema": "https://json-schema.org/draft-07/schema",
     "title": "TypeDefinition",
     "type": "object",
     "properties": {
+        "version": {
+            "type": "integer"
+        },
         "name": {
             "type": "string"
         },
@@ -50,9 +53,6 @@
             "type": "object",
             "properties": {
                 "depth": {
-                    "type": "boolean"
-                },
-                "outline_available": {
                     "type": "boolean"
                 }
             }
@@ -124,6 +124,7 @@
         "name",
         "generator",
         "render",
-        "config"
+        "config",
+        "version"
     ]
 }

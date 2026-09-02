@@ -9,16 +9,12 @@ uniform sampler2D colorTex1;
 uniform sampler2D depthTex1;
 
 void main() {
-    vec4 colorA = texture(colorTex0, TexCoords);
     vec4 colorB = texture(colorTex1, TexCoords);
     
     float depthA = texture(depthTex0, TexCoords).r;
     float depthB = texture(depthTex1, TexCoords).r;
 
-    if (depthA < depthB) {
-        FragColor = colorA;
-        gl_FragDepth = depthA; 
-    } else {
+    if (depthA >= depthB) {
         FragColor = colorB;
         gl_FragDepth = depthB;
     }

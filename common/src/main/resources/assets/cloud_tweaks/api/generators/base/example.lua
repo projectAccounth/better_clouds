@@ -1,3 +1,5 @@
+-- from ClassicFastMeshBuilder
+
 function buildCell(cellX, cellZ, colorModifier)
     local x0 = cellX * MeshConstants.CELL_SIZE;
     local x1 = x0 + MeshConstants.CELL_SIZE;

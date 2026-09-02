@@ -1,41 +1,35 @@
 package net.not_thefirst.story_mode_clouds.mesh_builder_api.natives;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh.Builder;
 import net.not_thefirst.lib.gl_render_system.vertex.GLVertexBuilder;
-import net.minecraft.util.Mth;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder;
 import net.not_thefirst.story_mode_clouds.renderer.CustomCloudRenderer.LayerState;
-import net.not_thefirst.story_mode_clouds.renderer.MeshBuilder.PuffMode;
-import net.not_thefirst.story_mode_clouds.utils.MiscUtils.CacheKey;
+import net.not_thefirst.story_mode_clouds.utils.math.MathUtils;
+import net.not_thefirst.story_mode_clouds.utils.math.NoiseCache;
+import net.not_thefirst.story_mode_clouds.utils.math.PerlinNoise;
 import net.not_thefirst.story_mode_clouds.utils.math.Texture;
 import net.not_thefirst.story_mode_clouds.utils.math.WrappedCoordinates;
 
 public class PuffMeshBuilder implements MeshTypeBuilder {
-    private static final long PHI = 0x9E3779B97F4A7C15L;
+private static final long PHI = 0x9E3779B97F4A7C15L;
     private static final int SPLITMIX_TABLE_SIZE = 1 << 10;
 
-    private static final int CHUNKS_PER_CELL = 6;
-    private static final float CHUNK_MIN_SIZE = 1.8f;
-    private static final float CHUNK_MAX_SIZE = 5.2f;
-    private static final float CHUNK_HEIGHT_FACTOR = 0.45f;
-
-    // ture
     private static final float[] sinTable = new float[SPLITMIX_TABLE_SIZE];
     private static final float[] cosTable = new float[SPLITMIX_TABLE_SIZE];
     static {
         for (int i = 0; i < SPLITMIX_TABLE_SIZE; i++) {
             double a = (2.0 * Math.PI * i) / SPLITMIX_TABLE_SIZE;
-            sinTable[i] = (float)Math.sin(a);
-            cosTable[i] = (float)Math.cos(a);
+            sinTable[i] = (float) Math.sin(a);
+            cosTable[i] = (float) Math.cos(a);
         }
     }
 
-    private static final Map<CacheKey, LayerCache> LayerCaches = new ConcurrentHashMap<>(4);
+    private static final Map<Integer, LayerCache> layerCaches = new HashMap<>(4);
 
     private static long splitmix64(long x) {
         x += PHI;
@@ -44,75 +38,102 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         return x ^ (x >>> 31);
     }
 
-    // produce a float in [0,1) from a 64-bit value
     private static float uint64ToFloat01(long v) {
-        // use top 53 bits to double precision mantissa style, then cast to float
         long top = (v >>> 11) & ((1L << 53) - 1);
-        double d = top * 0x1.0p-53; // double in [0,1)
+        double d = top * 0x1.0p-53;
         return (float) d;
     }
 
-    // Puff descriptor (relative to cell origin, px/pz are in [0, CELL_SIZE_IN_BLOCKS) if compact cluster centers used)
     private static final class PuffDesc {
-        final float localX; // local offset inside cell (can be slightly negative for overlap)
+        final float localX;
         final float localZ;
         final float hr;
         final float vr;
-        final float baseY; // base Y before tiny per-p puff jitter;; constrained so baseY + vr <= PUFF_MAX_VERTICAL
-        final float yBias; // stable per-puff depth bias
+        final float y; // baked height
 
-        PuffDesc(float localX, float localZ, float hr, float vr, float baseY, float yBias) {
+        PuffDesc(float localX, float localZ, float hr, float vr, float y) {
             this.localX = localX;
             this.localZ = localZ;
             this.hr = hr;
             this.vr = vr;
-            this.baseY = baseY;
-            this.yBias = yBias;
+            this.y = y;
         }
     }
 
-    // LayerCache holds cached PuffDesc[] for a texture cell
-    @SuppressWarnings("unused")
+    private record GenParams(
+        int puffCount,
+        float minSize,
+        float maxSize,
+        float heightFactor,
+        boolean compactMode,
+        int clusterMaxCount,
+        float clusterJitterFraction,
+        float scatterOverlapFactor,
+        boolean noiseEnabled,
+        float noiseScale,
+        int noiseSeed
+    ) {}
+
     private static final class LayerCache {
         final int texWidth;
         final int texHeight;
-        final Object texCellsRef; // identity of tex.cells for fast change detection
-        final int puffCount;
-        final PuffDesc[][] puffByCell; // index = (tx + tz * texWidth) to PuffDesc[puffCount]
-        final int currentLayer; // cache per layer
+        final Object texCellsRef;
+        final GenParams params;
+        final PuffDesc[][] puffByCell;
 
-        LayerCache(int texWidth, int texHeight, Object texCellsRef, int puffCount, int currentLayer) {
+        LayerCache(int texWidth, int texHeight, Object texCellsRef, GenParams params) {
             this.texWidth = texWidth;
             this.texHeight = texHeight;
             this.texCellsRef = texCellsRef;
-            this.puffCount = puffCount;
+            this.params = params;
             this.puffByCell = new PuffDesc[texWidth * texHeight][];
-            this.currentLayer = currentLayer;
         }
     }
 
-    // Build or return existing LayerCache for given tex n layer
-    private static LayerCache ensureCache(Texture.TextureData tex, int currentLayer) {
-        CacheKey key = new CacheKey(System.identityHashCode(tex), currentLayer);
-        LayerCache cache = LayerCaches.get(key);
-        Object cellsRef = tex.cells; // use reference identity to detect if texture changes
-        if (cache != null && 
-            cache.texWidth == tex.width && 
-            cache.texHeight == tex.height && 
-            cache.texCellsRef == cellsRef) {
-                return cache;
-            }
-            // else regenerate
-        
-        CloudsConfiguration.LayerConfiguration layerConfiguration = 
-            CloudsConfiguration.getInstance().getLayer(currentLayer);
-        final float PUFF_MAX_VERTICAL = MeshBuilder.HEIGHT_IN_BLOCKS * (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0f);
+    private static GenParams readGenParams(CloudsConfiguration.LayerConfiguration layerConfiguration) {
+        var config = layerConfiguration.getTypeConfig("POPULATED_ND");
 
-        LayerCache pc = new LayerCache(tex.width, tex.height, cellsRef, CHUNKS_PER_CELL, currentLayer);
+        return new GenParams(
+            (Integer) config.getValue("PUFF_COUNT").value(),
+            (Float) config.getValue("PUFF_MIN_SIZE").value(),
+            (Float) config.getValue("PUFF_MAX_SIZE").value(),
+            (Float) config.getValue("PUFF_HEIGHT_FACTOR").value(),
+            (Boolean) config.getValue("COMPACT_MODE").value(),
+            (Integer) config.getValue("CLUSTER_MAX_COUNT").value(),
+            (Float) config.getValue("CLUSTER_JITTER_FRACTION").value(),
+            (Float) config.getValue("SCATTER_OVERLAP_FACTOR").value(),
+            (Boolean) config.getValue("NOISE_HEIGHT_ENABLED").value(),
+            (Float) config.getValue("NOISE_HEIGHT_SCALE").value(),
+            (Integer) config.getValue("NOISE_HEIGHT_SEED").value()
+        );
+    }
+
+    private static LayerCache ensureCache(Texture.TextureData tex, int currentLayer,
+                                           CloudsConfiguration.LayerConfiguration layerConfiguration) {
+        GenParams params = readGenParams(layerConfiguration);
+        Object cellsRef = tex.cells;
+
+        LayerCache existing = layerCaches.get(currentLayer);
+        if (existing != null &&
+            existing.texWidth == tex.width &&
+            existing.texHeight == tex.height &&
+            existing.texCellsRef == cellsRef &&
+            existing.params.equals(params)) {
+            return existing;
+        }
+
+        LayerCache pc = new LayerCache(tex.width, tex.height, cellsRef, params);
 
         long[] cells = tex.cells;
         int w = tex.width;
         int h = tex.height;
+
+        final float cellSize = MeshBuilder.CELL_SIZE_IN_BLOCKS;
+        final float cellHeight = MeshBuilder.HEIGHT_IN_BLOCKS * layerConfiguration.APPEARANCE.CLOUD_Y_SCALE;
+        PerlinNoise noise = params.noiseEnabled() ? NoiseCache.getNoiseInstance(params.noiseSeed()) : null;
+
+        final float maxVr = params.maxSize() * params.heightFactor();
+        final float usableHeight = Math.max(cellHeight - maxVr, 0f);
 
         for (int tz = 0; tz < h; tz++) {
             for (int tx = 0; tx < w; tx++) {
@@ -122,14 +143,18 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     pc.puffByCell[idx] = null;
                     continue;
                 }
-                PuffDesc[] arr = new PuffDesc[CHUNKS_PER_CELL];
+                PuffDesc[] arr = new PuffDesc[params.puffCount()];
 
                 long cellSeed = ((tx & 0xFFFFL) << 32) |
                                 ((tz & 0xFFFFL) << 16) |
                                 (currentLayer & 0xFFFFL);
 
-                // precompute cluster centers
-                for (int p = 0; p < CHUNKS_PER_CELL; p++) {
+                float heightFrac = params.noiseEnabled()
+                    ? (float) noise.noise(tx * cellSize * params.noiseScale(), tz * cellSize * params.noiseScale()) * 0.5f + 0.5f
+                    : 0.5f;
+                float centerY = heightFrac * usableHeight + maxVr * 0.5f;
+
+                for (int p = 0; p < params.puffCount(); p++) {
                     long puffSeed = cellSeed + (p * PHI);
 
                     long s0 = splitmix64(puffSeed);
@@ -139,73 +164,64 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
                     long s2 = splitmix64(s1);
                     float rr2 = uint64ToFloat01(s2);
 
-                    float hr = Mth.lerp(rr0, CHUNK_MIN_SIZE, CHUNK_MAX_SIZE);
-                    float vr = hr * CHUNK_HEIGHT_FACTOR;                    
+                    float hr = MathUtils.lerp(rr0, params.minSize(), params.maxSize());
+                    float vr = hr * params.heightFactor();
 
-                    float localX; 
+                    float localX;
                     float localZ;
-                    if (MeshBuilder.PUFF_MODE == PuffMode.COMPACT) {
-                        // clusterCount 1..3, uses one per-cell rng but deterministic cluster centers should be consistent
-                        int clusterCount = 1 + (int)(uint64ToFloat01(splitmix64(cellSeed)) * 3.0f);
+                    if (params.compactMode()) {
+                        int clusterCount = 1 + (int) (uint64ToFloat01(splitmix64(cellSeed)) * params.clusterMaxCount());
                         int clusterIndex = p % clusterCount;
                         long clusterSeed = cellSeed + clusterIndex * 0xD1ABF00DL;
                         long cs0 = splitmix64(clusterSeed);
                         long cs1 = splitmix64(cs0);
-                        float cxOffset = uint64ToFloat01(cs0) * MeshBuilder.CELL_SIZE_IN_BLOCKS;
-                        float czOffset = uint64ToFloat01(cs1) * MeshBuilder.CELL_SIZE_IN_BLOCKS;
+                        float cxOffset = uint64ToFloat01(cs0) * cellSize;
+                        float czOffset = uint64ToFloat01(cs1) * cellSize;
 
-                        // per-puff jitter around cluster center
-                        float angleF = rr1 * (float)Math.PI * 2.0f;
-                        // map angleF to table index
-                        int idxTable = (int)((angleF / (2.0f * Math.PI)) * SPLITMIX_TABLE_SIZE) & (SPLITMIX_TABLE_SIZE - 1);
+                        float angleF = rr1 * (float) Math.PI * 2.0f;
+                        int idxTable = (int) ((angleF / (2.0f * Math.PI)) * SPLITMIX_TABLE_SIZE) & (SPLITMIX_TABLE_SIZE - 1);
                         float cosv = cosTable[idxTable];
                         float sinv = sinTable[idxTable];
 
-                        float dist = rr2 * (MeshBuilder.CELL_SIZE_IN_BLOCKS * 0.25f);
+                        float dist = rr2 * (cellSize * params.clusterJitterFraction());
                         float jitterX = cosv * dist;
                         float jitterZ = sinv * dist;
 
                         localX = cxOffset + jitterX;
                         localZ = czOffset + jitterZ;
                     } else {
-                        float overlap = hr * 1.25f;
-                        float localXRaw = rr1 * (MeshBuilder.CELL_SIZE_IN_BLOCKS + overlap * 2f) - overlap;
-                        float localZRaw = rr2 * (MeshBuilder.CELL_SIZE_IN_BLOCKS + overlap * 2f) - overlap;
-                        localX = localXRaw;
-                        localZ = localZRaw;
+                        float overlap = hr * params.scatterOverlapFactor();
+                        localX = rr1 * (cellSize + overlap * 2f) - overlap;
+                        localZ = rr2 * (cellSize + overlap * 2f) - overlap;
                     }
 
-                    float baseY = uint64ToFloat01(splitmix64(s2)) * (PUFF_MAX_VERTICAL - vr);
-                    baseY = Mth.clamp(baseY, 0.0f, PUFF_MAX_VERTICAL - vr);
+                    float baseY01 = uint64ToFloat01(splitmix64(s2));
+                    float jitter = (baseY01 - 0.5f) * 0.5f;
 
-                    long biasSeed = splitmix64(puffSeed ^ 0xA5A5A5A5A5A5A5A5L);
-                    float bias01 = uint64ToFloat01(biasSeed);
+                    float y = centerY - vr * 0.5f + jitter;
+                    y = MathUtils.clamp(y, 0.0f, Math.max(cellHeight - vr, 0f));
 
-                    // 64 discrete layers, total span approx .032 blocks
-                    float yBias = ((int)(bias01 * 64)) * 0.0005f;
-
-                    arr[p] = new PuffDesc(localX, localZ, hr, vr, baseY, yBias);
+                    arr[p] = new PuffDesc(localX, localZ, hr, vr, y);
                 }
 
                 pc.puffByCell[idx] = arr;
             }
         }
 
-        LayerCaches.put(key, pc);
+        layerCaches.put(currentLayer, pc);
         return pc;
     }
 
-    @SuppressWarnings("unused")
     @Override
     public AbstractStaticMesh.Builder<?, ?> build(
         AbstractStaticMesh.Builder<?, ?> bb,
         LayerState state,
-        int cx, int cz,  
+        int cx, int cz,
         int currentLayer, int colorModifier) {
 
-        CloudsConfiguration.LayerConfiguration layerConfiguration = 
+        CloudsConfiguration.LayerConfiguration layerConfiguration =
             CloudsConfiguration.getInstance().getLayer(currentLayer);
-        
+
         final int RANGE = CloudsConfiguration.getInstance().getCloudGridRange();
 
         Texture.TextureData tex = state.texture();
@@ -213,9 +229,9 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         int w = tex.width;
         int h = tex.height;
 
-        LayerCache pc = ensureCache(tex, currentLayer);
+        LayerCache pc = ensureCache(tex, currentLayer, layerConfiguration);
         final float cellSize = MeshBuilder.CELL_SIZE_IN_BLOCKS;
-        
+
         WrappedCoordinates wrapped = new WrappedCoordinates(cx, cz, RANGE, w, h);
 
         for (int dz = -RANGE; dz <= RANGE; dz++) {
@@ -223,43 +239,29 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
 
                 int cellIdx = wrapped.getCellIndex(dx, dz, RANGE);
                 long cell = cells[cellIdx];
-
-                int alpha = (int) ((cell >> 36) & 0xFF);
-
                 PuffDesc[] puffs = pc.puffByCell[cellIdx];
 
-                if (alpha <= 3 || cell == 0L || puffs == null) continue;
+                if (cell == 0L || puffs == null) continue;
 
                 float baseX = dx * cellSize;
                 float baseZ = dz * cellSize;
-
                 int color = Texture.getColor(cell);
 
-                for (int p = 0; p < CHUNKS_PER_CELL; p++) {
+                for (int p = 0; p < puffs.length; p++) {
                     PuffDesc description = puffs[p];
                     if (description == null) continue;
 
-                    // world-space puff center
                     float px = baseX + description.localX;
                     float pz = baseZ + description.localZ;
-
+                    float py = description.y;
                     float hr = description.hr;
                     float vr = description.vr;
-                    float py = description.baseY + description.yBias;
 
-                    CloudsConfiguration.LayerConfiguration lc = layerConfiguration;
-                    float maxVerticalHeight = MeshBuilder.HEIGHT_IN_BLOCKS;
-                    if (lc.IS_ENABLED) maxVerticalHeight *= lc.APPEARANCE.CLOUD_Y_SCALE;
-                    py = Mth.clamp(py, 0.0f, maxVerticalHeight - vr);
+                    int drawColor = layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier;
 
                     switch (MeshBuilder.SHAPE) {
-                        case CROSS:
-                            drawCross(bb, px, py, pz, hr, vr, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
-                            break;
-                        case CUBE:
-                        default:
-                            drawCube(bb, px, py, pz, hr, vr, currentLayer, layerConfiguration.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR ? color : colorModifier);
-                            break;
+                        case CROSS -> drawCross(bb, px, py, pz, hr, vr, currentLayer, drawColor);
+                        default -> drawCube(bb, px, py, pz, hr, vr, currentLayer, drawColor);
                     }
                 }
             }
@@ -272,98 +274,38 @@ public class PuffMeshBuilder implements MeshTypeBuilder {
         AbstractStaticMesh.Builder<?, ?> bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        int layer,  int colorModifier) {
+        int layer, int colorModifier) {
 
-        float x0 = cx - hr; 
+        float x0 = cx - hr;
         float x1 = cx + hr;
-        float y0 = cy     ; 
+        float y0 = cy;
         float y1 = cy + vr;
-        float z0 = cz - hr; 
+        float z0 = cz - hr;
         float z1 = cz + hr;
 
-        GLVertexBuilder.quad(
-                bb,
-                x0, y1, z1,
-                x1, y1, z1,
-                x1, y1, z0,
-                x0, y1, z0,
-                colorModifier
-        );
-
-        GLVertexBuilder.quad(
-                bb,
-                x0, y0, z0,
-                x1, y0, z0,
-                x1, y0, z1,
-                x0, y0, z1,
-                colorModifier
-        );
-
-        GLVertexBuilder.quad(
-                bb,
-                x0, y0, z1,
-                x1, y0, z1,
-                x1, y1, z1,
-                x0, y1, z1,
-                colorModifier
-        );
-
-        GLVertexBuilder.quad(
-                bb,
-                x1, y0, z0,
-                x0, y0, z0,
-                x0, y1, z0,
-                x1, y1, z0,
-                colorModifier
-        );
-
-        GLVertexBuilder.quad(
-                bb,
-                x0, y0, z0,
-                x0, y0, z1,
-                x0, y1, z1,
-                x0, y1, z0,
-                colorModifier
-        );
-
-        GLVertexBuilder.quad(
-                bb,
-                x1, y0, z1,
-                x1, y0, z0,
-                x1, y1, z0,
-                x1, y1, z1,
-                colorModifier
-        );
+        GLVertexBuilder.quad(bb, x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0, colorModifier);
+        GLVertexBuilder.quad(bb, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1, colorModifier);
+        GLVertexBuilder.quad(bb, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1, colorModifier);
+        GLVertexBuilder.quad(bb, x1, y0, z0, x0, y0, z0, x0, y1, z0, x1, y1, z0, colorModifier);
+        GLVertexBuilder.quad(bb, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0, colorModifier);
+        GLVertexBuilder.quad(bb, x1, y0, z1, x1, y0, z0, x1, y1, z0, x1, y1, z1, colorModifier);
     }
 
     private static void drawCross(
         AbstractStaticMesh.Builder<?, ?> bb,
         float cx, float cy, float cz,
         float hr, float vr,
-        int layer,  int colorModifier) {
+        int layer, int colorModifier) {
 
         float y0 = cy;
         float y1 = cy + vr;
 
-        GLVertexBuilder.quad(bb, 
-            cx - hr, y0, cz,
-            cx + hr, y0, cz,
-            cx + hr, y1, cz,
-            cx - hr, y1, cz,
-            colorModifier
-        );
-
-        GLVertexBuilder.quad(bb, 
-            cx, y0, cz - hr,
-            cx, y0, cz + hr,
-            cx, y1, cz + hr,
-            cx, y1, cz - hr,
-            colorModifier
-        );
+        GLVertexBuilder.quad(bb, cx - hr, y0, cz, cx + hr, y0, cz, cx + hr, y1, cz, cx - hr, y1, cz, colorModifier);
+        GLVertexBuilder.quad(bb, cx, y0, cz - hr, cx, y0, cz + hr, cx, y1, cz + hr, cx, y1, cz - hr, colorModifier);
     }
 
     @Override
-    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz,  int currentLayer,
+    public Builder<?, ?> buildOutline(Builder<?, ?> bb, LayerState state, int cx, int cz, int currentLayer,
             int colorModifier) {
         return bb;
     }
