@@ -93,7 +93,7 @@ def registerLoaderTask(String loader) {
             }
 
             def expectedPattern =
-                    ~/^${project.name}\+.+-${rootProject.mod_version}-${loader}_.+\.jar$/;
+                    ~/^${project.name}\+.+-${rootProject.mod_version}-${loader}\..+\.jar$/;
 
             fileTree(libsDir) {
                 include("*.jar");

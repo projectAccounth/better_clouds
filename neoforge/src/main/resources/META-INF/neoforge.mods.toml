@@ -18,7 +18,7 @@ logoFile="assets/cloud_tweaks/icon.png"
     side = "CLIENT"
 
 [[dependencies.cloud_tweaks]]
-    modId="cloth_config"
+    modId="yet_another_config_lib_v3"
     versionRange="[1,)"
     type = "optional"
     ordering="AFTER"
@@ -26,7 +26,7 @@ logoFile="assets/cloud_tweaks/icon.png"
 
 [[dependencies.cloud_tweaks]]
     modId="minecraft"
-    versionRange="[1.21.11,)"
+    versionRange="${version_range}"
     type = "required"
     ordering="NONE"
     side="CLIENT"

@@ -22,7 +22,6 @@ class Utils {
             if (process.exitValue() == 0) {
                 branch = output
             } else {
-                println process.err.text.trim()
                 branch = 'unknown'
             }
         }
@@ -31,6 +30,13 @@ class Utils {
     }
 
     static String getFormattedDate() {
-        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"));
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMdd-HHmm"));
+    }
+
+    static String getBuildNumber() {
+        if (System.getenv("GITHUB_RUN_NUMBER") != null) {
+            return "r" + System.getenv("GITHUB_RUN_NUMBER")
+        }
+        return "local." + getFormattedDate()
     }
 }

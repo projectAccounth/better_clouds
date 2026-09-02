@@ -12,7 +12,7 @@
     "client": [
       "net.not_thefirst.story_mode_clouds.StoryModeClouds"
     ],
-    "modmenu": [ 
+    "modmenu": [
       "net.not_thefirst.story_mode_clouds.config.ModMenuIntegration"
     ]
   },
@@ -20,11 +20,18 @@
     "cloud_tweaks.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.16.10",
-    "minecraft": ">=1.21.11"
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "${version_range}"
   },
-  "suggests": {
-    "yacl": "*",
+  "recommends": {
+    "yet_another_config_lib_v3": "*",
     "modmenu": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.issues": "https://github.com/projectAccounth/better_clouds/issues"
+      }
+    }
   }
 }

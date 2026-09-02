@@ -52,7 +52,7 @@ sourceSets {
 
 processResources {
     inputs.property "version", rootProject.version
-    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "version_range", project.mod_version_range
     inputs.property "loader_version", project.loader_version
     duplicatesStrategy = 'include'
 
@@ -61,7 +61,7 @@ processResources {
     filesMatching("fabric.mod.json") {
         expand(
             "version": rootProject.version,
-            "minecraft_version": project.minecraft_version,
+            "version_range": project.mod_version_range,
             "loader_version": project.loader_version
         )
     }
@@ -82,7 +82,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 jar {
-    archiveClassifier = "fabric_${getGitBranch()}"
+    archiveClassifier = "fabric.${getGitBranch()}.${getBuildNumber()}"
     from("LICENSE") {
         rename { "LICENSE-${project.archivesName}" }
     }

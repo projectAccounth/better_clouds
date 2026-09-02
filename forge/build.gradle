@@ -62,7 +62,7 @@ processResources {
     filesMatching("META-INF/mods.toml") {
         expand(
             "version": rootProject.version,
-            "minecraft_version": rootProject.minecraft_version
+            "version_range": rootProject.mod_version_range_mv
         )
     }
 }
@@ -74,5 +74,5 @@ jars {
 }
 
 jar {
-    archiveClassifier = "forge_${getGitBranch()}"
+    archiveClassifier = "forge.${getGitBranch()}.${getBuildNumber()}"
 }

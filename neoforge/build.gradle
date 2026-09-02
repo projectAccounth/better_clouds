@@ -82,13 +82,20 @@ processResources {
     filesMatching("META-INF/neoforge.mods.toml") {
         expand(
             "version": rootProject.version,
-            "minecraft_version": rootProject.minecraft_version
+            "version_range": rootProject.mod_version_range_mv
+        )
+    }
+
+    filesMatching("META-INF/mods.toml") {
+        expand(
+            "version": rootProject.version,
+            "version_range": rootProject.mod_version_range_mv
         )
     }
 }
 
 jar {
-    archiveClassifier = "neoforge_${getGitBranch()}"
+    archiveClassifier = "neoforge.${getGitBranch()}.${getBuildNumber()}"
     from("LICENSE") {
         rename { "LICENSE-${project.archivesName}" }
     }
