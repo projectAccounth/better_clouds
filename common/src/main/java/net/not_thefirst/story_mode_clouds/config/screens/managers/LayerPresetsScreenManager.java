@@ -1,4 +1,4 @@
-package net.not_thefirst.story_mode_clouds.config.screens;
+package net.not_thefirst.story_mode_clouds.config.screens.managers;
 
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.BackendHolder;
@@ -6,53 +6,92 @@ import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.presets.LayerPreset;
 import net.not_thefirst.story_mode_clouds.config.presets.LayerPresets;
 import net.not_thefirst.story_mode_clouds.config.presets.LayerPresets.LayerPresetMetadata;
+import net.not_thefirst.story_mode_clouds.config.screens.DataSettings;
+import net.not_thefirst.story_mode_clouds.utils.glfw.ClipboardUtils;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;
-import net.not_thefirst.story_mode_clouds.utils.glfw.ClipboardUtils;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class LayerPresetsScreen {
-    private LayerPresetsScreen() {}
+public class LayerPresetsScreenManager extends ScreenManager {
+    private static final Map<CloudsConfiguration.Dimension, LayerPresetsScreenManager> instances = new HashMap<>();
+    
+    private final CloudsConfiguration.Dimension dimension;
+    private final CloudsConfiguration config;
 
-    private static void copyToClipboard(String text) {
-        try {
-            ClipboardUtils.setClipboard(ClientHelper.getGLFWHandle(), text);
-        } catch (Exception e) {
-            LoggerProvider.get().error("Failed to copy to clipboard: {}", e.getMessage());
-        }
+    private LayerPresetsScreenManager(CloudsConfiguration.Dimension dimension) {
+        super();
+        this.dimension = dimension;
+        this.config = CloudsConfiguration.getInstance();
     }
 
-    public static Screen createLayerPresetsScreen(CloudsConfiguration.Dimension dimension, Screen backScreen) {
-        CloudsConfiguration config = CloudsConfiguration.getInstance();
+    public static LayerPresetsScreenManager getInstance(CloudsConfiguration.Dimension dimension) {
+        return instances.computeIfAbsent(dimension, d -> new LayerPresetsScreenManager(d));
+    }
+
+    public static void clearInstance(CloudsConfiguration.Dimension dimension) {
+        instances.remove(dimension);
+    }
+
+    public static void clearAll() {
+        instances.clear();
+    }
+
+    static Screen createLayerPresetEditingScreen(CloudsConfiguration.LayerConfiguration layer, String presetId, 
+                                                         CloudsConfiguration.Dimension dimension, Screen backScreen) {
         var backend = BackendHolder.getBackend();
-        var screenBuilder = backend.createScreen(dimension.getId().substring(0, 1).toUpperCase() + dimension.getId().substring(1), CloudsConfiguration::save);
+
+        return backend.createScreen("cloudtweaks.presets.edit_layer_preset", 
+            () -> LayerPresets.saveLayerPreset(
+                presetId,
+                layer.NAME,
+                ComponentWrapper.translatable("cloudtweaks.presets.modified_layer_preset").getString(),
+                layer,
+                dimension.getId()
+            ))
+            .category(DataSettings.buildLayerBasicSettings(layer))
+            .category(DataSettings.buildLayerAppearanceSettings(layer))
+            .category(DataSettings.buildOutlineCategory(layer))
+            .category(DataSettings.buildTextureCategory(layer))
+            .category(DataSettings.buildLayerFogSettings(layer))
+            .category(DataSettings.buildLayerFadeSettings(layer))
+            .category(DataSettings.buildLayerPresetSaveCategory(layer, presetId, dimension, backScreen))
+            .build(backScreen);
+    }
+
+    @Override
+    public Screen buildScreen() {
+        var backend = BackendHolder.getBackend();
+        var screenBuilder = backend.createScreen(
+            dimension.getId().substring(0, 1).toUpperCase() + dimension.getId().substring(1),
+            CloudsConfiguration::save
+        );
 
         List<LayerPresetMetadata> presets = LayerPresets.getPresetsForDimension(dimension.getId());
-
         var category = backend.createCategory("cloudtweaks.presets.available_presets", "cloudtweaks.presets.available_presets.tooltip");
         
-        category
-            .action(backend.createAction(
-                "cloudtweaks.presets.import",
-                "cloudtweaks.presets.import.tooltip",
-                () -> {
-                    try {
-                        String clipboard = ClipboardUtils.getClipboard(ClientHelper.getGLFWHandle());
-                        if (clipboard != null && !clipboard.isEmpty()) {
-                            if (LayerPresets.validateLayerPresetPayload(clipboard)) {
-                                showImportDialog(clipboard, dimension, backScreen);
-                            } else {
-                                ClientHelper.sendLocalSystemMessage(
-                                    ComponentWrapper.literal("Invalid clipboard payload for a layer preset.")
-                                );
-                            }
+        category.action(backend.createAction(
+            "cloudtweaks.presets.import",
+            "cloudtweaks.presets.import.tooltip",
+            () -> {
+                try {
+                    String clipboard = ClipboardUtils.getClipboard(ClientHelper.getGLFWHandle());
+                    if (clipboard != null && !clipboard.isEmpty()) {
+                        if (LayerPresets.validateLayerPresetPayload(clipboard)) {
+                            showImportDialog(clipboard);
+                        } else {
+                            ClientHelper.sendLocalSystemMessage(
+                                ComponentWrapper.literal("Invalid clipboard payload for a layer preset.")
+                            );
                         }
-                    } catch (Exception e) {
-                        LoggerProvider.get().info("Failed to read from clipboard: {}", e.getMessage());
                     }
-                })
-            );
+                } catch (Exception e) {
+                    LoggerProvider.get().info("Failed to read from clipboard: {}", e.getMessage());
+                }
+            })
+        );
 
         for (LayerPresetMetadata preset : presets) {
             var group = backend.createGroup(preset.displayName);
@@ -71,7 +110,9 @@ public class LayerPresetsScreen {
                                     ComponentWrapper.translatable("cloudtweaks.message.loaded_layer_preset_prefix").getString() + preset.displayName
                                 )
                             );
-                            ClientHelper.setScreen(createLayerPresetsScreen(dimension, backScreen));
+                            // Refresh the layer settings manager with the updated config
+                            LayerSettingsScreenManager layerMgr = LayerSettingsScreenManager.getInstance(dimension);
+                            ClientHelper.setScreen(layerMgr.refreshScreen());
                         }
                     }
                 ))
@@ -96,8 +137,8 @@ public class LayerPresetsScreen {
                     () -> {
                         LayerPreset loadedPreset = LayerPresets.loadLayerPreset(preset.id);
                         if (loadedPreset != null && loadedPreset.layer != null) {
-                            Screen editScreen = DataSettings.createLayerPresetEditingScreen(
-                                loadedPreset.layer, preset.id, dimension, backScreen
+                            Screen editScreen = createLayerPresetEditingScreen(
+                                loadedPreset.layer, preset.id, dimension, currentScreen
                             );
                             if (editScreen != null) {
                                 ClientHelper.setScreen(editScreen);
@@ -115,7 +156,7 @@ public class LayerPresetsScreen {
                                     ComponentWrapper.translatable("cloudtweaks.message.deleted_layer_preset_prefix").getString() + preset.displayName
                                 )
                             );
-                            ClientHelper.setScreen(createLayerPresetsScreen(dimension, backScreen));
+                            ClientHelper.setScreen(refreshScreen());
                         }
                     }
                 ));
@@ -124,10 +165,11 @@ public class LayerPresetsScreen {
         }
 
         screenBuilder.category(category);
-        return screenBuilder.build(backScreen);
+        currentScreen = screenBuilder.build(parentScreen);
+        return currentScreen;
     }
 
-    private static void showImportDialog(String base64Data, CloudsConfiguration.Dimension dimension, Screen parentScreen) {
+    private void showImportDialog(String base64Data) {
         var backend = BackendHolder.getBackend();
         var screenBuilder = backend.createScreen("cloudtweaks.presets.import_title", () -> {});
         var importData = new Object() {
@@ -176,13 +218,21 @@ public class LayerPresetsScreen {
                             )
                         );
                         LoggerProvider.get().info("Imported preset: {} (ID: {})", importData.displayName, importData.presetId);
-                        ClientHelper.setScreen(null);
+                        ClientHelper.setScreen(refreshScreen());
                     }
                 }
             ));
 
         screenBuilder.category(category);
-        var screen = screenBuilder.build(parentScreen);
+        var screen = screenBuilder.build(currentScreen);
         ClientHelper.setScreen(screen);
+    }
+
+    private static void copyToClipboard(String text) {
+        try {
+            ClipboardUtils.setClipboard(ClientHelper.getGLFWHandle(), text);
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to copy to clipboard: {}", e.getMessage());
+        }
     }
 }

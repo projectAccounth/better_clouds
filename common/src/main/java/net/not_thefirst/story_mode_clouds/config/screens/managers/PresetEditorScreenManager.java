@@ -1,9 +1,8 @@
-package net.not_thefirst.story_mode_clouds.config.screens;
+package net.not_thefirst.story_mode_clouds.config.screens.managers;
 
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.BackendHolder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.config.ConfigConstants;
 import net.not_thefirst.story_mode_clouds.config.backend.ConfigBackend;
 import net.not_thefirst.story_mode_clouds.config.presets.*;
 import net.not_thefirst.story_mode_clouds.utils.math.DiffuseLight;
@@ -14,21 +13,44 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
-public class PresetEditorScreen {
-    private PresetEditorScreen() {}
-    
+public class PresetEditorScreenManager extends ScreenManager {
+    private static final Map<String, PresetEditorScreenManager> instances = new HashMap<>();
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
     
-    @SuppressWarnings("unused")
-    private static String editingPresetId;
-    @SuppressWarnings("unused")
-    private static String editingPresetCategory;
+    private final PresetController.PresetCategory category;
+    private final String presetId;
 
-    private static String editingDisplayName;
-    private static String editingDescription;
+    private PresetEditorScreenManager(PresetController.PresetCategory category, String presetId) {
+        super();
+        this.category = category;
+        this.presetId = presetId;
+    }
 
-    public static Screen createEditorScreen(PresetController.PresetCategory category, String presetId, Screen backScreen) {
+    private static String getKey(PresetController.PresetCategory category, String presetId) {
+        return category.name() + "_" + presetId;
+    }
+
+    public static PresetEditorScreenManager getInstance(PresetController.PresetCategory category, String presetId) {
+        return instances.computeIfAbsent(getKey(category, presetId), k -> new PresetEditorScreenManager(category, presetId));
+    }
+
+    public static void clearInstance(PresetController.PresetCategory category, String presetId) {
+        instances.remove(getKey(category, presetId));
+    }
+
+    public static void clearAll() {
+        instances.clear();
+    }
+
+    @Override
+    public Screen buildScreen() {
+        return buildEditorScreen();
+    }
+
+    public Screen buildEditorScreen() {
         var backend = BackendHolder.getBackend();
         var screenBuilder = backend.createScreen(formatCategoryName(category), CloudsConfiguration::save);
         var categoryBuilder = backend.createCategory("cloudtweaks.presets.data", null);
@@ -57,74 +79,69 @@ public class PresetEditorScreen {
         categoryBuilder.action(backend.createAction(
             "cloudtweaks.presets.back",
             "cloudtweaks.presets.back.tooltip",
-            () -> ClientHelper.setScreen(backScreen)
+            () -> ClientHelper.setScreen(parentScreen)
         ));
 
         screenBuilder.category(categoryBuilder);
-        return screenBuilder.build(backScreen);
+        currentScreen = screenBuilder.build(parentScreen);
+        return currentScreen;
     }
-    
-    public static Screen createMetadataEditScreen(PresetController.PresetCategory category, String presetId, Screen backScreen) {
-        editingPresetId = presetId;
-        editingPresetCategory = category.name();
-        
+
+    public Screen buildMetadataEditScreen() {
         switch (category) {
-            case COLORS:
-                CloudColorPreset colorPreset = PresetController.getColorPreset(presetId);
-                if (colorPreset != null) {
-                    editingDisplayName = colorPreset.displayName;
-                    editingDescription = colorPreset.description;
+            case COLORS -> {
+                CloudColorPreset preset = PresetController.getColorPreset(presetId);
+                if (preset != null) {
+                    metadataName = preset.displayName;
+                    metadataDescription = preset.description;
                 }
-                break;
-            case LIGHTING:
-                LightingPreset lightingPreset = PresetController.getLightingPreset(presetId);
-                if (lightingPreset != null) {
-                    editingDisplayName = lightingPreset.displayName;
-                    editingDescription = lightingPreset.description;
+            }
+            case LIGHTING -> {
+                LightingPreset preset = PresetController.getLightingPreset(presetId);
+                if (preset != null) {
+                    metadataName = preset.displayName;
+                    metadataDescription = preset.description;
                 }
-                break;
-            case LIGHT_SOURCES:
-                LightSourcesPreset lightSourcesPreset = PresetController.getLightSourcesPreset(presetId);
-                if (lightSourcesPreset != null) {
-                    editingDisplayName = lightSourcesPreset.displayName;
-                    editingDescription = lightSourcesPreset.description;
+            }
+            case LIGHT_SOURCES -> {
+                LightSourcesPreset preset = PresetController.getLightSourcesPreset(presetId);
+                if (preset != null) {
+                    metadataName = preset.displayName;
+                    metadataDescription = preset.description;
                 }
-                break;
+            }
         }
 
         var backend = BackendHolder.getBackend();
-
         var screenBuilder = backend.createScreen(formatCategoryName(category), () -> {
-            PresetController.updatePresetMetadata(category, presetId, editingDisplayName, editingDescription);
+            PresetController.updatePresetMetadata(category, presetId, metadataName, metadataDescription);
             CloudsConfiguration.save();
         });
-
-        var infoCategory = backend.createCategory("cloudtweaks.presets.information", null);
-        
-        infoCategory
+        var infoCategory = backend.createCategory("cloudtweaks.presets.information", null)
             .option(backend.stringOption(
-                "cloudtweaks.presets.name",
-                null,
-                () -> editingDisplayName,
-                v -> editingDisplayName = v
+                "cloudtweaks.presets.name", null,
+                () -> metadataName,
+                v -> metadataName = v
             ))
             .option(backend.stringOption(
-                "cloudtweaks.option.preset_desc",
-                null,
-                () -> editingDescription,
-                v -> editingDescription = v
+                "cloudtweaks.option.preset_desc", null,
+                () -> metadataDescription,
+                v -> metadataDescription = v
             ))
             .action(backend.createAction(
                 "cloudtweaks.presets.back",
                 "cloudtweaks.presets.back.tooltip",
-                () -> ClientHelper.setScreen(backScreen)
+                () -> ClientHelper.setScreen(parentScreen)
             ));
-        
-        screenBuilder.category(infoCategory);
-        return screenBuilder.build(backScreen);
-    }
 
-    public static Screen createPresetEditingScreen(PresetController.PresetCategory category, String presetId, Screen backScreen) {
+        screenBuilder.category(infoCategory);
+        currentScreen = screenBuilder.build(parentScreen);
+        return currentScreen;
+    }
+    private String metadataName = "";
+    private String metadataDescription = "";
+
+    public Screen buildEditingScreen() {
         var backend = BackendHolder.getBackend();
 
         switch (category) {
@@ -171,13 +188,7 @@ public class PresetEditorScreen {
                             preset.colors.add(newKp);
                             CloudsConfiguration.save();
                             ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.added_color_keypoint"));
-                            Screen refreshedScreen = createPresetEditingScreen(category, presetId, backScreen);
-                            if (refreshedScreen != null) {
-                                ClientHelper.setScreen(refreshedScreen);
-                            }
-                            else {
-                                ClientHelper.setScreen(backScreen);
-                            }
+                            ClientHelper.setScreen(buildEditingScreen());
                         }
                     ));
                     
@@ -205,13 +216,7 @@ public class PresetEditorScreen {
                                     preset.colors.remove(kp);
                                     CloudsConfiguration.save();
                                     ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_keypoint"));
-                                    Screen refreshedScreen = createPresetEditingScreen(category, presetId, backScreen);
-                                    if (refreshedScreen != null) {
-                                        ClientHelper.setScreen(refreshedScreen);
-                                    }
-                                    else {
-                                        ClientHelper.setScreen(backScreen);
-                                    }
+                                    ClientHelper.setScreen(buildEditingScreen());
                                 }
                             }
                         ));
@@ -222,7 +227,8 @@ public class PresetEditorScreen {
                 dataCategory.group(colorGroup);
 
                 screenBuilder.category(dataCategory);
-                return screenBuilder.build(backScreen);
+                currentScreen = screenBuilder.build(parentScreen);
+                return currentScreen;
             }
             case LIGHTING: {
                 LightingPreset preset = PresetController.getLightingPreset(presetId);
@@ -255,13 +261,6 @@ public class PresetEditorScreen {
                         v -> preset.ambientStrength = v
                     ).range(0.0f, 1.0f).slider()
                         .step(0.05f))
-                    // .option(backend.floatOption(
-                    //     "cloudtweaks.option.max_shading",
-                    //     null,
-                    //     () -> preset.maxShadingStrength,
-                    //     v -> preset.maxShadingStrength = v
-                    // ).range(0.0f, 1.0f).slider()
-                    //     .step(0.05f))
                     .option(backend.enumOption(
                         "cloudtweaks.option.shading_mode",
                         null,
@@ -294,7 +293,8 @@ public class PresetEditorScreen {
                     ).range(0, 24000));
 
                 screenBuilder.category(dataCategory);
-                return screenBuilder.build(backScreen);
+                currentScreen = screenBuilder.build(parentScreen);
+                return currentScreen;
             }
             case LIGHT_SOURCES: {
                 LightSourcesPreset preset = PresetController.getLightSourcesPreset(presetId);
@@ -317,13 +317,7 @@ public class PresetEditorScreen {
                             preset.lights.add(new DiffuseLight());
                             CloudsConfiguration.save();
                             ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.added_light"));
-                            Screen refreshedScreen = createPresetEditingScreen(category, presetId, backScreen);
-                            if (refreshedScreen != null) {
-                                ClientHelper.setScreen(refreshedScreen);
-                            }
-                            else {
-                                ClientHelper.setScreen(backScreen);
-                            }
+                            ClientHelper.setScreen(buildEditingScreen());
                         }
                     ));
 
@@ -369,13 +363,7 @@ public class PresetEditorScreen {
                                     preset.lights.remove(light);
                                     CloudsConfiguration.save();
                                     ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_light"));
-                                    Screen refreshedScreen = createPresetEditingScreen(category, presetId, backScreen);
-                                    if (refreshedScreen != null) {
-                                        ClientHelper.setScreen(refreshedScreen);
-                                    }
-                                    else {
-                                        ClientHelper.setScreen(backScreen);
-                                    }
+                                    ClientHelper.setScreen(buildEditingScreen());
                                 }
                             }
                         ));
@@ -384,13 +372,14 @@ public class PresetEditorScreen {
                 }
 
                 screenBuilder.category(dataCategory);
-                return screenBuilder.build(backScreen);
+                currentScreen = screenBuilder.build(parentScreen);
+                return currentScreen;
             }
         }
         return null;
     }
-    
-    private static void addColorPresetDataGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, CloudColorPreset preset) {
+
+    private void addColorPresetDataGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, CloudColorPreset preset) {
         String lastMod = preset.lastModified > 0 ? DATE_FORMAT.format(Instant.ofEpochMilli(preset.lastModified)) : "Unknown";
         var backend = BackendHolder.getBackend();
 
@@ -423,52 +412,17 @@ public class PresetEditorScreen {
             ));
 
         categoryBuilder.group(infoGroup);
-
-        var modeGroup = backend.createGroup("cloudtweaks.presets.color_mode")
-            .description("cloudtweaks.presets.color_mode_desc");
-
-        modeGroup.option(backend.stringOption(
-                "cloudtweaks.option.cloud_mode",
-                null,
-                () -> preset.colorMode.name(),
-                v -> {}
-            ));
-
-        categoryBuilder.group(modeGroup);
-
-        var colorsGroup = backend.createGroup("cloudtweaks.presets.color_keypoints")
-            .description("cloudtweaks.presets.color_keypoints_desc");
-
-        if (preset.colors == null || preset.colors.isEmpty()) {
-            colorsGroup.option(backend.stringOption(
-                "cloudtweaks.presets.no_color_keypoints",
-                null,
-                () -> "No colors configured",
-                v -> {}
-            ));
-        } else {
-            for (int i = 0; i < preset.colors.size(); i++) {
-                CloudsConfiguration.SkyColorKeypoint keypoint = preset.colors.get(i);
-                colorsGroup.option(backend.stringOption(
-                    "cloudtweaks.raw.keypoint",
-                    null,
-                    () -> formatColorKeypoint(keypoint),
-                    v -> {}
-                ));
-            }
-        }
-
-        categoryBuilder.group(colorsGroup);
     }
-    
-    private static void addLightingPresetDataGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightingPreset preset) {
+
+    private void addLightingPresetDataGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightingPreset preset) {
         String lastMod = preset.lastModified > 0 ? DATE_FORMAT.format(Instant.ofEpochMilli(preset.lastModified)) : "Unknown";
         var backend = BackendHolder.getBackend();
 
         var infoGroup = backend.createGroup("cloudtweaks.presets.information")
             .description("cloudtweaks.presets.metadata_about");
-        
-        infoGroup.option(backend.stringOption(
+
+        infoGroup
+            .option(backend.stringOption(
                 "cloudtweaks.presets.name",
                 null,
                 () -> preset.displayName,
@@ -488,70 +442,17 @@ public class PresetEditorScreen {
             ));
 
         categoryBuilder.group(infoGroup);
-
-        var lightsGroup = backend.createGroup("cloudtweaks.presets.lighting_parameters")
-            .description("cloudtweaks.presets.configuration_settings");
-        
-        lightsGroup.option(backend.floatOption(
-                "cloudtweaks.option.ambient_strength",
-                null,
-                () -> preset.ambientStrength,
-                v -> {}
-            ).range(0.0f, 2.0f).step(0.1f).slider())
-            .option(backend.floatOption(
-                "cloudtweaks.option.max_shading",
-                null,
-                () -> preset.maxShadingStrength,
-                v -> {}
-            ).range(0.0f, 2.0f).step(0.1f).slider())
-            .option(backend.stringOption(
-                "cloudtweaks.option.shading_mode",
-                null,
-                () -> preset.shadingMode.name(),
-                v -> {}
-            ))
-            .option(backend.stringOption(
-                "cloudtweaks.option.lighting_type",
-                null,
-                () -> preset.lightingType.name(),
-                v -> {}
-            ));
-
-        categoryBuilder.group(lightsGroup);
-
-        var dayGroup = backend.createGroup("cloudtweaks.presets.day_cycle")
-            .description("cloudtweaks.presets.day_cycle_desc");
-        
-        dayGroup.option(backend.integerOption(
-                "cloudtweaks.presets.day_start",
-                null,
-                () -> preset.dayStart,
-                v -> {}
-            ).range(0, 24000).step(100).slider())
-            .option(backend.integerOption(
-                "cloudtweaks.presets.day_noon",
-                null,
-                () -> preset.dayNoon,
-                v -> {}
-            ).range(0, 24000).step(100).slider())
-            .option(backend.integerOption(
-                "cloudtweaks.presets.day_end",
-                null,
-                () -> preset.dayEnd,
-                v -> {}
-            ).range(0, 24000).step(100).slider());
-
-        categoryBuilder.group(dayGroup);
     }
-    
-    private static void addLightSourcesPresetDataGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightSourcesPreset preset) {
+
+    private void addLightSourcesPresetDataGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightSourcesPreset preset) {
         String lastMod = preset.lastModified > 0 ? DATE_FORMAT.format(Instant.ofEpochMilli(preset.lastModified)) : "Unknown";
         var backend = BackendHolder.getBackend();
 
         var infoGroup = backend.createGroup("cloudtweaks.presets.information")
             .description("cloudtweaks.presets.metadata_about");
 
-        infoGroup.option(backend.stringOption(
+        infoGroup
+            .option(backend.stringOption(
                 "cloudtweaks.presets.name",
                 null,
                 () -> preset.displayName,
@@ -568,54 +469,16 @@ public class PresetEditorScreen {
                 null,
                 () -> lastMod,
                 v -> {}
-            ))
-            .option(backend.integerOption(
-                "cloudtweaks.presets.light_source_count",
-                null,
-                () -> preset.lights.size(),
-                v -> {}
-            ).range(0, ConfigConstants.MAX_LIGHT_COUNT).field());
+            ));
 
         categoryBuilder.group(infoGroup);
-
-        var lightsGroup = backend.createGroup("cloudtweaks.option.light_sources")
-            .description("cloudtweaks.presets.light_sources_desc");
-
-        if (preset.lights == null || preset.lights.isEmpty()) {
-            lightsGroup.option(backend.stringOption(
-                "cloudtweaks.presets.no_light_sources",
-                null,
-                () -> "No light sources configured",
-                v -> {}
-            ));
-        } else {
-            for (DiffuseLight light : preset.lights) {
-                lightsGroup.option(backend.stringOption(
-                    "cloudtweaks.entry.light",
-                    null,
-                    () -> formatDiffuseLight(light),
-                    v -> {}
-                ));
-            }
-        }
-
-        categoryBuilder.group(lightsGroup);
     }
-    
-    private static String formatColorKeypoint(CloudsConfiguration.SkyColorKeypoint keypoint) {
-        return "Time=" + keypoint.time + ", Color=#" + String.format("%06X", keypoint.color);
-    }
-    
-    private static String formatDiffuseLight(DiffuseLight light) {
-        return String.format("Direction=(%.2f, %.2f, %.2f), Intensity=%.2f",
-            light.getXDirection(), light.getYDirection(), light.getZDirection(), light.intensity());
-    }
-    
-    private static String formatCategoryName(PresetController.PresetCategory category) {
+
+    private String formatCategoryName(PresetController.PresetCategory category) {
         return switch (category) {
-            case COLORS -> "Cloud Colors";
-            case LIGHTING -> "Lighting";
-            case LIGHT_SOURCES -> "Light Sources";
+            case COLORS -> "cloudtweaks.presets.color_presets";
+            case LIGHTING -> "cloudtweaks.presets.lighting_presets";
+            case LIGHT_SOURCES -> "cloudtweaks.presets.light_sources_presets";
         };
     }
 }

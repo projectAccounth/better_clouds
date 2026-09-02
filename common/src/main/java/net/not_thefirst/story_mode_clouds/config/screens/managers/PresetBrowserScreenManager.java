@@ -1,40 +1,61 @@
-package net.not_thefirst.story_mode_clouds.config.screens;
+package net.not_thefirst.story_mode_clouds.config.screens.managers;
 
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.BackendHolder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.config.backend.ConfigBackend;
 import net.not_thefirst.story_mode_clouds.config.presets.*;
-import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.utils.glfw.ClipboardUtils;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
 import net.not_thefirst.story_mode_clouds.utils.minecraft.ComponentWrapper;
+import java.util.HashMap;
+import java.util.Map;
 
-public class PresetBrowserScreen {
-    private PresetBrowserScreen() {}
+public class PresetBrowserScreenManager extends ScreenManager {
+    private static final Map<PresetController.PresetCategory, PresetBrowserScreenManager> instances = new HashMap<>();
+    
+    private final PresetController.PresetCategory category;
+    private final CloudsConfiguration config;
 
-    public static Screen createBrowserScreen(PresetController.PresetCategory category, Screen backScreen) {
+    private PresetBrowserScreenManager(PresetController.PresetCategory category) {
+        super();
+        this.category = category;
+        this.config = CloudsConfiguration.getInstance();
+    }
+
+    public static PresetBrowserScreenManager getInstance(PresetController.PresetCategory category) {
+        return instances.computeIfAbsent(category, c -> new PresetBrowserScreenManager(c));
+    }
+
+    public static void clearInstance(PresetController.PresetCategory category) {
+        instances.remove(category);
+    }
+
+    public static void clearAll() {
+        instances.clear();
+    }
+
+    @Override
+    public Screen buildScreen() {
         var backend = BackendHolder.getBackend();
         var screenBuilder = backend.createScreen("cloudtweaks.presets", CloudsConfiguration::save);
         var categoryBuilder = backend.createCategory("cloudtweaks.presets", null);
-        var config = CloudsConfiguration.getInstance();
-        final Screen[] self = new Screen[1];
         
         switch (category) {
             case COLORS:
                 for (CloudColorPreset preset : PresetController.listColorPresets()) {
-                    addColorPresetGroup(categoryBuilder, preset, config, backScreen, self);
+                    addColorPresetGroup(categoryBuilder, preset);
                 }
                 break;
             case LIGHTING:
                 for (LightingPreset preset : PresetController.listLightingPresets()) {
-                    addLightingPresetGroup(categoryBuilder, preset, config, backScreen, self);
+                    addLightingPresetGroup(categoryBuilder, preset);
                 }
                 break;
             case LIGHT_SOURCES:
                 for (LightSourcesPreset preset : PresetController.listLightSourcesPresets()) {
-                    addLightSourcesPresetGroup(categoryBuilder, preset, config, backScreen, self);
+                    addLightSourcesPresetGroup(categoryBuilder, preset);
                 }
                 break;
         }
@@ -47,7 +68,7 @@ public class PresetBrowserScreen {
                     String clipboard = ClipboardUtils.getClipboard(ClientHelper.getGLFWHandle());
                     if (clipboard != null && !clipboard.isEmpty()) {
                         if (PresetController.validatePresetPayload(category, clipboard)) {
-                            showImportDialog(category, clipboard, backScreen);
+                            showImportDialog(clipboard);
                         } else {
                             ClientHelper.sendLocalSystemMessage(
                                 ComponentWrapper.literal("Invalid clipboard payload for the selected preset category.")
@@ -63,16 +84,15 @@ public class PresetBrowserScreen {
         categoryBuilder.action(backend.createAction(
             "cloudtweaks.presets.back",
             "cloudtweaks.presets.back.tooltip",
-            () -> ClientHelper.setScreen(backScreen)
+            () -> ClientHelper.setScreen(parentScreen)
         ));
 
         screenBuilder.category(categoryBuilder);
-        var screen = screenBuilder.build(backScreen);
-        self[0] = screen;
-        return screen;
+        currentScreen = screenBuilder.build(parentScreen);
+        return currentScreen;
     }
-    
-    private static void addColorPresetGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, CloudColorPreset preset, CloudsConfiguration config, Screen backScreen, Screen[] self) {
+
+    private void addColorPresetGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, CloudColorPreset preset) {
         var backend = BackendHolder.getBackend();
         var group = backend.createGroup(preset.displayName)
             .description("cloudtweaks.presets.information");
@@ -80,9 +100,11 @@ public class PresetBrowserScreen {
         group.action(backend.createAction(
             "cloudtweaks.presets.preview",
             "cloudtweaks.presets.preview.tooltip",
-            () -> ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
-                PresetController.PresetCategory.COLORS, preset.id, self[0]
-            ))
+            () -> {
+                PresetEditorScreenManager editorMgr = PresetEditorScreenManager.getInstance(category, preset.id);
+                editorMgr.setParentScreen(currentScreen);
+                ClientHelper.setScreen(editorMgr.buildEditorScreen());
+            }
         ));
 
         group.action(backend.createAction(
@@ -102,9 +124,11 @@ public class PresetBrowserScreen {
         group.action(backend.createAction(
             "cloudtweaks.option.edit",
             "cloudtweaks.option.edit.tooltip",
-            () -> ClientHelper.setScreen(PresetEditorScreen.createPresetEditingScreen(
-                PresetController.PresetCategory.COLORS, preset.id, self[0]
-            ))
+            () -> {
+                PresetEditorScreenManager editorMgr = PresetEditorScreenManager.getInstance(category, preset.id);
+                editorMgr.setParentScreen(currentScreen);
+                ClientHelper.setScreen(editorMgr.buildEditingScreen());
+            }
         ));
 
         group.action(backend.createAction(
@@ -113,7 +137,6 @@ public class PresetBrowserScreen {
             () -> {
                 if (PresetController.loadColorPreset(preset.id, config)) {
                     CloudsConfiguration.save();
-                    if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                     ClientHelper.sendLocalSystemMessage(
                         ComponentWrapper.literal(
                             ComponentWrapper.translatable("cloudtweaks.message.loaded_color_preset_prefix").getString() + preset.displayName
@@ -134,7 +157,7 @@ public class PresetBrowserScreen {
                                 ComponentWrapper.translatable("cloudtweaks.message.deleted_color_preset_prefix").getString() + preset.displayName
                             )
                         );
-                        ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.COLORS, backScreen));
+                        ClientHelper.setScreen(refreshScreen());
                     }
                 }
             ));
@@ -142,8 +165,8 @@ public class PresetBrowserScreen {
 
         categoryBuilder.group(group);
     }
-    
-    private static void addLightingPresetGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightingPreset preset, CloudsConfiguration config, Screen backScreen, Screen[] self) {
+
+    private void addLightingPresetGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightingPreset preset) {
         var backend = BackendHolder.getBackend();
         var group = backend.createGroup(preset.displayName)
             .description("cloudtweaks.presets.information");
@@ -151,9 +174,11 @@ public class PresetBrowserScreen {
         group.action(backend.createAction(
             "cloudtweaks.presets.preview",
             "cloudtweaks.presets.preview.tooltip",
-            () -> ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
-                PresetController.PresetCategory.LIGHTING, preset.id, self[0]
-            ))
+            () -> {
+                PresetEditorScreenManager editorMgr = PresetEditorScreenManager.getInstance(category, preset.id);
+                editorMgr.setParentScreen(currentScreen);
+                ClientHelper.setScreen(editorMgr.buildEditorScreen());
+            }
         ));
 
         group.action(backend.createAction(
@@ -173,9 +198,11 @@ public class PresetBrowserScreen {
         group.action(backend.createAction(
             "cloudtweaks.option.edit",
             "cloudtweaks.option.edit.tooltip",
-            () -> ClientHelper.setScreen(PresetEditorScreen.createPresetEditingScreen(
-                PresetController.PresetCategory.LIGHTING, preset.id, self[0]
-            ))
+            () -> {
+                PresetEditorScreenManager editorMgr = PresetEditorScreenManager.getInstance(category, preset.id);
+                editorMgr.setParentScreen(currentScreen);
+                ClientHelper.setScreen(editorMgr.buildEditingScreen());
+            }
         ));
 
         group.action(backend.createAction(
@@ -184,7 +211,6 @@ public class PresetBrowserScreen {
             () -> {
                 if (PresetController.loadLightingPreset(preset.id, config)) {
                     CloudsConfiguration.save();
-                    if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                     ClientHelper.sendLocalSystemMessage(
                         ComponentWrapper.literal(
                             ComponentWrapper.translatable("cloudtweaks.message.loaded_lighting_preset_prefix").getString() + preset.displayName
@@ -205,7 +231,7 @@ public class PresetBrowserScreen {
                                 ComponentWrapper.translatable("cloudtweaks.message.deleted_lighting_preset_prefix").getString() + preset.displayName
                             )
                         );
-                        ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHTING, backScreen));
+                        ClientHelper.setScreen(refreshScreen());
                     }
                 }
             ));
@@ -213,8 +239,8 @@ public class PresetBrowserScreen {
 
         categoryBuilder.group(group);
     }
-    
-    private static void addLightSourcesPresetGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightSourcesPreset preset, CloudsConfiguration config, Screen backScreen, Screen[] self) {
+
+    private void addLightSourcesPresetGroup(ConfigBackend.ConfigCategoryBuilder categoryBuilder, LightSourcesPreset preset) {
         var backend = BackendHolder.getBackend();
         var group = backend.createGroup(preset.displayName)
             .description("cloudtweaks.presets.information");
@@ -222,9 +248,11 @@ public class PresetBrowserScreen {
         group.action(backend.createAction(
             "cloudtweaks.presets.preview",
             "cloudtweaks.presets.preview.tooltip",
-            () -> ClientHelper.setScreen(PresetEditorScreen.createEditorScreen(
-                PresetController.PresetCategory.LIGHT_SOURCES, preset.id, self[0]
-            ))
+            () -> {
+                PresetEditorScreenManager editorMgr = PresetEditorScreenManager.getInstance(category, preset.id);
+                editorMgr.setParentScreen(currentScreen);
+                ClientHelper.setScreen(editorMgr.buildEditorScreen());
+            }
         ));
 
         group.action(backend.createAction(
@@ -244,9 +272,11 @@ public class PresetBrowserScreen {
         group.action(backend.createAction(
             "cloudtweaks.option.edit",
             "cloudtweaks.option.edit.tooltip",
-            () -> ClientHelper.setScreen(PresetEditorScreen.createPresetEditingScreen(
-                PresetController.PresetCategory.LIGHT_SOURCES, preset.id, self[0]
-            ))
+            () -> {
+                PresetEditorScreenManager editorMgr = PresetEditorScreenManager.getInstance(category, preset.id);
+                editorMgr.setParentScreen(currentScreen);
+                ClientHelper.setScreen(editorMgr.buildEditingScreen());
+            }
         ));
 
         group.action(backend.createAction(
@@ -255,7 +285,6 @@ public class PresetBrowserScreen {
             () -> {
                 if (PresetController.loadLightSourcesPreset(preset.id, config)) {
                     CloudsConfiguration.save();
-                    if (RendererHolder.get() != null) RendererHolder.get().markForRebuild();
                     ClientHelper.sendLocalSystemMessage(
                         ComponentWrapper.literal(
                             ComponentWrapper.translatable("cloudtweaks.message.loaded_light_sources_preset_prefix").getString() + preset.displayName
@@ -274,7 +303,7 @@ public class PresetBrowserScreen {
                         ClientHelper.sendLocalSystemMessage(
                             ComponentWrapper.translatable("cloudtweaks.message.deleted_light_sources_preset_prefix")
                         );
-                        ClientHelper.setScreen(createBrowserScreen(PresetController.PresetCategory.LIGHT_SOURCES, backScreen));
+                        ClientHelper.setScreen(refreshScreen());
                     }
                 }
             ));
@@ -283,15 +312,7 @@ public class PresetBrowserScreen {
         categoryBuilder.group(group);
     }
 
-    private static void copyToClipboard(String text) {
-        try {
-            ClipboardUtils.setClipboard(ClientHelper.getGLFWHandle(), text);
-        } catch (Exception e) {
-            LoggerProvider.get().error("Failed to copy to clipboard: {}", e.getMessage());
-        }
-    }
-
-    private static void showImportDialog(PresetController.PresetCategory category, String payload, Screen parentScreen) {
+    private void showImportDialog(String payload) {
         var backend = BackendHolder.getBackend();
         var screenBuilder = backend.createScreen("cloudtweaks.presets.import_title", () -> {});
 
@@ -335,12 +356,20 @@ public class PresetBrowserScreen {
                     ClientHelper.sendLocalSystemMessage(
                         ComponentWrapper.translatable("cloudtweaks.message.imported_preset")
                     );
-                    ClientHelper.setScreen(createBrowserScreen(category, parentScreen));
+                    ClientHelper.setScreen(refreshScreen());
                 }
             }
         ));
 
         screenBuilder.category(categoryBuilder);
-        ClientHelper.setScreen(screenBuilder.build(parentScreen));
+        ClientHelper.setScreen(screenBuilder.build(currentScreen));
+    }
+
+    private static void copyToClipboard(String text) {
+        try {
+            ClipboardUtils.setClipboard(ClientHelper.getGLFWHandle(), text);
+        } catch (Exception e) {
+            LoggerProvider.get().error("Failed to copy to clipboard: {}", e.getMessage());
+        }
     }
 }

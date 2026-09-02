@@ -73,6 +73,8 @@ public class ConfigConstants {
 
     public static final int MAX_LAYER_OFFSET = 1000;
 
+    public static final float MAX_CLOUDS_Y_SCALE = 50.0f;
+
     public static final float MAX_AXIS_VELOCITY = 20;
     
     private ConfigConstants() {
