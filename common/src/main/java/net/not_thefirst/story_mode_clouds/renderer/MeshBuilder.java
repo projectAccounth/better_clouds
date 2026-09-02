@@ -1,6 +1,5 @@
 package net.not_thefirst.story_mode_clouds.renderer;
 
-import net.minecraft.client.CloudStatus;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.compiler.ScriptRegistry;
@@ -27,33 +26,28 @@ public class MeshBuilder {
         CUBE,
         CROSS
     }
+    
+    public static final record MeshBuilderParameters(
+        CustomCloudRenderer.LayerState state,
+        int currentLayer,
+        int colorModifier) {}
     @FunctionalInterface
     public static interface MeshCallback {
         AssetHandle<AbstractStaticMesh.Builder<?, ?>> apply(
             AbstractStaticMesh.Builder<?, ?> mesh, 
             MeshType meshType, 
-            int cx, int cz, 
-            int currentLayer,
-            CustomCloudRenderer.LayerState state,
-            int colorModifier);
+            MeshBuilderParameters params);
     }
 
-    public static final record MeshBuilderParameters(
-        CustomCloudRenderer.LayerState state,
-        int baseCx, int baseCz,
-        CloudStatus status,
-        int currentLayer,
-        int colorModifier) {}
+    
 
     public static AssetHandle<AbstractStaticMesh.Builder<?, ?>> buildMesh(
         AbstractStaticMesh.Builder<?, ?> mesh, 
         MeshType meshType, 
-        int cx, int cz, int currentLayer,
-        CustomCloudRenderer.LayerState state,
-        int colorModifier
+        MeshBuilderParameters params
     ) {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
-                CloudsConfiguration.getInstance().getLayer(currentLayer);
+                CloudsConfiguration.getInstance().getLayer(params.currentLayer());
 
         if (meshType.usesNativeBuilder()) {
             try {
@@ -63,10 +57,10 @@ public class MeshBuilder {
                     mesh, (bb) -> {
                         builder.build(
                             mesh, 
-                            state, 
-                            cx, cz,
-                            currentLayer, 
-                            colorModifier);
+                            params.state(), 
+                            params.state().baseCellX, params.state().baseCellZ,
+                            params.currentLayer(), 
+                            params.colorModifier());
                     }, MESH_BUILD_TIMEOUT_MS, true);
             }
             catch (Exception exception) {
@@ -89,8 +83,8 @@ public class MeshBuilder {
                     script, 
                     mesh, 
                     layerConfiguration, 
-                    state.texture(), 
-                    cx, cz, 
+                    params.state().texture(), 
+                    params.state().baseCellX, params.state().baseCellZ, 
                     MESH_BUILD_TIMEOUT_MS, true);
             }
             else {
@@ -103,12 +97,10 @@ public class MeshBuilder {
     public static AssetHandle<AbstractStaticMesh.Builder<?, ?>> buildOutlineMesh(
         AbstractStaticMesh.Builder<?, ?> mesh, 
         MeshType meshType, 
-        int cx, int cz,  int currentLayer,
-        CustomCloudRenderer.LayerState state,
-        int colorModifier
+        MeshBuilderParameters params
     ) {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
-                CloudsConfiguration.getInstance().getLayer(currentLayer);
+                CloudsConfiguration.getInstance().getLayer(params.currentLayer());
 
         if (meshType.usesNativeBuilder()) {
             try {
@@ -118,10 +110,10 @@ public class MeshBuilder {
                     mesh, (bb) -> {
                         builder.buildOutline(
                             mesh, 
-                            state, 
-                            cx, cz,
-                            currentLayer, 
-                            colorModifier);
+                            params.state(), 
+                            params.state().baseCellX, params.state().baseCellZ,
+                            params.currentLayer(), 
+                            params.colorModifier());
                     }, MESH_BUILD_TIMEOUT_MS, true);
             }
             catch (Exception exception) {
@@ -144,8 +136,8 @@ public class MeshBuilder {
                     script, 
                     mesh, 
                     layerConfiguration, 
-                    state.texture(), 
-                    cx, cz, 
+                    params.state().texture(), 
+                    params.state().baseCellX, params.state().baseCellZ, 
                     MESH_BUILD_TIMEOUT_MS, true);
             }
             else {

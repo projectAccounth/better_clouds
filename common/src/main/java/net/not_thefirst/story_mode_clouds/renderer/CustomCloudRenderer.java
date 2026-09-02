@@ -7,7 +7,6 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
 
-import net.minecraft.client.CloudStatus;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -135,7 +134,6 @@ public class CustomCloudRenderer implements AutoCloseable {
             layerState.texture = null;
             layerState.needsRebuild = true;
             layerState.cellInitialized = false;
-            layerState.prevStatus = null;
             layers.add(layerState);
 
             layerState.transforms = manager.createDataBuffer("CloudsTransforms", TRANSFORMS_SIZE);
@@ -210,6 +208,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         GLFWWindowHelper.chainCallback(ClientHelper.getGLFWHandle(), GLFWFramebufferSizeCallback.create((windowId, width, height) -> {
             cloudsOutlineTarget.resize(width, height);
             cloudsTarget.resize(width, height);
+            mainTarget.resize(width, height);
         }));
 
         noDepthPipelines = new AbstractPipeline[] {
@@ -230,7 +229,7 @@ public class CustomCloudRenderer implements AutoCloseable {
     // ----------
     // render func
 
-    public void render(CloudStatus status, Vec3 cam, float tickDelta) {
+    public void render(Vec3 cam, float tickDelta) {
         double baseDx = cam.x;
         double baseDz = cam.z + 3.96F;
 
@@ -271,7 +270,7 @@ public class CustomCloudRenderer implements AutoCloseable {
         final float time = (gameTime + tickDelta) / 20.0F;
 
         final int range = CloudsConfiguration.getInstance().getCloudGridRange();
-        final int slack = range * 3 / 4;
+        final int slack = range >> 1;
 
         for (int layer : order) {
             LayerState currentLayer = this.layers.get(layer);
@@ -293,9 +292,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             double dzLayer = baseDz + currentLayer.offsetZ + timeOffsetZ;
 
             float cloudChunkHeight = MeshBuilder.HEIGHT_IN_BLOCKS;
-            if (layerConfiguration.IS_ENABLED) {
-                cloudChunkHeight *= layerConfiguration.APPEARANCE.CLOUD_Y_SCALE;
-            }
+            cloudChunkHeight *= layerConfiguration.APPEARANCE.CLOUD_Y_SCALE;
 
             float layerY = (float)(layerConfiguration.LAYER_HEIGHT - cam.y);
             float relYTop = layerY + cloudChunkHeight;
@@ -310,6 +307,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             if (!currentLayer.cellInitialized ||
                 (Math.abs(dxCell) > slack || Math.abs(dzCell) > slack)
             ) {
+                currentLayer.preserveAsStale();
                 currentLayer.baseCellX = cellX;
                 currentLayer.baseCellZ = cellZ;
                 currentLayer.needsRebuild = true;
@@ -320,30 +318,45 @@ public class CustomCloudRenderer implements AutoCloseable {
             float offY = (float) (layerConfiguration.LAYER_HEIGHT + layerConfiguration.APPEARANCE.LAYER_HEIGHT_OFFSET - cam.y);
             float offZ = (float)(dzLayer - currentLayer.baseCellZ * MeshBuilder.CELL_SIZE_IN_BLOCKS);
 
-            boolean needs = 
-                currentLayer.needsRebuild
-                || status != currentLayer.prevStatus;
-
-            if (needs) {
+            if (currentLayer.needsRebuild) {
                 currentLayer.needsRebuild  = false;
-                currentLayer.prevStatus    = status;
                 tryBuildClouds(currentLayer, layer, ARGB.toRGBA(ARGB.WHITE));
             }
 
             pollPendingMeshes(layer);
+            
+            AbstractStaticMesh<?> buffer = currentLayer.mainBuffer;
+            boolean usingStaleBuffer = false;
+            
+            if (buffer == null && currentLayer.staleMainBuffer != null) {
+                buffer = currentLayer.staleMainBuffer;
+                usingStaleBuffer = true;
+            }
+            
+            if (buffer == null) continue;
 
             try {
+                // recalc if using stale, otherwise it'll just shift to the new cx/cz
+                float offsetXToUse = offX;
+                float offsetZToUse = offZ;
+                if (usingStaleBuffer) {
+                    offsetXToUse = (float)(dxLayer - currentLayer.staleBaseCellX * MeshBuilder.CELL_SIZE_IN_BLOCKS);
+                    offsetZToUse = (float)(dzLayer - currentLayer.staleBaseCellZ * MeshBuilder.CELL_SIZE_IN_BLOCKS);
+                }
+                
+                Vector3f offset = new Vector3f(offsetXToUse, offY, offsetZToUse);
+
                 if (!type.doDepthWrite()) {
                     drawLayer(noDepthPipelines,
-                        offX, offY, offZ,
-                        relY, layer, skyColor, dayTime, cam);
+                        offset,
+                        relY, layer, skyColor, dayTime, cam, buffer);
                     continue;
                 }
 
                 drawLayer(
                     depthPipelines,
-                    offX, offY, offZ,
-                    relY, layer, skyColor, dayTime, cam);
+                    offset,
+                    relY, layer, skyColor, dayTime, cam, buffer);
             }
             catch (Exception e) {
                 LoggerProvider.get().error("Error while rendering frame: {}", e);
@@ -353,17 +366,16 @@ public class CustomCloudRenderer implements AutoCloseable {
 
     private void drawLayer(
         AbstractPipeline[] pipelines,
-        float ox, float oy, float oz,
+        Vector3f offset,
         float relY,
         int layer,
         int skyColor,
         
         long timeTicks,
-        Vec3 camPos) {
+        Vec3 camPos,
+        @Nullable AbstractStaticMesh<?> meshBuffer) {
 
         LayerState currentLayer = layers.get(layer);
-
-        if (!meshesFinishedBuilding(currentLayer) || currentLayer.mainBuffer == null) return;
 
         CloudsConfiguration.LayerConfiguration layerConfiguration =
             CloudsConfiguration.getInstance().getLayer(layer);
@@ -386,14 +398,11 @@ public class CustomCloudRenderer implements AutoCloseable {
         Matrix4f proj = RenderSystem.getModelViewMatrixCopy();
         Matrix4f mv = RenderSystem.getModelViewMatrixCopy();
 
-        currentLayer.transforms.putVec4(-ox, oy, -oz, 1.0f);
+        currentLayer.transforms.putVec4(-offset.x, offset.y, -offset.z, 1.0f);
         currentLayer.transforms.putMat4(proj);
         currentLayer.transforms.putMat4(mv);
 
-        float heightInBlocks = MeshBuilder.HEIGHT_IN_BLOCKS *
-                (layerConfiguration.IS_ENABLED
-                    ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE
-                    : 1.0f);
+        float heightInBlocks = MeshBuilder.HEIGHT_IN_BLOCKS * layerConfiguration.APPEARANCE.CLOUD_Y_SCALE;
 
         int shaderColor = ColorUtils.getCloudShaderColor(layer, skyColor);
 
@@ -515,14 +524,23 @@ public class CustomCloudRenderer implements AutoCloseable {
             pass.setRenderTarget(cloudsTarget);
             pass.setClearColor(CLEAR_COLOR);
             pass.setClearDepth(CLEAR_DEPTH);
-            pass.setMesh(currentLayer.mainBuffer, currentLayer.layerIndexCount);
+            pass.setMesh(meshBuffer, meshBuffer.getIndexCount());
 
             pass.setup();
+
+            cloudsTarget.copyDepthFrom(mainTarget);
+
             pass.render();
             pass.cleanup();
         }
 
-        if (currentLayer.outlineBuffer == null || currentLayer.outlineLayerIndexCount <= 0 || !layerConfiguration.APPEARANCE.OUTLINE_ENABLED) {
+        AbstractStaticMesh<?> outlineBufferToUse = currentLayer.outlineBuffer;
+        
+        if (outlineBufferToUse == null && currentLayer.staleOutlineBuffer != null) {
+            outlineBufferToUse = currentLayer.staleOutlineBuffer;
+        }
+
+        if (outlineBufferToUse == null || outlineBufferToUse.getIndexCount() <= 0 || !layerConfiguration.APPEARANCE.OUTLINE_ENABLED) {
             cloudsTarget.renderTo(manager.getPipeline("BLIT"), mainTarget);
             return;
         }
@@ -536,7 +554,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             pass.setRenderTarget(cloudsOutlineTarget);
             pass.setClearColor(CLEAR_COLOR);
             pass.setClearDepth(CLEAR_DEPTH);
-            pass.setMesh(currentLayer.outlineBuffer, currentLayer.outlineLayerIndexCount);
+            pass.setMesh(outlineBufferToUse, outlineBufferToUse.getIndexCount());
 
             pass.setup();
             pass.render();
@@ -574,15 +592,18 @@ public class CustomCloudRenderer implements AutoCloseable {
     private void pollPendingMeshes(int layerIdx) {
         LayerState currentLayer = layers.get(layerIdx);
 
+        boolean mainReady = false;
+        boolean outlineReady = false;
+
         if (currentLayer.pendingMain != null && currentLayer.pendingMain.isReady()) {
             var mesh = currentLayer.pendingMain.get();
             try {
+                var uploaded = mesh.build();
                 if (currentLayer.mainBuffer != null) {
                     currentLayer.mainBuffer.close();
                 }
 
-                currentLayer.mainBuffer = mesh.build();
-                currentLayer.layerIndexCount = currentLayer.mainBuffer.getIndexCount();
+                currentLayer.mainBuffer = uploaded;
                 LoggerProvider.get().info("Built cloud mesh for layer {} with {} vertices, {} indices", 
                     layerIdx, currentLayer.mainBuffer.getVertexCount(), currentLayer.mainBuffer.getIndexCount());
             }
@@ -591,21 +612,26 @@ public class CustomCloudRenderer implements AutoCloseable {
             }
 
             currentLayer.pendingMain = null;
+            mainReady = true;
         }
         else if (currentLayer.pendingMain != null && currentLayer.pendingMain.hasFailed()) {
             LoggerProvider.get().warn("Mesh building failed.");
             currentLayer.pendingMain = null;
+            mainReady = true;
+        }
+        else {
+            mainReady = currentLayer.pendingMain == null;
         }
 
         if (currentLayer.pendingOutline != null && currentLayer.pendingOutline.isReady()) {
             var mesh = currentLayer.pendingOutline.get();
             try {
+                var uploaded = mesh.build();
                 if (currentLayer.outlineBuffer != null) {
                     currentLayer.outlineBuffer.close();
                 }
 
-                currentLayer.outlineBuffer = mesh.build();
-                currentLayer.outlineLayerIndexCount = currentLayer.outlineBuffer.getIndexCount();
+                currentLayer.outlineBuffer = uploaded;
                 LoggerProvider.get().info("Built cloud mesh outline for layer {} with {} vertices, {} indices", 
                     layerIdx, currentLayer.outlineBuffer.getVertexCount(), currentLayer.outlineBuffer.getIndexCount());
             }
@@ -614,10 +640,21 @@ public class CustomCloudRenderer implements AutoCloseable {
             }
 
             currentLayer.pendingOutline = null;
+            outlineReady = true;
         }
         else if (currentLayer.pendingOutline != null && currentLayer.pendingOutline.hasFailed()) {
             LoggerProvider.get().warn("Outline mesh building failed.");
             currentLayer.pendingOutline = null;
+            outlineReady = true;
+        }
+        else {
+            outlineReady = currentLayer.pendingOutline == null;
+        }
+
+        // Clear stale buffers only after both new meshes are confirmed ready
+        if (mainReady && outlineReady && currentLayer.isRebuilding) {
+            currentLayer.clearStaleBuffers();
+            currentLayer.isRebuilding = false;
         }
     }
 
@@ -642,19 +679,20 @@ public class CustomCloudRenderer implements AutoCloseable {
             LoggerProvider.get().error("Exception getting mesh type: {}", e);
             return null;
         }
+        MeshBuilder.MeshBuilderParameters params = new MeshBuilder.MeshBuilderParameters(
+            state,
+            currentLayer,
+            colorModifier
+        );
         
         if (meshBuilderCond.getAsBoolean())
-            return callback.apply(mesh, meshType, state.baseCellX, state.baseCellZ, currentLayer, state, colorModifier);
+            return callback.apply(mesh, meshType, params);
         else
             return new AssetHandle<>(null);
     }
 
     // ------------------------------------------
     // misc utils
-
-    private boolean meshesFinishedBuilding(LayerState currentLayer) {
-        return currentLayer.pendingOutline == null && currentLayer.pendingMain == null;
-    }
     
     private int packConfig(int layer) {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
@@ -730,13 +768,17 @@ public class CustomCloudRenderer implements AutoCloseable {
         AbstractStaticMesh<?> mainBuffer;
         AbstractStaticMesh<?> outlineBuffer;
 
+        // stale mechanic to prevent disappearing clouds during rebuild
+        AbstractStaticMesh<?> staleMainBuffer;
+        AbstractStaticMesh<?> staleOutlineBuffer;
+        int staleBaseCellX;
+        int staleBaseCellZ;
+
+        boolean isRebuilding = false;
+
         boolean needsRebuild;
 
         boolean cellInitialized = false;
-        CloudStatus prevStatus;
-
-        int layerIndexCount;
-        int outlineLayerIndexCount;
 
         AbstractUBODataBuffer<?, ?>  transforms;
         AbstractUBODataBuffer<?, ?>  cloudsInfo;
@@ -745,6 +787,32 @@ public class CustomCloudRenderer implements AutoCloseable {
         AbstractUBODataBuffer<?, ?>  outline;
 
         public Texture.TextureData texture() { return this.texture; }
+
+        void preserveAsStale() {
+            if (mainBuffer != null) {
+                staleMainBuffer = mainBuffer;
+                mainBuffer = null;
+            }
+            if (outlineBuffer != null) {
+                staleOutlineBuffer = outlineBuffer;
+                outlineBuffer = null;
+            }
+            // stale buffers don't shift when rendered
+            staleBaseCellX = baseCellX;
+            staleBaseCellZ = baseCellZ;
+            isRebuilding = true;
+        }
+
+        void clearStaleBuffers() {
+            if (staleMainBuffer != null) {
+                staleMainBuffer.close();
+                staleMainBuffer = null;
+            }
+            if (staleOutlineBuffer != null) {
+                staleOutlineBuffer.close();
+                staleOutlineBuffer = null;
+            }
+        }
 
         public LayerState(int index) {
             this.index = index;
@@ -770,6 +838,7 @@ public class CustomCloudRenderer implements AutoCloseable {
             if (outlineBuffer != null) {
                 outlineBuffer.close();
             }
+            clearStaleBuffers();
             closeBuffers();
         }
     }

@@ -1,6 +1,5 @@
 package net.not_thefirst.story_mode_clouds.mixin;
 
-import net.minecraft.client.CloudStatus;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -26,11 +25,10 @@ public abstract class LevelRendererMixin {
             return;
         ci.cancel();
 
-        CloudStatus cloudStatus = ClientHelper.getOptions().getCloudStatus();
-        float partialTicks = ClientHelper.getClient().getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        float partialTicks = ClientHelper.getClient().getDeltaTracker().getGameTimeDeltaPartialTick(true);
         Vec3 camPos = ClientHelper.CameraHelper.getCamera().position();
 
-        RendererHolder.renderCloud(cloudStatus, camPos, partialTicks);
+        RendererHolder.renderCloud(camPos, partialTicks);
     }
 
     @ModifyExpressionValue(

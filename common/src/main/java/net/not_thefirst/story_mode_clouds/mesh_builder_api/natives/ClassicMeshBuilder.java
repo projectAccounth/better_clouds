@@ -87,7 +87,7 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
         CloudsConfiguration.LayerConfiguration layerConfiguration = 
                 CloudsConfiguration.getInstance().getLayer(currentLayer);
 
-        float scaledY1 = y1 * (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0f);        
+        float scaledY1 = y1 * layerConfiguration.APPEARANCE.CLOUD_Y_SCALE;      
         
         // Top face
         GLVertexBuilder.quad(bb, 
@@ -173,8 +173,8 @@ public class ClassicMeshBuilder implements MeshTypeBuilder {
         CloudsConfiguration.LayerConfiguration layerConfiguration =
                 CloudsConfiguration.getInstance().getLayer(currentLayer);
 
-        float scaledY1 = y1 * (layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE : 1.0f);
-        float outlineSize = layerConfiguration.IS_ENABLED ? layerConfiguration.APPEARANCE.OUTLINE_SIZE : 0.0f;
+        float scaledY1 = y1 * layerConfiguration.APPEARANCE.CLOUD_Y_SCALE;
+        float outlineSize = layerConfiguration.APPEARANCE.OUTLINE_SIZE;
 
         // pos 0-3 are the top face vertices, pos 4-7 are the bottom face vertices (ccw, vertex i aligns vertically to vertex i+4, 0 < i < 4)
         // pos 1, 0, 4, 5 are the south face vertices (+z)

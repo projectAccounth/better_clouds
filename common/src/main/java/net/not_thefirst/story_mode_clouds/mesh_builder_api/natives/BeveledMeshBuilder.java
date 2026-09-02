@@ -101,9 +101,7 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         CloudsConfiguration.LayerConfiguration layerConfiguration =
                 CloudsConfiguration.getInstance().getLayer(currentLayer);
 
-        float scaledY1 = y1 * (layerConfiguration.IS_ENABLED
-                ? layerConfiguration.APPEARANCE.CLOUD_Y_SCALE
-                : 1.0f);
+        float scaledY1 = y1 * layerConfiguration.APPEARANCE.CLOUD_Y_SCALE;
 
         boolean n = Texture.isNorthEmpty(cell);
         boolean s = Texture.isSouthEmpty(cell);
@@ -117,9 +115,11 @@ public class BeveledMeshBuilder implements MeshTypeBuilder {
         if (!n) excluded.add(FaceDir.NEG_Z);
         if (!s) excluded.add(FaceDir.POS_Z);
 
-        float bevelRadius = layerConfiguration.BEVEL.BEVEL_SIZE;
-        int edgeSegments = layerConfiguration.BEVEL.BEVEL_EDGE_SEGMENTS;
-        int cornerSegments = layerConfiguration.BEVEL.BEVEL_CORNER_SEGMENTS;
+        var bevelConfig = layerConfiguration.getTypeConfig("BEVELED");
+
+        float bevelRadius = (Float) bevelConfig.getValue("BEVEL_SIZE").value();
+        int edgeSegments = (Integer) bevelConfig.getValue("BEVEL_EDGE_SEGMENTS").value();
+        int cornerSegments = (Integer) bevelConfig.getValue("BEVEL_CORNER_SEGMENTS").value();
 
         NeighborCache neighbors = new NeighborCache();
         neighbors.cacheNeighbors(cellIdxX, cellIdxZ, state.texture());

@@ -5,7 +5,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.client.CloudStatus;
 import net.minecraft.client.renderer.CloudRenderer;
 import net.minecraft.world.phys.Vec3;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
@@ -21,10 +20,9 @@ public class CloudRendererMixin {
             return;
         ci.cancel();
 
-        CloudStatus cloudStatus = ClientHelper.getOptions().getCloudStatus();
         float partialTicks = ClientHelper.getClient().getDeltaTracker().getGameTimeDeltaPartialTick(false);
         Vec3 camPos = ClientHelper.CameraHelper.getCamera().position();
         
-        RendererHolder.renderCloud(cloudStatus, camPos, partialTicks);
+        RendererHolder.renderCloud(camPos, partialTicks);
     }
 }
