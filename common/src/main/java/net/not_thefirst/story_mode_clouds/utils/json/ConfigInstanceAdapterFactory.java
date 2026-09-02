@@ -21,10 +21,10 @@ public class ConfigInstanceAdapterFactory implements TypeAdapterFactory {
         return (TypeAdapter<T>) new ConfigInstanceAdapter();
     }
 
-    public static class ConfigInstanceAdapter extends TypeAdapter<ConfigInstance> {
+    public static class ConfigInstanceAdapter extends TypeAdapter<ConfigInstance<?>> {
 
         @Override
-        public void write(JsonWriter out, ConfigInstance value) {
+        public void write(JsonWriter out, ConfigInstance<?> value) {
             Object underlying = value.value();
 
             if (underlying instanceof String) {
@@ -57,7 +57,7 @@ public class ConfigInstanceAdapterFactory implements TypeAdapterFactory {
         }
 
         @Override
-        public ConfigInstance read(JsonReader in) throws IOException {
+        public ConfigInstance<?> read(JsonReader in) throws IOException {
             switch (in.peek()) {
                 case STRING:
                     return ConfigInstance.create(in.nextString());

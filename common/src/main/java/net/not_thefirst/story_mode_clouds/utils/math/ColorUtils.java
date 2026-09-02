@@ -9,10 +9,6 @@ public class ColorUtils {
                 CloudsConfiguration.getInstance().getLayer(layer);
         int color = ARGB.WHITE;
 
-        if (!layerConfiguration.IS_ENABLED) {
-            return ARGB.multiply(color, skyColor);
-        }
-
         boolean useColor = layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR;
         int customColor  = layerConfiguration.APPEARANCE.LAYER_COLOR;
 

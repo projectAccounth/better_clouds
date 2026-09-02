@@ -636,7 +636,7 @@ public final class YaclConfigBackend implements ConfigBackend {
             builder.controller(opt -> {
                 if (enumClass != null) {
                     Option<T> typedOption = (Option<T>) opt;
-                    return EnumControllerBuilder.create(typedOption).enumClass((Class) enumClass);
+                    return EnumControllerBuilder.create(typedOption).enumClass(enumClass);
                 }
                 Option<String> stringOption = (Option<String>) (Option<?>) opt;
                 return (ControllerBuilder<T>) (Object) StringControllerBuilder.create(stringOption);

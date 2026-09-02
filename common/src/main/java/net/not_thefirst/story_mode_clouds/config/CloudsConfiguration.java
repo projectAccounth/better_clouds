@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -127,15 +128,13 @@ public class CloudsConfiguration {
 
     private final Map<Dimension, LayerHolder> DIMENSION_LAYERS = new HashMap<>();
     private final Map<Dimension, Boolean> DIMENSION_CLOUD_RENDERED = new HashMap<>();
+    private static final transient Set<Dimension> REMOVED_DIMENSIONS = new HashSet<>();
     
     // ------------------------------------------
     // constructor
 
     public CloudsConfiguration() {
         initializeDimensions();
-        // LAYERS.addLayer(new LayerConfiguration(0));
-        // NETHER_LAYERS.addLayer(new LayerConfiguration(0));
-        // END_LAYERS.addLayer(new LayerConfiguration(0));
     }
 
     // ------------------------------------------
@@ -166,6 +165,14 @@ public class CloudsConfiguration {
     
     @Nullable
     public LayerHolder getLayerHolder(Dimension dimension) {
+        if (dimension == null) {
+            LoggerProvider.get().warn("Dimension is null when trying to get LayerHolder. Returning null.");
+            return null;
+        }
+        if (REMOVED_DIMENSIONS.contains(dimension)) {
+            LoggerProvider.get().warn("LayerHolder for dimension {} has been removed. Refresh to re-generate.", dimension.getId());
+            return null;
+        }
         if (!DIMENSION_LAYERS.containsKey(dimension)) {
             LoggerProvider.get().warn("LayerHolder for dimension {} not found, hash code: {}. Recreating.", dimension.getId(), dimension.hashCode());
             LayerHolder holder = new LayerHolder();
@@ -184,6 +191,11 @@ public class CloudsConfiguration {
         return getLayerInDimension(DimensionProvider.getCurrentDimension(), idx);
     }
     
+    public void removeLayerHolder(Dimension dimension) {
+        DIMENSION_LAYERS.remove(dimension);
+        REMOVED_DIMENSIONS.add(dimension);
+    }
+
     public LayerConfiguration getLayerInDimension(Dimension dimension, int idx) {
         LayerHolder holder = getLayerHolder(dimension);
         if (holder == null || idx < 0 || idx >= holder.layers.size()) {
@@ -249,6 +261,7 @@ public class CloudsConfiguration {
     public static void refreshConfig() {
         LoggerProvider.get().info("Refreshing configuration from disk");
         load();
+        REMOVED_DIMENSIONS.clear();
         
         initializeCustomParameters();
         
@@ -455,11 +468,6 @@ public class CloudsConfiguration {
     // ------------------------------------------
     // typedefs
 
-    /**
-     * Configuration for a single cloud rendering layer.
-     * Each layer can have independent appearance, fog, fade, and performance settings.
-     * Multiple layers can be stacked to create complex cloud effects.
-     */
     public static class LayerConfiguration {
         public AppearanceParameters  APPEARANCE  = new AppearanceParameters();
         public FadeParameters        FADE        = new FadeParameters();
@@ -469,7 +477,6 @@ public class CloudsConfiguration {
 
         public String  NAME                  = "Minecraft";
         public boolean FOG_ENABLED           = true;
-        public boolean IS_ENABLED            = true;
         public boolean LAYER_RENDERED        = true;
         public int     LAYER_HEIGHT          = 128;
 
@@ -482,7 +489,6 @@ public class CloudsConfiguration {
         public void copy(LayerConfiguration other) {
             this.NAME = other.NAME;
             this.FOG_ENABLED = other.FOG_ENABLED;
-            this.IS_ENABLED = other.IS_ENABLED;
             this.LAYER_RENDERED = other.LAYER_RENDERED;
             this.LAYER_HEIGHT = other.LAYER_HEIGHT;
             this.MODE = other.MODE;
@@ -1013,6 +1019,10 @@ public class CloudsConfiguration {
          */
         public String getId() {
             return id;
+        }
+
+        public static boolean isBuiltin(Dimension dim) {
+            return dim.equals(OVERWORLD) || dim.equals(NETHER) || dim.equals(END);
         }
 
         static Dimension register(String id) {

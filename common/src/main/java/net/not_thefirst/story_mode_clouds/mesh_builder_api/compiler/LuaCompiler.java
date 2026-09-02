@@ -10,7 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-public final class LuaJitCompiler {
+public final class LuaCompiler {
 
     private static final Globals COMPILER_CONTEXT;
 
@@ -19,18 +19,10 @@ public final class LuaJitCompiler {
         LuaJC.install(COMPILER_CONTEXT);
     }
 
-    private LuaJitCompiler() {
+    private LuaCompiler() {
         // static init
     }
 
-    /**
-     * Compiles an InputStream directly to real JVM bytecode in memory.
-     * 
-     * @param stream     The resource stream from your mod's file API.
-     * @param chunkName  A debugging name given to the script (e.g., "wave_gen.lua").
-     * @return A thread-safe, cached Proto blueprint containing the compiled bytecode loops.
-     * @throws IOException If the stream fails to read or compile.
-     */
     public static Prototype compile(InputStream stream, String chunkName) throws IOException {
         if (stream == null) {
             throw new IllegalArgumentException("Cannot compile a null InputStream resource.");
@@ -45,7 +37,7 @@ public final class LuaJitCompiler {
             
             return prototype;
         } catch (Exception e) {
-            throw new IOException("In-memory bytecode JIT compilation failure for " + chunkName, e);
+            throw new IOException("In-memory bytecode compilation failure for " + chunkName, e);
         }
     }
 }

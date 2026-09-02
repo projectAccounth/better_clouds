@@ -18,7 +18,7 @@ public class ScriptRegistry {
 
     public static void loadScript(String scriptId, IdentifierWrapper assetPath) {
         try (InputStream resourceStream = ResourceHandler.getResource(ClientHelper.getClient().getResourceManager(), assetPath).open()) {
-            Prototype compiledBlueprint = LuaJitCompiler.compile(resourceStream, scriptId + ".lua");
+            Prototype compiledBlueprint = LuaCompiler.compile(resourceStream, scriptId + ".lua");
             
             BYTECODE_CACHE.put(scriptId, new SharedHandle<>(compiledBlueprint));
             LoggerProvider.get().info("Loaded script {} with id {}", assetPath, scriptId);
@@ -29,7 +29,7 @@ public class ScriptRegistry {
 
     public static void loadScript(String scriptId, InputStream stream) {
         try {
-            Prototype compiledBlueprint = LuaJitCompiler.compile(stream, scriptId + ".lua");
+            Prototype compiledBlueprint = LuaCompiler.compile(stream, scriptId + ".lua");
             
             BYTECODE_CACHE.put(scriptId, new SharedHandle<>(compiledBlueprint));
             LoggerProvider.get().info("Loaded script with id {}", scriptId);
