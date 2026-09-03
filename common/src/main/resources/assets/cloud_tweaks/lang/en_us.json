@@ -134,7 +134,7 @@
   "cloudtweaks.option.y_scale": "Y Scale",
   "cloudtweaks.presets": "Presets",
   "cloudtweaks.confirm_delete.title": "Confirm Deletion",
-  "cloudtweaks.confirm_delete.category": "Destructive Action",
+  "cloudtweaks.confirm_delete.category": "Confirm deletion",
   "cloudtweaks.confirm_delete.target": "Target",
   "cloudtweaks.confirm_delete.description": "This action cannot be undone.",
   "cloudtweaks.confirm_delete.confirm": "Delete",

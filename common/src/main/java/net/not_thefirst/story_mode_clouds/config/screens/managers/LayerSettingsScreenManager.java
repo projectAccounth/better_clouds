@@ -56,8 +56,14 @@ public class LayerSettingsScreenManager extends ScreenManager {
                 "cloudtweaks.title.delete_dimension",
                 "cloudtweaks.desc.delete_dimension",
                 () -> {
-                    CloudsConfiguration.getInstance().removeLayerHolder(dimension);
-                    ClientHelper.setScreen(parentScreen);
+                    ClientHelper.setScreen(buildDeleteConfirmationScreen(
+                        dimension.getId(),
+                        currentScreen,
+                        () -> {
+                            CloudsConfiguration.getInstance().removeLayerHolder(dimension);
+                            ClientHelper.setScreen(parentScreen);
+                        }
+                    ));
                 }
             ));
         }

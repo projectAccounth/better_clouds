@@ -131,12 +131,20 @@ public class DataSettings {
                     "cloudtweaks.raw.remove",
                     "cloudtweaks.desc.delete_keypoint",
                     () -> {
-                        if (colors.size() > 1 && colors.remove(kp)) {
-                            CloudsConfiguration.save();
-                            ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.translatable("cloudtweaks.presets.removed_keypoint")
-                            );
-                            ClientHelper.setScreen(null);
+                        if (colors.size() > 1) {
+                            ClientHelper.setScreen(ScreenManager.buildDeleteConfirmationScreen(
+                                ComponentWrapper.translatable("cloudtweaks.raw.keypoint").getString(),
+                                ClientHelper.getCurrentScreen(),
+                                () -> {
+                                    if (colors.remove(kp)) {
+                                        CloudsConfiguration.save();
+                                        ClientHelper.sendLocalSystemMessage(
+                                            ComponentWrapper.translatable("cloudtweaks.presets.removed_keypoint")
+                                        );
+                                        ClientHelper.setScreen(null);
+                                    }
+                                }
+                            ));
                         }
                     }
                 ));
@@ -299,12 +307,20 @@ public class DataSettings {
                     "cloudtweaks.raw.remove",
                     "cloudtweaks.desc.light.delete",
                     () -> {
-                        if (lights.size() > 1 && lights.remove(light)) {
-                            CloudsConfiguration.save();
-                            ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.translatable("cloudtweaks.presets.removed_light")
-                            );
-                            ClientHelper.setScreen(null);
+                        if (lights.size() > 1) {
+                            ClientHelper.setScreen(ScreenManager.buildDeleteConfirmationScreen(
+                                ComponentWrapper.translatable("cloudtweaks.entry.light").getString(),
+                                ClientHelper.getCurrentScreen(),
+                                () -> {
+                                    if (lights.remove(light)) {
+                                        CloudsConfiguration.save();
+                                        ClientHelper.sendLocalSystemMessage(
+                                            ComponentWrapper.translatable("cloudtweaks.presets.removed_light")
+                                        );
+                                        ClientHelper.setScreen(null);
+                                    }
+                                }
+                            ));
                         }
                     }
                 ));

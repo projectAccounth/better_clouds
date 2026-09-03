@@ -215,10 +215,16 @@ public class PresetEditorScreenManager extends ScreenManager {
                             "cloudtweaks.raw.remove.tooltip",
                             () -> {
                                 if (preset.colors.size() > 0) {
-                                    preset.colors.remove(kp);
-                                    CloudsConfiguration.save();
-                                    ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_keypoint"));
-                                    ClientHelper.setScreen(buildEditingScreen());
+                                    ClientHelper.setScreen(ScreenManager.buildDeleteConfirmationScreen(
+                                        ComponentWrapper.translatable("cloudtweaks.raw.keypoint").getString(),
+                                        currentScreen,
+                                        () -> {
+                                            preset.colors.remove(kp);
+                                            CloudsConfiguration.save();
+                                            ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_keypoint"));
+                                            ClientHelper.setScreen(buildEditingScreen());
+                                        }
+                                    ));
                                 }
                             }
                         ));
@@ -362,10 +368,16 @@ public class PresetEditorScreenManager extends ScreenManager {
                             "cloudtweaks.raw.remove.tooltip",
                             () -> {
                                 if (preset.lights.size() > 0) {
-                                    preset.lights.remove(light);
-                                    CloudsConfiguration.save();
-                                    ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_light"));
-                                    ClientHelper.setScreen(buildEditingScreen());
+                                    ClientHelper.setScreen(ScreenManager.buildDeleteConfirmationScreen(
+                                        ComponentWrapper.translatable("cloudtweaks.entry.light").getString(),
+                                        currentScreen,
+                                        () -> {
+                                            preset.lights.remove(light);
+                                            CloudsConfiguration.save();
+                                            ClientHelper.sendLocalSystemMessage(ComponentWrapper.translatable("cloudtweaks.presets.removed_light"));
+                                            ClientHelper.setScreen(buildEditingScreen());
+                                        }
+                                    ));
                                 }
                             }
                         ));
