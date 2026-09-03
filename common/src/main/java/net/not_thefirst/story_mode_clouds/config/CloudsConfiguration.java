@@ -506,14 +506,21 @@ public class CloudsConfiguration {
             this.FOG.copy(other.FOG);
 
             refreshCustomTypeConfig();
+            for (var typeEntry : other.getAllTypeConfig().entrySet()) {
+                CustomTypeParameters targetParams = this.CUSTOM_PARAMETERS.get(typeEntry.getKey());
+                if (targetParams == null) continue;
+                for (var valueEntry : typeEntry.getValue().getMap().entrySet()) {
+                    ConfigInstance<?> targetValue = targetParams.getValue(valueEntry.getKey());
+                    if (targetValue != null) {
+                        targetValue.setValueFrom(valueEntry.getValue());
+                    }
+                }
+            }
         }
 
         public LayerConfiguration(int idx) {
             LAYER_IDX = idx;
-            for (var entry : MeshTypeDataCache.getData()) {
-                if (entry.config().isEmpty()) continue;
-                CUSTOM_PARAMETERS.put(entry.name(), new CustomTypeParameters());
-            }
+            refreshCustomTypeConfig();
         }
 
         public LayerConfiguration() {

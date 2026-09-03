@@ -110,12 +110,18 @@ public class LayerSettingsScreenManager extends ScreenManager {
                     "cloudtweaks.desc.remove_layer",
                     () -> {
                         if (layerHolder.layers.size() > 1) {
-                            layerHolder.removeLayer(layerIndex);
-                            CloudsConfiguration.save();
-                            ClientHelper.sendLocalSystemMessage(
-                                ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.removed_layer_prefix").getString() + dimension.getId())
-                            );
-                            ClientHelper.setScreen(refreshScreen());
+                            ClientHelper.setScreen(buildDeleteConfirmationScreen(
+                                layer.NAME,
+                                currentScreen,
+                                () -> {
+                                    layerHolder.removeLayer(layerIndex);
+                                    CloudsConfiguration.save();
+                                    ClientHelper.sendLocalSystemMessage(
+                                        ComponentWrapper.literal(ComponentWrapper.translatable("cloudtweaks.message.removed_layer_prefix").getString() + dimension.getId())
+                                    );
+                                    ClientHelper.setScreen(refreshScreen());
+                                }
+                            ));
                         }
                     })
                 );

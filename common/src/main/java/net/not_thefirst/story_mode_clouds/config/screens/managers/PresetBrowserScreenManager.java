@@ -153,14 +153,16 @@ public class PresetBrowserScreenManager extends ScreenManager {
                 "cloudtweaks.option.delete_preset_action",
                 "cloudtweaks.tooltip.delete_preset_action",
                 () -> {
-                    if (PresetController.deleteColorPreset(preset.id)) {
-                        ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.literal(
-                                ComponentWrapper.translatable("cloudtweaks.message.deleted_color_preset_prefix").getString() + preset.displayName
-                            )
-                        );
-                        ClientHelper.setScreen(refreshScreen());
-                    }
+                    showDeleteConfirmation(preset.displayName, () -> {
+                        if (PresetController.deleteColorPreset(preset.id)) {
+                            ClientHelper.sendLocalSystemMessage(
+                                ComponentWrapper.literal(
+                                    ComponentWrapper.translatable("cloudtweaks.message.deleted_color_preset_prefix").getString() + preset.displayName
+                                )
+                            );
+                            ClientHelper.setScreen(refreshScreen());
+                        }
+                    });
                 }
             ));
         }
@@ -227,14 +229,16 @@ public class PresetBrowserScreenManager extends ScreenManager {
                 "cloudtweaks.option.delete_preset_action",
                 "cloudtweaks.tooltip.delete_preset_action",
                 () -> {
-                    if (PresetController.deleteLightingPreset(preset.id)) {
-                        ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.literal(
-                                ComponentWrapper.translatable("cloudtweaks.message.deleted_lighting_preset_prefix").getString() + preset.displayName
-                            )
-                        );
-                        ClientHelper.setScreen(refreshScreen());
-                    }
+                    showDeleteConfirmation(preset.displayName, () -> {
+                        if (PresetController.deleteLightingPreset(preset.id)) {
+                            ClientHelper.sendLocalSystemMessage(
+                                ComponentWrapper.literal(
+                                    ComponentWrapper.translatable("cloudtweaks.message.deleted_lighting_preset_prefix").getString() + preset.displayName
+                                )
+                            );
+                            ClientHelper.setScreen(refreshScreen());
+                        }
+                    });
                 }
             ));
         }
@@ -301,12 +305,14 @@ public class PresetBrowserScreenManager extends ScreenManager {
                 "cloudtweaks.option.delete_preset_action",
                 "cloudtweaks.tooltip.delete_preset_action",
                 () -> {
-                    if (PresetController.deleteLightSourcesPreset(preset.id)) {
-                        ClientHelper.sendLocalSystemMessage(
-                            ComponentWrapper.translatable("cloudtweaks.message.deleted_light_sources_preset_prefix")
-                        );
-                        ClientHelper.setScreen(refreshScreen());
-                    }
+                    showDeleteConfirmation(preset.displayName, () -> {
+                        if (PresetController.deleteLightSourcesPreset(preset.id)) {
+                            ClientHelper.sendLocalSystemMessage(
+                                ComponentWrapper.translatable("cloudtweaks.message.deleted_light_sources_preset_prefix")
+                            );
+                            ClientHelper.setScreen(refreshScreen());
+                        }
+                    });
                 }
             ));
         }
@@ -365,6 +371,14 @@ public class PresetBrowserScreenManager extends ScreenManager {
 
         screenBuilder.category(categoryBuilder);
         ClientHelper.setScreen(screenBuilder.build(currentScreen));
+    }
+
+    private void showDeleteConfirmation(String presetName, Runnable deleteAction) {
+        ClientHelper.setScreen(ScreenManager.buildDeleteConfirmationScreen(
+            presetName,
+            currentScreen,
+            deleteAction
+        ));
     }
 
     private static void copyToClipboard(String text) {

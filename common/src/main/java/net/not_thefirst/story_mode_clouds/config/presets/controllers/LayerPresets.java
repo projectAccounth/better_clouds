@@ -143,7 +143,9 @@ public final class LayerPresets extends BasePresetController<LayerPreset> {
     protected LayerPreset readPreset(FileReader reader, PresetMetadata entry) {
         JsonElement element = JsonParser.parseReader(reader);
         if (element.isJsonObject() && element.getAsJsonObject().has("layer")) {
-            return gson.fromJson(element, LayerPreset.class);
+            LayerPreset preset = gson.fromJson(element, LayerPreset.class);
+            if (preset != null && preset.layer != null) preset.layer.refreshCustomTypeConfig();
+            return preset;
         }
         LayerConfiguration layer = gson.fromJson(element, LayerConfiguration.class);
         LayerPresetMetadata metadata = (LayerPresetMetadata) entry;

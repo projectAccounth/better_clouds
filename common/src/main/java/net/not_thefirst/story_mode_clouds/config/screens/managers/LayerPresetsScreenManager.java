@@ -43,22 +43,27 @@ public class LayerPresetsScreenManager extends ScreenManager {
                                                          CloudsConfiguration.Dimension dimension, Screen backScreen) {
         var backend = BackendHolder.getBackend();
 
-        return backend.createScreen("cloudtweaks.presets.edit_layer_preset", 
-            () -> LayerPresets.saveLayerPreset(
-                presetId,
-                layer.NAME,
-                ComponentWrapper.translatable("cloudtweaks.presets.modified_layer_preset").getString(),
-                layer,
-                dimension.getId()
-            ))
+        final Screen[] self = new Screen[1];
+        Runnable savePreset = () -> LayerPresets.saveLayerPreset(
+            presetId,
+            layer.NAME,
+            ComponentWrapper.translatable("cloudtweaks.presets.modified_layer_preset").getString(),
+            layer,
+            dimension.getId()
+        );
+        self[0] = backend.createScreen("cloudtweaks.presets.edit_layer_preset",
+            savePreset)
             .category(DataSettings.buildLayerBasicSettings(layer))
             .category(DataSettings.buildLayerAppearanceSettings(layer))
             .category(DataSettings.buildOutlineCategory(layer))
             .category(DataSettings.buildTextureCategory(layer))
+            .category(DataSettings.buildTypeSpecificCategory(layer, self, savePreset))
             .category(DataSettings.buildLayerFogSettings(layer))
             .category(DataSettings.buildLayerFadeSettings(layer))
             .category(DataSettings.buildLayerPresetSaveCategory(layer, presetId, dimension, backScreen))
             .build(backScreen);
+
+        return self[0];
     }
 
     @Override
@@ -135,15 +140,20 @@ public class LayerPresetsScreenManager extends ScreenManager {
                     "cloudtweaks.presets.edit",
                     "cloudtweaks.presets.edit.tooltip",
                     () -> {
-                        LayerPreset loadedPreset = LayerPresets.loadLayerPreset(preset.id);
-                        if (loadedPreset != null && loadedPreset.layer != null) {
-                            Screen editScreen = createLayerPresetEditingScreen(
-                                loadedPreset.layer, preset.id, dimension, currentScreen
-                            );
-                            if (editScreen != null) {
-                                ClientHelper.setScreen(editScreen);
+                        ClientHelper.setScreen(ScreenManager.buildDeleteConfirmationScreen(
+                            preset.displayName,
+                            currentScreen,
+                            () -> {
+                                if (LayerPresets.deleteLayerPreset(preset.id)) {
+                                    ClientHelper.sendLocalSystemMessage(
+                                        ComponentWrapper.literal(
+                                            ComponentWrapper.translatable("cloudtweaks.message.deleted_layer_preset_prefix").getString() + preset.displayName
+                                        )
+                                    );
+                                    ClientHelper.setScreen(refreshScreen());
+                                }
                             }
-                        }
+                        ));
                     }
                 ))
                 .action(backend.createAction(

@@ -594,6 +594,11 @@ public class DataSettings {
     }
 
     public static ConfigBackend.ConfigCategoryBuilder buildTypeSpecificCategory(CloudsConfiguration.LayerConfiguration layer, Screen[] self) {
+        return buildTypeSpecificCategory(layer, self, CloudsConfiguration::save);
+        }
+
+    public static ConfigBackend.ConfigCategoryBuilder buildTypeSpecificCategory(
+            CloudsConfiguration.LayerConfiguration layer, Screen[] self, Runnable saveAction) {
         var backend = BackendHolder.getBackend();
         var category = backend.createCategory("cloudtweaks.group.type_specific", null);
 
@@ -608,7 +613,7 @@ public class DataSettings {
                 typeName,
                 null,
                 () -> {
-                    Screen typeScreen = createTypeSpecificConfigScreen(typeName, params, self[0], layer);
+                    Screen typeScreen = createTypeSpecificConfigScreen(typeName, params, self[0], layer, saveAction);
                     if (typeScreen != null) {
                         ClientHelper.setScreen(typeScreen);
                     }
@@ -620,9 +625,9 @@ public class DataSettings {
         return category;
     }
 
-    private static Screen createTypeSpecificConfigScreen(String name, CloudsConfiguration.LayerConfiguration.CustomTypeParameters params, Screen backScreen, CloudsConfiguration.LayerConfiguration layer) {
+    private static Screen createTypeSpecificConfigScreen(String name, CloudsConfiguration.LayerConfiguration.CustomTypeParameters params, Screen backScreen, CloudsConfiguration.LayerConfiguration layer, Runnable saveAction) {
         var backend = BackendHolder.getBackend();
-        var screen = backend.createScreen(name, CloudsConfiguration::save);
+        var screen = backend.createScreen(name, saveAction);
         var category = backend.createCategory("cloudtweaks.group.type_specific", null);
         var group = backend.createGroup(name + ComponentWrapper.translatable("cloudtweaks.group.type_specific_suffix").getString());
         
@@ -678,8 +683,10 @@ public class DataSettings {
             "cloudtweaks.raw.remove", 
             "cloudtweaks.action.remove_config", 
             () -> {
-                layer.deleteCustomType(name);
-                ClientHelper.setScreen(backScreen);
+                ClientHelper.setScreen(ScreenManager.buildDeleteConfirmationScreen(name, backScreen, () -> {
+                    layer.deleteCustomType(name);
+                    ClientHelper.setScreen(backScreen);
+                }));
             })
         );
 
@@ -689,7 +696,7 @@ public class DataSettings {
             () -> {
                 layer.deleteCustomType(name);
                 CloudsConfiguration.LayerConfiguration.CustomTypeParameters newParams = layer.resetCustomTypeConfig(name);
-                Screen refreshedScreen = createTypeSpecificConfigScreen(name, newParams, backScreen, layer);
+                Screen refreshedScreen = createTypeSpecificConfigScreen(name, newParams, backScreen, layer, saveAction);
                 ClientHelper.setScreen(refreshedScreen);
             })
         );
