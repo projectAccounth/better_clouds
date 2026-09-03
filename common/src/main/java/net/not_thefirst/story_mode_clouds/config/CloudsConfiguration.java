@@ -35,6 +35,7 @@ import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeDataCac
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.types.MeshTypeData.ConfigEntry;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
 import net.not_thefirst.story_mode_clouds.utils.json.ConfigInstanceAdapterFactory;
+import net.not_thefirst.story_mode_clouds.utils.json.CloudsConfigurationAdapterFactory;
 import net.not_thefirst.story_mode_clouds.utils.json.DimensionTypeAdapter;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 import net.not_thefirst.story_mode_clouds.utils.math.CloudColorProvider;
@@ -54,6 +55,7 @@ public class CloudsConfiguration {
             .setPrettyPrinting()
             .setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE)
             .registerTypeAdapter(Dimension.class, new DimensionTypeAdapter())
+            .registerTypeAdapterFactory(new CloudsConfigurationAdapterFactory())
             .registerTypeAdapterFactory(new ConfigInstanceAdapterFactory())
             .create();
 
