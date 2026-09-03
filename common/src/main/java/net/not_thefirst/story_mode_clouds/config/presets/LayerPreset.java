@@ -2,6 +2,7 @@ package net.not_thefirst.story_mode_clouds.config.presets;
 
 import com.google.gson.Gson;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.config.presets.controllers.LayerPresets;
 import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
 /**

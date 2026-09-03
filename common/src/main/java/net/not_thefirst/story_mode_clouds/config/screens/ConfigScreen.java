@@ -3,8 +3,8 @@ package net.not_thefirst.story_mode_clouds.config.screens;
 import net.minecraft.client.gui.screens.Screen;
 import net.not_thefirst.story_mode_clouds.config.BackendHolder;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
-import net.not_thefirst.story_mode_clouds.config.presets.PresetController;
-import net.not_thefirst.story_mode_clouds.config.presets.LayerPresets;
+import net.not_thefirst.story_mode_clouds.config.presets.controllers.PresetController;
+import net.not_thefirst.story_mode_clouds.config.presets.controllers.LayerPresets;
 
 public class ConfigScreen {
     private ConfigScreen() {}
