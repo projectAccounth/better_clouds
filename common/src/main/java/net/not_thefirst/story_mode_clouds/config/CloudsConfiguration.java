@@ -771,7 +771,6 @@ public class CloudsConfiguration {
 
         public static class AppearanceParameters {
             private static final boolean DEFAULT_SHADING_ENABLED = false;
-            private static final boolean DEFAULT_USES_CUSTOM_ALPHA = true;
             private static final boolean DEFAULT_CUSTOM_BRIGHTNESS = false;
             private static final boolean DEFAULT_USES_CUSTOM_COLOR = false;
             private static final int DEFAULT_BASE_ALPHA = (int) (0.8f * 255);
@@ -795,7 +794,6 @@ public class CloudsConfiguration {
             private static final boolean DEFAULT_OUTLINE_ENABLED = false;
 
             public boolean SHADING_ENABLED = DEFAULT_SHADING_ENABLED;
-            public boolean USES_CUSTOM_ALPHA = DEFAULT_USES_CUSTOM_ALPHA;
             public boolean CUSTOM_BRIGHTNESS = DEFAULT_CUSTOM_BRIGHTNESS;
             public boolean USES_CUSTOM_COLOR = DEFAULT_USES_CUSTOM_COLOR;
             public float OUTLINE_SIZE = DEFAULT_OUTLINE_SIZE;
@@ -822,7 +820,6 @@ public class CloudsConfiguration {
 
             void copy(AppearanceParameters other) {
                 this.SHADING_ENABLED = other.SHADING_ENABLED;
-                this.USES_CUSTOM_ALPHA = other.USES_CUSTOM_ALPHA;
                 this.CUSTOM_BRIGHTNESS = other.CUSTOM_BRIGHTNESS;
                 this.USES_CUSTOM_COLOR = other.USES_CUSTOM_COLOR;
                 this.BASE_ALPHA = other.BASE_ALPHA;

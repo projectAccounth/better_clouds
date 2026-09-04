@@ -702,7 +702,6 @@ public class CustomCloudRenderer implements AutoCloseable {
 
         if (layerConfiguration.FOG_ENABLED)                                config |= 1 << 0;
         if (layerConfiguration.APPEARANCE.SHADING_ENABLED)                 config |= 1 << 1;
-        if (layerConfiguration.APPEARANCE.USES_CUSTOM_ALPHA)               config |= 1 << 2;
         if (layerConfiguration.APPEARANCE.CUSTOM_BRIGHTNESS)               config |= 1 << 3;
         if (layerConfiguration.APPEARANCE.USES_CUSTOM_COLOR)               config |= 1 << 4;
         if (layerConfiguration.FADE.FADE_ENABLED)                          config |= 1 << 5;

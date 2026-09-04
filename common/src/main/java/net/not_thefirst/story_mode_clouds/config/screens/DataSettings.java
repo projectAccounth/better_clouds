@@ -426,12 +426,6 @@ public class DataSettings {
                 () -> layer.APPEARANCE.SHADING_ENABLED,
                 v -> layer.APPEARANCE.SHADING_ENABLED = v
             ))
-            .option(backend.booleanOption(
-                "cloudtweaks.option.use_custom_alpha",
-                null,
-                () -> layer.APPEARANCE.USES_CUSTOM_ALPHA,
-                v -> layer.APPEARANCE.USES_CUSTOM_ALPHA = v
-            ))
             .option(backend.integerOption(
                 "cloudtweaks.option.base_alpha",
                 null,
