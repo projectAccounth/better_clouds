@@ -25,19 +25,8 @@ function buildCell(cellX, cellZ, colorModifier)
     );
 end
 
-local range = Coords.getCloudGridHalfSize();
-
-for cellX = -range, range do
-    for cellZ = -range, range do
-        local wrappedCellX = Coords.getWrappedX(cellX);
-        local wrappedCellZ = Coords.getWrappedX(cellZ);
-
-        local cellColor = Texture.getColor(wrappedCellX, wrappedCellZ);
-        local color = LayerConfig.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR and cellColor or ARGB.WHITE;
-
-        if (not Texture.isCellEmpty(wrappedCellX, wrappedCellZ)) then
-            buildCell(cellX, cellZ, color);
-        end
-    end
-end
+CloudGrid.forEachOccupied(function(cell)
+    local color = Config.layer.APPEARANCE.PRESERVE_ORIGINAL_TEXTURE_COLOR and cell.color or ARGB.WHITE;
+    buildCell(cell.localX, cell.localZ, color);
+end)
 

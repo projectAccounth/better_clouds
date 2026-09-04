@@ -7,7 +7,9 @@ bin/
 *.sh
 .architectury-transformer/
 .eclipse/
-docs/scripting_engine
+
+# new repo
+docs/scripting_engine/
 
 # personal scripts
 *.py
