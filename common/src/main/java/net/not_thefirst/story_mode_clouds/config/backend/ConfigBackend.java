@@ -25,7 +25,6 @@ public interface ConfigBackend {
 
     interface ConfigScreenBuilder {
         ConfigScreenBuilder category(ConfigCategoryBuilder category);
-        ConfigScreenBuilder category(dev.isxander.yacl3.api.ConfigCategory category);
         ConfigScreenBuilder category(String title, String tooltip, Consumer<ConfigCategoryBuilder> initializer);
         Screen build(Screen backScreen);
     }

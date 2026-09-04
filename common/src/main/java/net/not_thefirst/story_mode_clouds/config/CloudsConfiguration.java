@@ -123,11 +123,10 @@ public class CloudsConfiguration {
     
     public boolean CLOUDS_RENDERED = true;
 
-    public CloudColorProviderMode COLOR_MODE = CloudColorProviderMode.VANILLA;
+    public CloudColorProviderMode COLOR_MODE  = CloudColorProviderMode.VANILLA;
     public LightingParameters LIGHTING        = new LightingParameters();
     public WeatherColorConfig WEATHER_COLOR   = new WeatherColorConfig();
-    public int                CLOUD_GRID_SIZE = 64; // legacy serialized block half-range, kept for backward compatibility
-    public Integer            CLOUD_DISTANCE_CHUNKS = null; // distance in chunks; grid half-range = (chunks * 16) / 12
+    public int          CLOUD_DISTANCE_CHUNKS = 32; // distance in chunks; grid half-range = (chunks * 16) / 12
 
     private final Map<Dimension, LayerHolder> DIMENSION_LAYERS = new HashMap<>();
     private final Map<Dimension, Boolean> DIMENSION_CLOUD_RENDERED = new HashMap<>();
@@ -241,16 +240,11 @@ public class CloudsConfiguration {
     }
 
     public int getCloudDistanceChunks() {
-        if (CLOUD_DISTANCE_CHUNKS != null && CLOUD_DISTANCE_CHUNKS > 0) {
-            return CLOUD_DISTANCE_CHUNKS;
-        }
-        int derived = Math.round(CLOUD_GRID_SIZE * 12f / 16f);
-        return derived >= ConfigConstants.MIN_CLOUD_DISTANCE_CHUNKS ? derived : ConfigConstants.DEFAULT_CLOUD_DISTANCE_CHUNKS;
+        return CLOUD_DISTANCE_CHUNKS;
     }
 
     public void setCloudDistanceChunks(int value) {
         CLOUD_DISTANCE_CHUNKS = value;
-        CLOUD_GRID_SIZE = Math.round(value * 16f / 12f);
     }
 
     public int getCloudGridRange() {
@@ -605,6 +599,19 @@ public class CloudsConfiguration {
                     }
                     default -> throw new IllegalArgumentException("Unsupported config type: " + entry.type());
                 }
+            }
+
+            public static String getDescription(String configName, MeshTypeData schema) {
+                if (schema == null) return "";
+                ConfigEntry entry = schema.config().get(configName);
+                if (entry == null) return "";
+                String desc = entry.description();
+                if (desc == null) return "";
+                return desc;
+            }
+
+            public String getDescription(String configName) {
+                return getDescription(configName, schema);
             }
 
             /**

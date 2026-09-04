@@ -102,42 +102,6 @@ public final class YaclConfigBackend implements ConfigBackend {
         }
 
         @Override
-        public ConfigScreenBuilder category(ConfigCategory category) {
-            categories.add(new ConfigCategoryBuilder() {
-                @Override
-                public ConfigCategoryBuilder name(String name) {
-                    return this;
-                }
-
-                @Override
-                public ConfigCategoryBuilder tooltip(String tooltip) {
-                    return this;
-                }
-
-                @Override
-                public ConfigCategoryBuilder option(ConfigOptionBuilder<?> option) {
-                    return this;
-                }
-
-                @Override
-                public ConfigCategoryBuilder group(ConfigGroupBuilder group) {
-                    return this;
-                }
-
-                @Override
-                public ConfigCategoryBuilder action(ConfigActionBuilder action) {
-                    return this;
-                }
-
-                @Override
-                public ConfigCategorySpec build() {
-                    return new ConfigCategorySpec(category.name().toString(), null, category);
-                }
-            });
-            return this;
-        }
-
-        @Override
         public ConfigScreenBuilder category(String title, String tooltip, Consumer<ConfigCategoryBuilder> initializer) {
             ConfigCategoryBuilder builder = new YaclCategoryBuilder(title, tooltip);
             initializer.accept(builder);

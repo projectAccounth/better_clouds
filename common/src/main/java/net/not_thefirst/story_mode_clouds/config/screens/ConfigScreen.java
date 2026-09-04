@@ -21,9 +21,9 @@ public class ConfigScreen {
         builder.category(DataSettings.buildGlobalSettings(config));
         builder.category(DataSettings.createPresetsCategory(self));
         builder.category(DataSettings.buildLightingSettings(config));
-        builder.category(DataSettings.buildLayerSettings(config, self));
-        builder.category(DataSettings.buildSkyColorSettings(config));
         builder.category(DataSettings.buildLightSourcesSettings(config));
+        builder.category(DataSettings.buildSkyColorSettings(config));
+        builder.category(DataSettings.buildLayerSettings(config, self));
 
         self[0] = builder.build(parent);
         return self[0];
