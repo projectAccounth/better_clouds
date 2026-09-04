@@ -23,8 +23,22 @@ public class Bit64Lib extends TwoArgFunction {
         bit64.set("rshift",   new Fn(Fn.RSHIFT));
         bit64.set("arshift",  new Fn(Fn.ARSHIFT));
         bit64.set("equals",   new Fn(Fn.EQUALS));
+
+        LuaTable friendly = new LuaTable();
+        friendly.set("toLong", new Fn(Fn.TOLONG));
+        friendly.set("toNumber", new Fn(Fn.TONUMBER));
+        friendly.set("toHex", new Fn(Fn.TOHEX));
+        friendly.set("bitAnd", new Fn(Fn.BAND));
+        friendly.set("bitOr", new Fn(Fn.BOR));
+        friendly.set("bitXor", new Fn(Fn.BXOR));
+        friendly.set("bitNot", new Fn(Fn.BNOT));
+        friendly.set("leftShift", new Fn(Fn.LSHIFT));
+        friendly.set("rightShift", new Fn(Fn.RSHIFT));
+        friendly.set("arithmeticRightShift", new Fn(Fn.ARSHIFT));
+        friendly.set("equals", new Fn(Fn.EQUALS));
  
         env.set("bit64", bit64);
+        env.set("Bit64", friendly);
         LuaValue pkg = env.get("package");
         if (!pkg.isnil()) {
             pkg.get("loaded").set("bit64", bit64);

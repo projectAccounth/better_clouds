@@ -22,8 +22,10 @@ public class GridCoordsApi extends TwoArgFunction {
         LuaTable library = new LuaTable();
         
         library.set("getCellIndex", new GetCellIndex());
+        library.set("getCellIndexWrapped", new GetCellIndexWrapped());
         library.set("getWrappedX", new GetCellX());
         library.set("getWrappedZ", new GetCellZ());
+        library.set("getRange", new Range());
         library.set("getCloudGridHalfSize", new Range());
         library.set("getCenterX", new ZeroArgFunction() {
             @Override
@@ -48,6 +50,16 @@ public class GridCoordsApi extends TwoArgFunction {
             return LuaValue.valueOf(underlying.getCellIndex(
                 x.checkint(),
                 z.checkint()
+            ));
+        }
+    }
+
+    private class GetCellIndexWrapped extends TwoArgFunction {
+        @Override
+        public LuaValue call(LuaValue wx, LuaValue wz) {
+            return LuaValue.valueOf(underlying.getCellIndexWrapped(
+                wx.checkint(),
+                wz.checkint()
             ));
         }
     }

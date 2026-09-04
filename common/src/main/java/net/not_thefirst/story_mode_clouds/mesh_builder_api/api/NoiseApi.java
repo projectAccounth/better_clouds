@@ -38,6 +38,7 @@ public class NoiseApi extends TwoArgFunction {
                 return new LuaNoiseInstance(nativeNoise);
             }
         });
+        library.set("new", library.get("create"));
 
         env.set("Noise", library);
         return library;

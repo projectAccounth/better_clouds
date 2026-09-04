@@ -8,7 +8,9 @@ import org.luaj.vm2.lib.TableLib;
 import net.not_thefirst.lib.gl_render_system.alt.AbstractStaticMesh;
 import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.api.Bit64Lib;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.api.CloudGridApi;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.api.ColorApi;
+import net.not_thefirst.story_mode_clouds.mesh_builder_api.api.ConfigApi;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.api.GridCoordsApi;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.api.MeshApi;
 import net.not_thefirst.story_mode_clouds.mesh_builder_api.api.NoiseApi;
@@ -49,15 +51,22 @@ public class ThreadLocalMeshRunner {
         localEnv.load(new NoiseApi());
         localEnv.load(new Bit64Lib());
         localEnv.load(new TextureApi(gridData));
-        localEnv.load(new GridCoordsApi(new WrappedCoordinates(cz, cz, global.getCloudGridRange(), gridData.width, gridData.height)));
+        WrappedCoordinates coordinates = new WrappedCoordinates(cx, cz, global.getCloudGridRange(), gridData.width, gridData.height);
+        localEnv.load(new GridCoordsApi(coordinates));
+        localEnv.load(new CloudGridApi(gridData, coordinates));
 
-        localEnv.set("GlobalConfig", LuaStructMapper.toLua(global));
+        LuaValue globalConfig = LuaStructMapper.toLua(global);
+        LuaValue layerConfig = LuaStructMapper.toLua(config);
+        LuaValue typeConfig = LuaValue.NIL;
+
         localEnv.set("MeshConstants", LuaStructMapper.toLua(new MeshBuilder()));
         localEnv.set("LayerConfig", LuaStructMapper.toLua(config));
 
         if (config.getTypeConfig(config.MODE) != null) {
-            localEnv.set("TypeConfig", LuaStructMapper.fromMap(config.getTypeConfig(config.MODE).getMap()));
+            typeConfig = LuaStructMapper.fromMap(config.getTypeConfig(config.MODE).getMap());
+            localEnv.set("TypeConfig", typeConfig);
         }
+        localEnv.load(new ConfigApi(globalConfig, layerConfig, typeConfig));
 
         try {
             LuaClosure scriptInstance = new LuaClosure(proto, localEnv);

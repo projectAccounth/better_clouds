@@ -27,7 +27,6 @@ public class TextureApi extends TwoArgFunction {
 
         lib.set("idx", new Fn(Fn.IDX, data));
         lib.set("getCell", new Fn(Fn.GET_CELL, data));
-        lib.set("setCell", new Fn(Fn.SET_CELL, data));
         lib.set("getNeighbor", new Fn(Fn.GET_NEIGHBOR, data));
         lib.set("setNeighbor", new Fn(Fn.SET_NEIGHBOR, data));
 
@@ -54,7 +53,7 @@ public class TextureApi extends TwoArgFunction {
     }
 
     private static final class Fn extends VarArgFunction {
-        static final int IDX = 0, GET_CELL = 1, SET_CELL = 2, GET_NEIGHBOR = 3, SET_NEIGHBOR = 4,
+        static final int IDX = 0, GET_CELL = 1, GET_NEIGHBOR = 3, SET_NEIGHBOR = 4,
                 GET_COLOR = 5, IS_NORTH_EMPTY = 6, IS_EAST_EMPTY = 7, IS_SOUTH_EMPTY = 8,
                 IS_WEST_EMPTY = 9, HAS_ALL_SIDES_OCCUPIED = 10,
                 IS_NORTH_SIDE_CLEAR = 11, IS_SOUTH_SIDE_CLEAR = 12,
@@ -87,12 +86,6 @@ public class TextureApi extends TwoArgFunction {
                 case GET_CELL: {
                     int k = idx(args.checkint(1), args.checkint(2), w, h);
                     return LuaLong.valueOf(data.cells[k]);
-                }
-
-                case SET_CELL: {
-                    int k = idx(args.checkint(1), args.checkint(2), w, h);
-                    data.cells[k] = LuaLong.checklong(args.arg(3));
-                    return LuaValue.NONE;
                 }
 
                 case GET_NEIGHBOR: {

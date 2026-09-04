@@ -45,6 +45,10 @@ public class WrappedCoordinates {
         return getCellIndex(offsetX, offsetZ, this.range);
     }
 
+    public int getCellIndexWrapped(int wx, int wz) {
+        return wx + wz * width;
+    }
+
     public int getWrappedX(int offsetX) {
         return wrappedX[offsetX + this.range];
     }
