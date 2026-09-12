@@ -36,6 +36,8 @@ public class Blaze3DPipelines extends PipelineAllocator {
         IdentifierWrapper.of(Initializer.MOD_ID, "b3d/stencil");
     static final IdentifierWrapper BLIT_FRAG = 
         IdentifierWrapper.of(Initializer.MOD_ID, "b3d/blit");
+    static final IdentifierWrapper BLIT_REVERSED_FRAG = 
+        IdentifierWrapper.of(Initializer.MOD_ID, "b3d/blit_reversed");
 
 
     private static final B3DPipeline.Builder COMMON_BUILDER = (B3DPipeline.Builder) 
@@ -110,6 +112,18 @@ public class Blaze3DPipelines extends PipelineAllocator {
         .withUniforms(Arrays.asList("colorTex0", "colorTex1", "depthTex0", "depthTex1"))
         .build();
 
+     public static final B3DPipeline BLIT_REVERSED = new B3DPipeline.Builder("BLIT_REVERSED")
+        .withName("BLIT_REVERSED")
+        .withId("cloud_tweaks:blit_reversed")
+        .withVertexShader(SCREENQUAD.toString())
+        .withFragmentShader(BLIT_REVERSED_FRAG.toString())
+        .withBlendState(BlendState.PREMULTIPLIED_ALPHA)
+        .withDepthTestState(DepthTestState.GEQUAL)
+        .withMaskState(MaskState.COLOR_DEPTH)
+        .withUniforms(Arrays.asList("colorTex0", "colorTex1", "depthTex0", "depthTex1"))
+        .build();
+
+
 
     public static final PipelineProvider BLAZE3D = PipelineProvider.register("BLAZE3D");
 
@@ -121,7 +135,7 @@ public class Blaze3DPipelines extends PipelineAllocator {
         manager.registerPipeline(OUTLINE, BLAZE3D);
         manager.registerPipeline(STENCIL, BLAZE3D);
         manager.registerPipeline(BLIT, BLAZE3D);
-
+        manager.registerPipeline(BLIT_REVERSED, BLAZE3D);
         manager.registerDataBufferFactory(  BLAZE3D, B3DUBODataBufferFactory::new);
         manager.registerRenderPassFactory(  BLAZE3D, B3DRenderPassFactory::new);
         manager.registerRenderTargetFactory(BLAZE3D, B3DRenderTargetFactory::new);

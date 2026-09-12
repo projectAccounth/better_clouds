@@ -27,4 +27,10 @@ public class RendererHolder {
 
         renderer.render(vec3, partialTicks);
     }
+
+    public static void finishCloudRender() {
+        if (renderer != null) {
+            renderer.finishRender();
+        }
+    }
 }

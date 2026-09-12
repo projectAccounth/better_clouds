@@ -48,7 +48,7 @@ float relY               = Info1.w;
 
 bool fogEnabled()        { return (Config & (1 << 0)) != 0; }
 bool shadingEnabled()    { return (Config & (1 << 1)) != 0; }
-bool usesCustomAlpha()   { return (Config & (1 << 2)) != 0; }
+bool usesCustomAlpha()   { return true; }
 bool customBrightness()  { return (Config & (1 << 3)) != 0; }
 bool usesCustomColor()   { return (Config & (1 << 4)) != 0; }
 bool fadeEnabled()       { return (Config & (1 << 5)) != 0; }
@@ -121,7 +121,7 @@ void main() {
 
     float lighting = 1.0;
 
-    if (shadingEnabled() && !UsePhong) {
+    if (shadingEnabled() && !UsePhong && length(N) > 0) {
         lighting = AmbientFactor;
 
         for (int i = 0; i < LightCount; i++) {
