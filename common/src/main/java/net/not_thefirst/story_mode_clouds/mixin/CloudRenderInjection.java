@@ -5,7 +5,7 @@ public class CloudRenderInjection {
 
     public static final String PRE_CLOUD_RENDERER = "renderClouds";
 
-    public static final String MODERN_FABRIC_RENDER = "method_62205";
+    public static final String MODERN_FABRIC_RENDER = "lambda$addCloudsPass$0";
     /* signature:
     * void(
     *    int cloudColor,

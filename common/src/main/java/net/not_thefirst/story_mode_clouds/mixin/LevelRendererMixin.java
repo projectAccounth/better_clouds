@@ -1,10 +1,9 @@
 package net.not_thefirst.story_mode_clouds.mixin;
 
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.world.phys.Vec3;
-import net.not_thefirst.story_mode_clouds.config.CloudsConfiguration;
+import net.not_thefirst.story_mode_clouds.config.state.RenderStatus;
 import net.not_thefirst.story_mode_clouds.renderer.RendererHolder;
-import net.not_thefirst.story_mode_clouds.utils.minecraft.ClientHelper;
+import net.not_thefirst.story_mode_clouds.utils.logging.LoggerProvider;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,14 +20,21 @@ public abstract class LevelRendererMixin {
     private void interceptCloudRender(
         CallbackInfo ci
     ) {
-        if (!CloudsConfiguration.getInstance().CLOUDS_RENDERED) 
+        if (!RenderStatus.shouldRender())
             return;
-        ci.cancel();
+    }
 
-        float partialTicks = ClientHelper.getClient().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-        Vec3 camPos = ClientHelper.CameraHelper.getCamera().position();
-
-        RendererHolder.renderCloud(camPos, partialTicks);
+    @Inject(method = "render", at = @At("RETURN"), require = 0)
+    private void finishCloudRender(CallbackInfo ci) {
+        if (!RenderStatus.shouldRender())
+            return;
+        try {
+            RendererHolder.finishCloudRender();
+        }
+        catch (Exception e) {
+            LoggerProvider.get().error("Error finishing cloud render", e);
+            RenderStatus.onRenderFailed();
+        }
     }
 
     @ModifyExpressionValue(
@@ -39,7 +45,7 @@ public abstract class LevelRendererMixin {
         )
     )
     private int forceAlphaCheckToPass(int originalAlpha) {
-        if (!CloudsConfiguration.getInstance().CLOUDS_RENDERED) {
+        if (!RenderStatus.shouldRender()) {
             return originalAlpha;
         }
         return Math.max(1, originalAlpha);
