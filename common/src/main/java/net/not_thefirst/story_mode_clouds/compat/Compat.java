@@ -18,6 +18,10 @@ public final class Compat {
             checker.isLoaded("cloth_config2");
     }
 
+    public static boolean hasIris() {
+        return checker.isLoaded("iris");
+    }
+
     public static boolean hasModMenu() {
         return checker.isLoaded("modmenu");
     }
