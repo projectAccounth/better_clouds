@@ -29,6 +29,7 @@ dependencies {
 
     implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+    compileOnly "maven.modrinth:iris:${project.iris_version}"
 }
 
 loom {
